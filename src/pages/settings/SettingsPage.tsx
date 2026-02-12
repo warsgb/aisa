@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
-import type { SharedFramework, TeamMember } from '../../types';
+import type { SharedFramework, TeamMember, InviteMemberData } from '../../types';
 
 export default function SettingsPage() {
   const { user, team, logout } = useAuth();
@@ -10,6 +10,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [invitePassword, setInvitePassword] = useState('');
   const [inviteRole, setInviteRole] = useState<'MEMBER' | 'ADMIN'>('MEMBER');
 
   useEffect(() => {
@@ -36,9 +37,19 @@ export default function SettingsPage() {
     if (!team || !inviteEmail.trim()) return;
 
     try {
-      await apiService.createTeamMember(team.id, { email: inviteEmail, role: inviteRole });
+      const payload: InviteMemberData = {
+        email: inviteEmail,
+        role: inviteRole,
+      };
+      // 如果提供了密码，添加到 payload
+      if (invitePassword.trim()) {
+        payload.password = invitePassword;
+      }
+
+      await apiService.createTeamMember(team.id, payload);
       setShowInviteModal(false);
       setInviteEmail('');
+      setInvitePassword('');
       setInviteRole('MEMBER');
       alert('邀请已发送');
       loadData();
@@ -288,6 +299,16 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">密码（可选，直接指定则无需邮件验证）</label>
+                <input
+                  type="password"
+                  value={invitePassword}
+                  onChange={(e) => setInvitePassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="留空则发送邮件验证，填写则直接设置密码"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">角色</label>
                 <select
                   value={inviteRole}
@@ -304,6 +325,7 @@ export default function SettingsPage() {
                 onClick={() => {
                   setShowInviteModal(false);
                   setInviteEmail('');
+                  setInvitePassword('');
                   setInviteRole('MEMBER');
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -311,7 +333,12 @@ export default function SettingsPage() {
                 取消
               </button>
               <button
-                onClick={handleInviteMember}
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setInviteEmail('');
+                  setInvitePassword('');
+                  setInviteRole('MEMBER');
+                }}
                 disabled={!inviteEmail.trim()}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >

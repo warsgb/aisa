@@ -36,6 +36,12 @@ export interface Team {
   members?: TeamMember[];
 }
 
+export interface InviteMemberData {
+  email: string;
+  role: 'MEMBER' | 'ADMIN';
+  password?: string;
+}
+
 export interface TeamBasic {
   id: string;
   name: string;

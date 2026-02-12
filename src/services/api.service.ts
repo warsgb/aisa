@@ -153,7 +153,7 @@ class ApiService {
     return this.request<TeamMember[]>(`/teams/${teamId}/members`);
   }
 
-  async createTeamMember(teamId: string, data: { email: string; role: 'MEMBER' | 'ADMIN' }): Promise<TeamMember> {
+  async createTeamMember(teamId: string, data: InviteMemberData): Promise<TeamMember> {
     return this.request<TeamMember>(`/teams/${teamId}/members`, {
       method: 'POST',
       body: JSON.stringify(data),
