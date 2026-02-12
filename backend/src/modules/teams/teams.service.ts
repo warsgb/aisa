@@ -5,9 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { Team } from '../../entities/team.entity';
 import { TeamMember, TeamRole } from '../../entities/team-member.entity';
-import { User } from '../../entities/user.entity';
+import { User, UserRole } from '../../entities/user.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 
@@ -126,8 +127,27 @@ export class TeamsService {
     });
 
     if (!user) {
-      // User doesn't exist - in a real app, send invitation email
-      throw new NotFoundException('User not found. Please register first.');
+      // User doesn't exist
+      if (password) {
+        // Create user with provided password
+        const password_hash = await bcrypt.hash(password, 10);
+        user = this.userRepository.create({
+          email,
+          password_hash,
+          full_name: email.split('@')[0], // 临时名字，用户可以后续修改
+          role: UserRole.MEMBER,
+          is_active: true,
+        });
+        await this.userRepository.save(user);
+      } else {
+        // No password provided, ask user to register first
+        throw new NotFoundException('User not found. Please register first.');
+      }
+    } else if (password) {
+      // User exists and password provided, update password
+      const password_hash = await bcrypt.hash(password, 10);
+      user.password_hash = password_hash;
+      await this.userRepository.save(user);
     }
 
     // Check if already a member
@@ -145,12 +165,6 @@ export class TeamsService {
       user_id: user.id,
       role,
     });
-
-    // If password provided, set it directly
-    if (password) {
-      user.password = password;
-      await this.userRepository.save(user);
-    }
 
     await this.teamMemberRepository.save(teamMember);
 
