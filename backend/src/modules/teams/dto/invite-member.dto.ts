@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 import { TeamRole } from '../../../entities/team-member.entity';
 
 export class InviteMemberDto {
