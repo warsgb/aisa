@@ -199,26 +199,42 @@ export class SkillLoaderService {
     const lines = parametersStr.split('\n');
 
     this.logger.log(`[parseYamlParameters] Starting to parse parameters string, length: ${parametersStr.length}`);
+    this.logger.log(`[parseYamlParameters] First 200 chars:\n${parametersStr.substring(0, 200)}`);
 
     let currentParam: any = null;
-    let paramNameIndent: number | null = null; // Auto-detect parameter indent
+    let paramBaseIndent: number | null = null; // Indentation of parameter names (e.g., "target_role:")
 
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
 
       const indent = line.search(/\S/);
+      this.logger.log(`[parseYamlParameters] Line indent=${indent}, trimmed="${trimmed.substring(0, 30)}"`);
 
-      // Auto-detect parameter indent from first parameter definition
-      if (paramNameIndent === null && trimmed.match(/^\w+:\s*$/)) {
-        paramNameIndent = indent;
+      // Auto-detect the indentation level for parameter names
+      // Parameter names are the ones that have property definitions nested under them
+      if (paramBaseIndent === null) {
+        // Check if this line looks like a parameter name (followed by nested properties on next lines)
+        const isPotentialParamName = trimmed.match(/^\w+:\s*$/);
+        if (isPotentialParamName) {
+          // Look ahead to see if next line has more indentation (indicating nested properties)
+          const lineIndex = lines.indexOf(line);
+          if (lineIndex < lines.length - 1) {
+            const nextLine = lines[lineIndex + 1];
+            const nextIndent = nextLine.search(/\S/);
+            if (nextIndent > indent) {
+              // This is a parameter name with nested properties
+              paramBaseIndent = indent;
+              this.logger.log(`[parseYamlParameters] Detected parameter base indent: ${paramBaseIndent}`);
+            }
+          }
+        }
+        // Skip lines until we know the parameter indent
+        if (paramBaseIndent === null) continue;
       }
 
-      // Skip lines until we know the parameter indent
-      if (paramNameIndent === null) continue;
-
-      // Check if this is a new parameter (indentation equals parameter indent)
-      if (indent === paramNameIndent) {
+      // Check if this is a new parameter (at the base indent level)
+      if (indent === paramBaseIndent) {
         // Save previous parameter if exists
         if (currentParam) {
           this.logger.log(`[parseYamlParameters] Saving param: ${currentParam.name}`);
@@ -242,7 +258,7 @@ export class SkillLoaderService {
             placeholder: '',
           };
         }
-      } else if (currentParam && indent > paramNameIndent) {
+      } else if (currentParam && indent > paramBaseIndent) {
         // Parse nested property
         const keyMatch = trimmed.match(/^(\w+):\s*(.*)$/);
         if (keyMatch) {
@@ -337,11 +353,13 @@ export class SkillLoaderService {
 
     // Find the field definition line (e.g., "parameters:")
     let fieldStartIndex = -1;
+    let baseIndent = -1;
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
       const match = trimmed.match(new RegExp(`^${fieldName}:\\s*(.*)`));
       if (match) {
         fieldStartIndex = i;
+        baseIndent = lines[i].search(/\S/);
         // If the field has an inline value (e.g., "name: value"), return it immediately
         if (match[1] !== '') {
           return match[1].trim();
@@ -354,7 +372,7 @@ export class SkillLoaderService {
       return null; // Field not found
     }
 
-    // For multi-line values, collect everything from the next line until we hit another top-level field
+    // For multi-line values, collect everything from the next line until we hit another field at same or lower level
     const collectedLines: string[] = [];
     for (let i = fieldStartIndex + 1; i < lines.length; i++) {
       const line = lines[i];
@@ -366,9 +384,9 @@ export class SkillLoaderService {
         continue;
       }
 
-      // Stop if we hit another top-level field (0 indentation, starts with word:)
-      // A top-level field looks like: "field_name:" or "field_name: value"
-      if (indent === 0 && trimmed.match(/^\w+:/)) {
+      // Stop if we hit another field at same or lower indentation level
+      // This handles both "field:" at same level and "field:" at outer level
+      if (indent <= baseIndent && trimmed.match(/^\w+:/)) {
         break;
       }
 
