@@ -1,13 +1,34 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  // Validate required environment variables
+  const requiredEnvVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET'];
+  const missing = requiredEnvVars.filter(key => !process.env[key]);
+
+  if (missing.length > 0) {
+    Logger.error(
+      `❌ Missing required environment variables: ${missing.join(', ')}\n` +
+      `Please set these in your backend/.env file.\n` +
+      `You can generate secure keys with: openssl rand -base64 32`
+    );
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS with explicit configuration for development
+  // Read allowed origins from environment variable or use defaults
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+    : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
+  // Allow all origins in development if CORS_ALLOW_ALL is set
+  const allowAllOrigins = process.env.NODE_ENV === 'development' && process.env.CORS_ALLOW_ALL === 'true';
+
   app.enableCors({
-    origin: ['http://69.5.7.242:5173', 'http://localhost:5173', 'http://172.31.0.2:5173'],
+    origin: allowAllOrigins ? true : corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],

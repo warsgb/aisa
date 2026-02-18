@@ -34,8 +34,21 @@ export class SkillLoaderService {
     @InjectRepository(Skill)
     private skillRepository: Repository<Skill>,
   ) {
-    // Skills directory is at /home/presales/aisa/skills
-    this.skillsDir = path.join(process.cwd(), '..', 'skills');
+    // Skills directory - support environment variable or use relative path
+    const envSkillsDir = this.configService.get<string>('SKILLS_DIR');
+    if (envSkillsDir) {
+      this.skillsDir = envSkillsDir;
+    } else {
+      // Default: ../skills from backend directory, or ./skills if running from project root
+      const possiblePaths = [
+        path.join(process.cwd(), '..', 'skills'),
+        path.join(process.cwd(), 'skills'),
+        path.join(__dirname, '..', '..', '..', 'skills'),
+      ];
+      // Use first existing directory
+      this.skillsDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[0];
+    }
+    this.logger.log(`Skills directory: ${this.skillsDir}`);
   }
 
   async loadAllSkills(): Promise<Skill[]> {

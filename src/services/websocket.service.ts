@@ -21,7 +21,8 @@ class WebSocketService {
       return;
     }
 
-    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+    // Support relative paths for same-origin deployment, fallback to localhost
+    const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3001');
 
     console.log('🔌 [WebSocket Service] Attempting to connect...', {
       url: wsUrl,

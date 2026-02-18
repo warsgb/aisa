@@ -1,6 +1,7 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { SkillsController } from './skills.controller';
 import { SkillsService } from './skills.service';
 import { SkillLoaderService } from './skill-loader.service';
@@ -28,8 +29,11 @@ import { Document } from '../../entities/document.entity';
       TeamMember,
       Document,
     ]),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production-aisa-2026',
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+      }),
     }),
   ],
   controllers: [SkillsController],

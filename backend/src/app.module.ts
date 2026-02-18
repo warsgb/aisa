@@ -11,12 +11,18 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ReferencesModule } from './modules/references/references.module';
 import { FrameworksModule } from './modules/frameworks/frameworks.module';
+import * as path from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      // Try multiple possible locations for .env file
+      envFilePath: [
+        '.env',
+        path.join(process.cwd(), '.env'),
+        path.join(process.cwd(), 'backend', '.env'),
+      ],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

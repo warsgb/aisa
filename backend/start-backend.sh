@@ -4,7 +4,9 @@
 
 set -e
 
-BACKEND_DIR="/home/presales/aisa/backend"
+# Get the parent directory of this script (backend directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="${BACKEND_DIR:-$SCRIPT_DIR}"
 PORT=3001
 
 # Change to backend directory

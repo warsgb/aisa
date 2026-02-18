@@ -1,7 +1,11 @@
 #!/bin/bash
 # Fix Vite configuration by setting base directory
 
-cd /home/presales/aisa
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="${PROJECT_DIR:-$SCRIPT_DIR}"
+
+cd "$PROJECT_DIR"
 
 echo "🔧 Fixing vite.config.ts..."
 echo ""

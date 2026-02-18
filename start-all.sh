@@ -4,7 +4,10 @@
 
 set -e
 
-PROJECT_DIR="/home/presales/aisa"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Support environment variable override
+PROJECT_DIR="${PROJECT_DIR:-$SCRIPT_DIR}"
 FRONTEND_DIR="$PROJECT_DIR"
 BACKEND_DIR="$PROJECT_DIR/backend"
 

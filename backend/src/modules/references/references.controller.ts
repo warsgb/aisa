@@ -16,8 +16,22 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ReferencesService } from './references.service';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+
+// Helper function to get upload path
+const getUploadPath = (...paths: string[]) => {
+  const baseDir = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
+  const fullPath = join(baseDir, ...paths);
+
+  // Ensure directory exists
+  if (!fs.existsSync(fullPath)) {
+    fs.mkdirSync(fullPath, { recursive: true });
+  }
+
+  return fullPath;
+};
 
 interface RequestWithUser extends Request {
   user: {
@@ -41,8 +55,8 @@ export class ReferencesController {
           const teamId = (req.params as any).teamId;
           const customerId = (req.body as any).customerId;
           const dir = customerId
-            ? `/home/presales/aisa/uploads/teams/${teamId}/customers/${customerId}/references`
-            : `/home/presales/aisa/uploads/teams/${teamId}/references`;
+            ? getUploadPath('teams', teamId, 'customers', customerId, 'references')
+            : getUploadPath('teams', teamId, 'references');
           cb(null, dir);
         },
         filename: (req, file, cb) => {

@@ -5,7 +5,9 @@
 set -e
 
 PORT=3001
-BACKEND_DIR="/home/presales/aisa/backend"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="${BACKEND_DIR:-$SCRIPT_DIR}"
 
 echo "🛑 Stopping backend on port $PORT..."
 

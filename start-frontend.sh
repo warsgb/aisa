@@ -3,7 +3,10 @@
 
 set -e
 
-FRONTEND_DIR="/home/presales/aisa"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Support environment variable override
+FRONTEND_DIR="${PROJECT_DIR:-$SCRIPT_DIR}"
 LOG_FILE="/tmp/frontend.log"
 
 echo "🚀 Starting Frontend..."

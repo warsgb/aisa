@@ -19,28 +19,25 @@ export default defineConfig({
 
   optimizeDeps: {
     include: [
-      'vite',
       'react',
       'react-dom',
       'react-dom/client',
       '@uiw/react-md-editor',
     ],
-    exclude: [
-      'node_modules/.vite',
-      'node_modules/react',
-    ],
+    // Exclude native modules from optimization
+    exclude: ['fsevents'],
   },
 
   // Proxy API requests to backend
   proxy: {
     '/api': {
-      target: 'http://69.5.7.242:3001',
+      target: process.env.VITE_API_URL || 'http://localhost:3001',
       changeOrigin: true,
       secure: false,
       ws: true, // Proxy WebSocket
     },
     '/ws': {
-      target: 'ws://69.5.7.242:3001',
+      target: process.env.VITE_WS_URL ? process.env.VITE_WS_URL.replace('http://', 'ws://').replace('https://', 'wss://') : 'ws://localhost:3001',
       ws: true,
     },
   },

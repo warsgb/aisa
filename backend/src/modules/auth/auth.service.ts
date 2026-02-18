@@ -132,9 +132,14 @@ export class AuthService {
   }
 
   async refreshToken(refresh_token: string) {
+    const refreshSecret = process.env.JWT_REFRESH_SECRET;
+    if (!refreshSecret) {
+      throw new UnauthorizedException('JWT_REFRESH_SECRET not configured');
+    }
+
     try {
       const payload = this.jwtService.verify(refresh_token, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: refreshSecret,
       });
 
       const user = await this.userRepository.findOne({
@@ -215,6 +220,11 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string, teamId?: string) {
+    const refreshSecret = process.env.JWT_REFRESH_SECRET;
+    if (!refreshSecret) {
+      throw new Error('JWT_REFRESH_SECRET environment variable is required');
+    }
+
     const payload = { sub: userId, team_id: teamId };
 
     const access_token = this.jwtService.sign(payload, {
@@ -222,7 +232,7 @@ export class AuthService {
     });
 
     const refresh_token = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production-aisa-2026',
+      secret: refreshSecret,
       expiresIn: '7d',
     });
 

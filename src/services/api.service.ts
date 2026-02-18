@@ -15,7 +15,38 @@ import type {
   TeamMember,
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Support relative paths for same-origin deployment, fallback to localhost
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Safe localStorage wrapper to handle cases where localStorage is unavailable
+const safeStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn('localStorage not available:', e);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): boolean => {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      console.warn('localStorage not available:', e);
+      return false;
+    }
+  },
+  removeItem: (key: string): boolean => {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch (e) {
+      console.warn('localStorage not available:', e);
+      return false;
+    }
+  },
+};
 
 class ApiService {
   private accessToken: string | null = null;
@@ -23,22 +54,22 @@ class ApiService {
 
   constructor() {
     // Load tokens from localStorage on init
-    this.accessToken = localStorage.getItem('access_token');
-    this.refreshToken = localStorage.getItem('refresh_token');
+    this.accessToken = safeStorage.getItem('access_token');
+    this.refreshToken = safeStorage.getItem('refresh_token');
   }
 
   setTokens(accessToken: string, refreshToken: string) {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
+    safeStorage.setItem('access_token', accessToken);
+    safeStorage.setItem('refresh_token', refreshToken);
   }
 
   clearTokens() {
     this.accessToken = null;
     this.refreshToken = null;
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    safeStorage.removeItem('access_token');
+    safeStorage.removeItem('refresh_token');
   }
 
   private async request<T>(
