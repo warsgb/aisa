@@ -18,11 +18,12 @@ export default function SkillsPage() {
   const [streamingContent, setStreamingContent] = useState('');
   const [showStreamingModal, setShowStreamingModal] = useState(false);
   const [executionError, setExecutionError] = useState<string | null>(null);
+  const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
 
   useEffect(() => {
     loadSkills();
     loadCustomers();
-    // Connect WebSocket when user is available
+    // Connect WebSocket when user is available and has a team
     if (user && team) {
       const token = localStorage.getItem('access_token');
       if (token) {
@@ -36,8 +37,13 @@ export default function SkillsPage() {
 
   const loadSkills = async () => {
     try {
-      const data = await apiService.getSkills();
-      setSkills(data);
+      if (isSystemAdmin) {
+        const data = await apiService.getSystemSkills();
+        setSkills(data.data);
+      } else {
+        const data = await apiService.getSkills();
+        setSkills(data);
+      }
     } catch (error) {
       console.error('加载技能失败:', error);
     } finally {
@@ -46,16 +52,24 @@ export default function SkillsPage() {
   };
 
   const loadCustomers = async () => {
-    if (!team) return;
     try {
-      const data = await apiService.getCustomers(team.id);
-      setCustomers(data);
+      if (isSystemAdmin) {
+        const data = await apiService.getSystemCustomers();
+        setCustomers(data.data);
+      } else if (team) {
+        const data = await apiService.getCustomers(team.id);
+        setCustomers(data);
+      }
     } catch (error) {
       console.error('加载客户失败:', error);
     }
   };
 
   const handleExecuteSkill = async () => {
+    if (isSystemAdmin) {
+      alert('系统管理员无法执行技能，请使用普通用户账号');
+      return;
+    }
     if (!selectedSkill || !selectedCustomer || !team) {
       alert('请选择技能和客户');
       return;

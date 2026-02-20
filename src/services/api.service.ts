@@ -13,6 +13,18 @@ import type {
   CreateCustomerDto,
   User,
   TeamMember,
+  InviteMemberData,
+  SystemUser,
+  SystemTeam,
+  SystemStats,
+  PaginatedResponse,
+  UpdateUserStatusDto,
+  ResetPasswordDto,
+  CreateSystemUserDto,
+  CreateSystemTeamDto,
+  TeamApplication,
+  SubmitTeamApplicationDto,
+  ReviewTeamApplicationDto,
 } from '../types';
 
 // Support relative paths for same-origin deployment, fallback to localhost
@@ -78,19 +90,23 @@ class ApiService {
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
 
+    // Always get the latest token from localStorage
+    const token = safeStorage.getItem('access_token');
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
 
-    if (this.accessToken) {
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     let response = await fetch(url, { ...options, headers });
 
     // Try to refresh token if unauthorized
-    if (response.status === 401 && this.refreshToken) {
+    const refreshToken = safeStorage.getItem('refresh_token');
+    if (response.status === 401 && refreshToken) {
       try {
         const refreshData = await this.refreshAccessToken();
         if (refreshData.access_token) {
@@ -200,6 +216,13 @@ class ApiService {
 
   async removeTeamMember(teamId: string, memberId: string): Promise<void> {
     return this.request<void>(`/teams/${teamId}/members/${memberId}`, { method: 'DELETE' });
+  }
+
+  async updateTeamMemberPassword(teamId: string, memberId: string, password: string): Promise<void> {
+    return this.request<void>(`/teams/${teamId}/members/${memberId}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ password }),
+    });
   }
 
   // Customers endpoints
@@ -353,6 +376,134 @@ class ApiService {
 
   async deleteFramework(id: string): Promise<void> {
     return this.request<void>(`/frameworks/${id}`, { method: 'DELETE' });
+  }
+
+  // System Admin endpoints
+  async getAllSystemUsers(page: number = 1, pageSize: number = 20, search?: string): Promise<PaginatedResponse<SystemUser>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+    if (search) params.append('search', search);
+    return this.request<PaginatedResponse<SystemUser>>(`/system/users?${params.toString()}`);
+  }
+
+  async getSystemUser(id: string): Promise<SystemUser> {
+    return this.request<SystemUser>(`/system/users/${id}`);
+  }
+
+  async updateUserStatus(id: string, dto: UpdateUserStatusDto): Promise<SystemUser> {
+    return this.request<SystemUser>(`/system/users/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async resetUserPassword(id: string, dto: ResetPasswordDto): Promise<{ id: string; email: string; message: string }> {
+    return this.request<{ id: string; email: string; message: string }>(`/system/users/${id}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async getAllSystemTeams(page: number = 1, pageSize: number = 20, search?: string): Promise<PaginatedResponse<SystemTeam>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+    if (search) params.append('search', search);
+    return this.request<PaginatedResponse<SystemTeam>>(`/system/teams?${params.toString()}`);
+  }
+
+  async getSystemTeamMembers(teamId: string): Promise<TeamMember[]> {
+    return this.request<TeamMember[]>(`/system/teams/${teamId}/members`);
+  }
+
+  async deleteSystemTeam(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/system/teams/${id}`, { method: 'DELETE' });
+  }
+
+  async getSystemStats(): Promise<SystemStats> {
+    return this.request<SystemStats>('/system/stats');
+  }
+
+  // System admin - get all data across teams
+  async getSystemCustomers(page: number = 1, pageSize: number = 100, search?: string): Promise<PaginatedResponse<Customer>> {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (search) params.append('search', search);
+    return this.request<PaginatedResponse<Customer>>(`/system/customers?${params}`);
+  }
+
+  async getSystemSkills(page: number = 1, pageSize: number = 100, search?: string): Promise<PaginatedResponse<Skill>> {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (search) params.append('search', search);
+    return this.request<PaginatedResponse<Skill>>(`/system/skills?${params}`);
+  }
+
+  async getSystemInteractions(page: number = 1, pageSize: number = 100, search?: string): Promise<PaginatedResponse<SkillInteraction>> {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (search) params.append('search', search);
+    return this.request<PaginatedResponse<SkillInteraction>>(`/system/interactions?${params}`);
+  }
+
+  async getSystemDocuments(page: number = 1, pageSize: number = 100, search?: string): Promise<PaginatedResponse<Document>> {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (search) params.append('search', search);
+    return this.request<PaginatedResponse<Document>>(`/system/documents?${params}`);
+  }
+
+  // Create user by system admin
+  async createSystemUser(dto: CreateSystemUserDto): Promise<SystemUser> {
+    return this.request<SystemUser>('/system/users', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  // Create team by system admin
+  async createSystemTeam(dto: CreateSystemTeamDto): Promise<SystemTeam> {
+    return this.request<SystemTeam>('/system/teams', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  // Team applications
+  async submitTeamApplication(dto: SubmitTeamApplicationDto): Promise<TeamApplication> {
+    return this.request<TeamApplication>('/system/team-applications', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  async getMyTeamApplications(): Promise<TeamApplication[]> {
+    return this.request<TeamApplication[]>('/system/team-applications/my');
+  }
+
+  async getSystemTeamApplications(
+    page: number = 1,
+    pageSize: number = 20,
+    status?: string
+  ): Promise<PaginatedResponse<TeamApplication>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+    if (status) params.append('status', status);
+    return this.request<PaginatedResponse<TeamApplication>>(`/system/team-applications?${params.toString()}`);
+  }
+
+  async reviewTeamApplication(
+    id: string,
+    dto: ReviewTeamApplicationDto
+  ): Promise<{ id: string; status: string; team: { id: string; name: string } | null }> {
+    return this.request<{ id: string; status: string; team: { id: string; name: string } | null }>(
+      `/system/team-applications/${id}/review`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(dto),
+      }
+    );
   }
 }
 

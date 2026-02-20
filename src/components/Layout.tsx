@@ -22,6 +22,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/interactions', label: '交互', icon: '💬' },
     { path: '/documents', label: '文档', icon: '📄' },
     { path: '/settings', label: '设置', icon: '⚙️' },
+    ...(user?.role === 'SYSTEM_ADMIN' ? [{ path: '/system', label: '系统管理', icon: '🔐' }] : []),
   ];
 
   return (

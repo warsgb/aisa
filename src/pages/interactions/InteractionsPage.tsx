@@ -5,7 +5,7 @@ import { apiService } from '../../services/api.service';
 import type { SkillInteraction, Customer, Skill } from '../../types';
 
 export default function InteractionsPage() {
-  const { team } = useAuth();
+  const { team, user } = useAuth();
   const navigate = useNavigate();
   const [interactions, setInteractions] = useState<SkillInteraction[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -13,40 +13,53 @@ export default function InteractionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filterCustomer, setFilterCustomer] = useState<string>('');
   const [filterSkill, setFilterSkill] = useState<string>('');
+  const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
 
   useEffect(() => {
-    if (!team) return;
+    if (!team && !isSystemAdmin) return;
     loadData();
-  }, [team]);
+  }, [team, isSystemAdmin]);
 
   useEffect(() => {
-    if (!team) return;
+    if (!team && !isSystemAdmin) return;
     loadInteractions();
-  }, [team, filterCustomer, filterSkill]);
+  }, [team, isSystemAdmin, filterCustomer, filterSkill]);
 
   const loadData = async () => {
-    if (!team) return;
     try {
-      const [customersData, skillsData] = await Promise.all([
-        apiService.getCustomers(team.id),
-        apiService.getSkills(),
-      ]);
-      setCustomers(customersData);
-      setSkills(skillsData);
+      if (isSystemAdmin) {
+        const [customersData, skillsData] = await Promise.all([
+          apiService.getSystemCustomers(),
+          apiService.getSystemSkills(),
+        ]);
+        setCustomers(customersData.data);
+        setSkills(skillsData.data);
+      } else if (team) {
+        const [customersData, skillsData] = await Promise.all([
+          apiService.getCustomers(team.id),
+          apiService.getSkills(),
+        ]);
+        setCustomers(customersData);
+        setSkills(skillsData);
+      }
     } catch (error) {
       console.error('加载数据失败:', error);
     }
   };
 
   const loadInteractions = async () => {
-    if (!team) return;
     try {
       setIsLoading(true);
-      const filters: { customerId?: string; skillId?: string } = {};
-      if (filterCustomer) filters.customerId = filterCustomer;
-      if (filterSkill) filters.skillId = filterSkill;
-      const data = await apiService.getInteractions(team.id, filters);
-      setInteractions(data);
+      if (isSystemAdmin) {
+        const data = await apiService.getSystemInteractions();
+        setInteractions(data.data);
+      } else if (team) {
+        const filters: { customerId?: string; skillId?: string } = {};
+        if (filterCustomer) filters.customerId = filterCustomer;
+        if (filterSkill) filters.skillId = filterSkill;
+        const data = await apiService.getInteractions(team.id, filters);
+        setInteractions(data);
+      }
     } catch (error) {
       console.error('加载交互失败:', error);
     } finally {

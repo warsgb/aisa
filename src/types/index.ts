@@ -3,7 +3,7 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
-  role: 'ADMIN' | 'MEMBER';
+  role: 'SYSTEM_ADMIN' | 'ADMIN' | 'MEMBER';
 }
 
 export interface AuthResponse {
@@ -38,6 +38,7 @@ export interface Team {
 
 export interface InviteMemberData {
   email: string;
+  full_name?: string;
   role: 'MEMBER' | 'ADMIN';
   password?: string;
 }
@@ -259,4 +260,96 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   pageSize: number;
+}
+
+// System Admin Types
+export interface SystemUser {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'SYSTEM_ADMIN' | 'ADMIN' | 'MEMBER';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  teams: Array<{
+    id: string;
+    name: string;
+    role: 'OWNER' | 'ADMIN' | 'MEMBER';
+  }>;
+}
+
+export interface SystemTeam {
+  id: string;
+  name: string;
+  description?: string;
+  logo_url?: string;
+  created_at: string;
+  updated_at: string;
+  member_count: number;
+  owner: {
+    id: string;
+    email: string;
+    full_name: string;
+  } | null;
+}
+
+export interface SystemStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalTeams: number;
+  totalTeamMembers: number;
+}
+
+export interface UpdateUserStatusDto {
+  is_active: boolean;
+}
+
+export interface ResetPasswordDto {
+  new_password: string;
+}
+
+// Create System User/Team DTOs
+export interface CreateSystemUserDto {
+  email: string;
+  full_name: string;
+  password: string;
+  role?: 'SYSTEM_ADMIN' | 'ADMIN' | 'MEMBER';
+  is_active?: boolean;
+}
+
+export interface CreateSystemTeamDto {
+  name: string;
+  description?: string;
+  logo_url?: string;
+  owner_id: string;
+}
+
+// Team Application Types
+export interface TeamApplication {
+  id: string;
+  name: string;
+  description?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  user?: {
+    id: string;
+    email: string;
+    full_name: string;
+  };
+  reviewer?: {
+    id: string;
+    full_name: string;
+  } | null;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  created_at: string;
+}
+
+export interface SubmitTeamApplicationDto {
+  name: string;
+  description?: string;
+}
+
+export interface ReviewTeamApplicationDto {
+  status: 'approved' | 'rejected';
+  rejectionReason?: string;
 }

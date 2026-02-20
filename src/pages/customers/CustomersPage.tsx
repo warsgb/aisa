@@ -4,13 +4,14 @@ import { apiService } from '../../services/api.service';
 import type { Customer, CreateCustomerDto } from '../../types';
 
 export default function CustomersPage() {
-  const { team } = useAuth();
+  const { team, user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
   const [formData, setFormData] = useState<CreateCustomerDto>({
     name: '',
     industry: '',
@@ -25,15 +26,19 @@ export default function CustomersPage() {
   });
 
   useEffect(() => {
-    if (!team) return;
+    if (!team && !isSystemAdmin) return;
     loadCustomers();
-  }, [team]);
+  }, [team, isSystemAdmin]);
 
   const loadCustomers = async () => {
-    if (!team) return;
     try {
-      const data = await apiService.getCustomers(team.id);
-      setCustomers(data);
+      if (isSystemAdmin) {
+        const data = await apiService.getSystemCustomers();
+        setCustomers(data.data);
+      } else if (team) {
+        const data = await apiService.getCustomers(team.id);
+        setCustomers(data);
+      }
     } catch (error) {
       console.error('加载客户失败:', error);
     } finally {
@@ -43,10 +48,16 @@ export default function CustomersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!team) return;
+    if (!team && !isSystemAdmin) return;
+
+    // System admin cannot create customers without a team
+    if (isSystemAdmin) {
+      alert('系统管理员无法创建客户，请使用普通用户账号');
+      return;
+    }
 
     try {
-      await apiService.createCustomer(team.id, formData);
+      await apiService.createCustomer(team!.id, formData);
       setShowCreateModal(false);
       resetForm();
       loadCustomers();
@@ -58,10 +69,16 @@ export default function CustomersPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!team || !selectedCustomer) return;
+    if ((!team && !isSystemAdmin) || !selectedCustomer) return;
+
+    // System admin cannot update customers
+    if (isSystemAdmin) {
+      alert('系统管理员无法更新客户，请使用普通用户账号');
+      return;
+    }
 
     try {
-      await apiService.updateCustomer(team.id, selectedCustomer.id, formData);
+      await apiService.updateCustomer(team!.id, selectedCustomer.id, formData);
       setShowEditModal(false);
       setSelectedCustomer(null);
       resetForm();
@@ -73,11 +90,18 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (customer: Customer) => {
-    if (!team) return;
+    if (!team && !isSystemAdmin) return;
+
+    // System admin cannot delete customers
+    if (isSystemAdmin) {
+      alert('系统管理员无法删除客户，请使用普通用户账号');
+      return;
+    }
+
     if (!confirm(`确定要删除客户 "${customer.name}" 吗？此操作不可撤销。`)) return;
 
     try {
-      await apiService.deleteCustomer(team.id, customer.id);
+      await apiService.deleteCustomer(team!.id, customer.id);
       loadCustomers();
     } catch (error) {
       console.error('删除客户失败:', error);

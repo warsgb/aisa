@@ -13,6 +13,20 @@ export default defineConfig({
     hmr: {
       protocol: 'ws', // Use WebSocket for HMR
     },
+    // Proxy API requests to backend
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_URL || 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // Proxy WebSocket
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      '/ws': {
+        target: process.env.VITE_WS_URL ? process.env.VITE_WS_URL.replace('http://', 'ws://').replace('https://', 'wss://') : 'ws://localhost:3001',
+        ws: true,
+      },
+    },
   },
 
   clearScreen: true,
@@ -26,19 +40,5 @@ export default defineConfig({
     ],
     // Exclude native modules from optimization
     exclude: ['fsevents'],
-  },
-
-  // Proxy API requests to backend
-  proxy: {
-    '/api': {
-      target: process.env.VITE_API_URL || 'http://localhost:3001',
-      changeOrigin: true,
-      secure: false,
-      ws: true, // Proxy WebSocket
-    },
-    '/ws': {
-      target: process.env.VITE_WS_URL ? process.env.VITE_WS_URL.replace('http://', 'ws://').replace('https://', 'wss://') : 'ws://localhost:3001',
-      ws: true,
-    },
   },
 })

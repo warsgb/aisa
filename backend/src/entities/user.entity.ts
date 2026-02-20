@@ -9,6 +9,7 @@ import {
 import { TeamMember } from './team-member.entity';
 
 export enum UserRole {
+  SYSTEM_ADMIN = 'SYSTEM_ADMIN',
   ADMIN = 'ADMIN',
   MEMBER = 'MEMBER',
 }

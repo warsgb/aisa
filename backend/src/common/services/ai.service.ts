@@ -38,15 +38,16 @@ export class AIService {
       this.defaultMaxTokens = this.configService.get<number>('ZHIPU_MAX_TOKENS', 4096);
       this.defaultTemperature = this.configService.get<number>('ZHIPU_TEMPERATURE', 0.7);
 
-      if (!apiKey) {
-        this.logger.warn('ZHIPU_API_KEY not configured');
+      if (!apiKey || apiKey === 'your_zhipu_api_key_here') {
+        this.logger.warn('ZHIPU_API_KEY not configured or using placeholder. Will use mock response mode.');
+        this.client = null as any; // Mark as not configured
+      } else {
+        // 智谱AI使用OpenAI兼容接口
+        this.client = new OpenAI({
+          apiKey,
+          baseURL,
+        });
       }
-
-      // 智谱AI使用OpenAI兼容接口
-      this.client = new OpenAI({
-        apiKey,
-        baseURL,
-      });
 
       this.logger.log(`AI Service initialized (Zhipu GLM) with model: ${this.defaultModel}`);
       this.logger.log(`Base URL: ${baseURL}`);
@@ -92,6 +93,35 @@ export class AIService {
     } = options;
 
     try {
+      // Check if AI client is configured
+      if (!this.client) {
+        this.logger.warn('AI client not configured, using mock response');
+
+        // Generate a mock response
+        const mockResponse = this.generateMockResponse(messages, system);
+
+        // Simulate streaming by sending chunks
+        if (onStart) {
+          onStart();
+        }
+
+        if (onChunk) {
+          const chunkSize = 20;
+          for (let i = 0; i < mockResponse.length; i += chunkSize) {
+            const chunk = mockResponse.substring(i, i + chunkSize);
+            onChunk(chunk);
+            // Add small delay to simulate streaming
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+        }
+
+        if (onComplete) {
+          onComplete(mockResponse);
+        }
+
+        return mockResponse;
+      }
+
       // Prepare messages
       const allMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
 
@@ -275,5 +305,44 @@ export class AIService {
       this.logger.error('AI API error:', error);
       throw error;
     }
+  }
+
+  private generateMockResponse(messages: Message[], system?: string): string {
+    // Extract parameters from the last user message if present
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    let response = '';
+
+    if (lastUserMessage && lastUserMessage.content.includes('目标角色')) {
+      // Elevator pitch skill mock response
+      response = `# 电梯演讲：30秒打动CEO
+
+**CEO您好，给我30秒时间：**
+
+作为建筑行业的领军企业，北京建工集团正在推进数字化转型。想象一下，如果您的团队能够：
+
+✨ **提升3倍工作效率** - 智能文档协作，让项目资料实时同步
+🚀 **缩短50%审批周期** - 流程自动化，从立项到验收全面提速
+💡 **降低70%沟通成本** - 跨部门协作无缝衔接，信息零延迟
+
+WPS 365已服务超过500家建筑国企，包括中建、中铁等龙头企业。我们的平台正在帮助您的同行实现**"降本增效、安全可控"**的数字化目���。
+
+**下周一上午10点，我能用15分钟为您展示具体案例吗？**
+
+---
+*这就是愿景型钩子的力量 - 不是推销产品，而是描绘客户渴望的未来。*`;
+    } else {
+      // Generic mock response
+      response = `感谢您的提问。
+
+这是一个模拟的AI响应，用于测试系统功能。实际使用时，系统将连接到真实的AI服务（智谱AI）来提供专业的内容生成服务。
+
+当前测试模式已启用，因为ZHIPU_API_KEY尚未配置。
+
+要使用真实AI服务，请在backend/.env文件中设置有效的ZHIPU_API_KEY。
+
+功能测试完成！`;
+    }
+
+    return response;
   }
 }

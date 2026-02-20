@@ -1,7 +1,5 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { SkillsController } from './skills.controller';
 import { SkillsService } from './skills.service';
 import { SkillLoaderService } from './skill-loader.service';
@@ -16,6 +14,7 @@ import { ReferenceMaterial } from '../../entities/reference-material.entity';
 import { SharedFramework } from '../../entities/shared-framework.entity';
 import { TeamMember } from '../../entities/team-member.entity';
 import { Document } from '../../entities/document.entity';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -29,12 +28,7 @@ import { Document } from '../../entities/document.entity';
       TeamMember,
       Document,
     ]),
-    JwtModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-      }),
-    }),
+    AuthModule,
   ],
   controllers: [SkillsController],
   providers: [

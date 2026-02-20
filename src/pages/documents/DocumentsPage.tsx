@@ -5,7 +5,7 @@ import { apiService } from '../../services/api.service';
 import type { Document, Customer } from '../../types';
 
 export default function DocumentsPage() {
-  const { team } = useAuth();
+  const { team, user } = useAuth();
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -19,35 +19,44 @@ export default function DocumentsPage() {
     title: '',
     content: '',
   });
+  const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
 
   useEffect(() => {
-    if (!team) return;
+    if (!team && !isSystemAdmin) return;
     loadCustomers();
-  }, [team]);
+  }, [team, isSystemAdmin]);
 
   useEffect(() => {
-    if (!team) return;
+    if (!team && !isSystemAdmin) return;
     loadDocuments();
-  }, [team, filterCustomer]);
+  }, [team, isSystemAdmin, filterCustomer]);
 
   const loadCustomers = async () => {
-    if (!team) return;
     try {
-      const data = await apiService.getCustomers(team.id);
-      setCustomers(data);
+      if (isSystemAdmin) {
+        const data = await apiService.getSystemCustomers();
+        setCustomers(data.data);
+      } else if (team) {
+        const data = await apiService.getCustomers(team.id);
+        setCustomers(data);
+      }
     } catch (error) {
       console.error('加载客户失败:', error);
     }
   };
 
   const loadDocuments = async () => {
-    if (!team) return;
     try {
       setIsLoading(true);
-      const data = filterCustomer
-        ? await apiService.getDocuments(team.id, filterCustomer)
-        : await apiService.getDocuments(team.id);
-      setDocuments(data);
+      if (isSystemAdmin) {
+        const data = await apiService.getSystemDocuments();
+        setDocuments(data.data);
+      } else if (team) {
+        const data = filterCustomer
+          ? await apiService.getDocuments(team.id, filterCustomer)
+          : await apiService.getDocuments(team.id);
+        setDocuments(data);
+      }
     } catch (error) {
       console.error('加载文档失败:', error);
     } finally {

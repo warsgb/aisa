@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
-import type { SharedFramework, TeamMember, InviteMemberData } from '../../types';
+import type { SharedFramework, TeamMember, InviteMemberData, TeamApplication } from '../../types';
 
 export default function SettingsPage() {
   const { user, team, logout } = useAuth();
@@ -10,15 +10,29 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
   const [invitePassword, setInvitePassword] = useState('');
   const [inviteRole, setInviteRole] = useState<'MEMBER' | 'ADMIN'>('MEMBER');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+
+  // Team application states
+  const [myApplications, setMyApplications] = useState<TeamApplication[]>([]);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [teamName, setTeamName] = useState('');
+  const [teamDescription, setTeamDescription] = useState('');
 
   useEffect(() => {
     loadData();
+    loadMyApplications();
   }, [team]);
 
   const loadData = async () => {
-    if (!team) return;
+    if (!team) {
+      setIsLoading(false);
+      return;
+    }
     try {
       const [frameworksData, teamData] = await Promise.all([
         apiService.getFrameworks(),
@@ -39,6 +53,7 @@ export default function SettingsPage() {
     try {
       const payload: InviteMemberData = {
         email: inviteEmail,
+        full_name: inviteName.trim() || undefined,
         role: inviteRole,
       };
       // 如果提供了密码，添加到 payload
@@ -49,6 +64,7 @@ export default function SettingsPage() {
       await apiService.createTeamMember(team.id, payload);
       setShowInviteModal(false);
       setInviteEmail('');
+      setInviteName('');
       setInvitePassword('');
       setInviteRole('MEMBER');
       alert('邀请已发送');
@@ -82,6 +98,67 @@ export default function SettingsPage() {
       console.error('更新成员角色失败:', error);
       alert('更新成员角色失败');
     }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!team || !selectedMember || !newPassword.trim()) return;
+
+    try {
+      await apiService.updateTeamMemberPassword(team.id, selectedMember.id, newPassword);
+      setShowPasswordModal(false);
+      setSelectedMember(null);
+      setNewPassword('');
+      alert('密码修改成功');
+    } catch (error) {
+      console.error('修改密码失败:', error);
+      alert('修改密码失败');
+    }
+  };
+
+  const loadMyApplications = async () => {
+    try {
+      const data = await apiService.getMyTeamApplications();
+      setMyApplications(data);
+    } catch (error) {
+      console.error('加载申请记录失败:', error);
+    }
+  };
+
+  const handleSubmitApplication = async () => {
+    if (!teamName.trim()) return;
+
+    try {
+      await apiService.submitTeamApplication({
+        name: teamName,
+        description: teamDescription,
+      });
+      setShowApplyModal(false);
+      setTeamName('');
+      setTeamDescription('');
+      alert('申请已提交，请等待管理员审核');
+      loadMyApplications();
+    } catch (error) {
+      console.error('提交申请失败:', error);
+      alert('提交申请失败');
+    }
+  };
+
+  const getApplicationStatusText = (status: string) => {
+    const statuses: Record<string, string> = {
+      pending: '待审核',
+      approved: '已批准',
+      rejected: '已拒绝',
+    };
+    return statuses[status] || status;
+  };
+
+  const getApplicationStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      pending: 'bg-yellow-100 text-yellow-700',
+      approved: 'bg-green-100 text-green-700',
+      rejected: 'bg-red-100 text-red-700',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-700';
   };
 
   const getRoleText = (role: string) => {
@@ -179,6 +256,44 @@ export default function SettingsPage() {
           )}
         </div>
 
+        {/* 团队申请 */}
+        {!team && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">创建团队</h2>
+              <button
+                onClick={() => setShowApplyModal(true)}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm"
+              >
+                申请创建团队
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              您当前没有加入任何团队。可以申请创建新团队，等待系统管理员审核。
+            </p>
+            {myApplications.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">我的申请记录</h3>
+                <div className="space-y-2">
+                  {myApplications.map((app) => (
+                    <div key={app.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <div>
+                        <span className="font-medium text-gray-900">{app.name}</span>
+                        <span className="text-xs text-gray-500 ml-2">
+                          {new Date(app.created_at).toLocaleDateString('zh-CN')}
+                        </span>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getApplicationStatusColor(app.status)}`}>
+                        {getApplicationStatusText(app.status)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 团队成员 */}
         <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
@@ -236,6 +351,15 @@ export default function SettingsPage() {
                                 <option value="ADMIN">管理员</option>
                               </select>
                               <button
+                                onClick={() => {
+                                  setSelectedMember(member);
+                                  setShowPasswordModal(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                修改密码
+                              </button>
+                              <button
                                 onClick={() => handleRemoveMember(member.id, member.full_name)}
                                 className="text-red-600 hover:text-red-700"
                               >
@@ -288,6 +412,17 @@ export default function SettingsPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">邀请团队成员</h2>
             <div className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">姓名 *</label>
+                <input
+                  type="text"
+                  required
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="张三"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">邮箱 *</label>
                 <input
                   type="email"
@@ -325,6 +460,7 @@ export default function SettingsPage() {
                 onClick={() => {
                   setShowInviteModal(false);
                   setInviteEmail('');
+                  setInviteName('');
                   setInvitePassword('');
                   setInviteRole('MEMBER');
                 }}
@@ -334,10 +470,105 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={handleInviteMember}
-                disabled={!inviteEmail.trim()}
+                disabled={!inviteEmail.trim() || !inviteName.trim()}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 邀请
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 修改密码弹窗 */}
+      {showPasswordModal && selectedMember && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">修改成员密码</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              为 <span className="font-medium">{selectedMember.full_name}</span> ({selectedMember.email}) 设置新密码
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">新密码 *</label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="请输入新密码"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setSelectedMember(null);
+                  setNewPassword('');
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleUpdatePassword}
+                disabled={!newPassword.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                确认修改
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 申请创建团队弹窗 */}
+      {showApplyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">申请创建团队</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">团队名称 *</label>
+                <input
+                  type="text"
+                  required
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="请输入团队名称"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">团队描述</label>
+                <textarea
+                  value={teamDescription}
+                  onChange={(e) => setTeamDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="请输入团队描述（可选）"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowApplyModal(false);
+                  setTeamName('');
+                  setTeamDescription('');
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSubmitApplication}
+                disabled={!teamName.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                提交申请
               </button>
             </div>
           </div>

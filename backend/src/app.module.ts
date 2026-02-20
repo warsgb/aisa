@@ -11,6 +11,7 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ReferencesModule } from './modules/references/references.module';
 import { FrameworksModule } from './modules/frameworks/frameworks.module';
+import { SystemModule } from './modules/system/system.module';
 import * as path from 'path';
 
 @Module({
@@ -47,6 +48,7 @@ import * as path from 'path';
     DocumentsModule,
     ReferencesModule,
     FrameworksModule,
+    SystemModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -7,7 +7,9 @@ import {
   Body,
   Param,
   UseGuards,
+  UsePipes,
   Request,
+  ValidationPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TeamsService } from './teams.service';
@@ -56,17 +58,30 @@ export class TeamsController {
   }
 
   @Post(':id/members')
+  @UsePipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false, transform: true }))
   inviteMember(
     @Param('id') id: string,
     @Request() req: RequestWithUser,
-    @Body() dto: InviteMemberDto,
+    @Body() dto: any,
   ) {
-    return this.teamsService.inviteMember(id, req.user.id, dto.email, dto.role, dto.password);
+    console.log('[Invite Member] Received raw body:', JSON.stringify(dto));
+    return this.teamsService.inviteMember(id, req.user.id, dto.email, dto.role, dto.password, dto.full_name);
   }
 
   @Delete(':id/members/:memberId')
   removeMember(@Param('id') id: string, @Param('memberId') memberId: string, @Request() req: RequestWithUser) {
     return this.teamsService.removeMember(id, req.user.id, memberId);
+  }
+
+  @Put(':id/members/:memberId/password')
+  updateMemberPassword(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Request() req: RequestWithUser,
+    @Body('password') password: string,
+  ) {
+    console.log(`[Password Update] Team: ${id}, Member: ${memberId}, User: ${req.user.id}`);
+    return this.teamsService.updateMemberPassword(id, req.user.id, memberId, password);
   }
 
   @Put(':id/members/:memberId')

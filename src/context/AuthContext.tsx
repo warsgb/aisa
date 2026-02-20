@@ -23,19 +23,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if user has valid tokens and load their data
     const checkAuth = async () => {
+      console.log('[AuthContext] Checking auth...');
       const token = localStorage.getItem('access_token');
+      console.log('[AuthContext] Token found:', !!token);
       if (!token) {
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log('[AuthContext] Calling getMe...');
         const me = await apiService.getMe();
+        console.log('[AuthContext] getMe succeeded:', me.user);
         setUser(me.user);
         if (me.team) {
           setTeam(me.team);
         }
-      } catch {
+      } catch (error) {
+        console.error('[AuthContext] getMe failed:', error);
         // Not authenticated - clear tokens
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
@@ -48,17 +53,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (data: LoginDto) => {
     console.log('🔐 [Auth Context] Login attempt...', { email: data.email });
-    const response = await apiService.login(data);
-    console.log('✅ [Auth Context] Login successful!');
-    console.log('📊 User data:', response.user);
-    console.log('💾 Storing access_token:', response.access_token ? 'Yes' : 'No');
-    setUser(response.user);
-    // Convert TeamBasic to Team if needed
-    if (response.team) {
-      const fullTeam = await apiService.getTeam(response.team.id);
-      setTeam(fullTeam);
-    } else {
-      setTeam(null);
+    try {
+      const response = await apiService.login(data);
+      console.log('✅ [Auth Context] Login successful!');
+      console.log('📊 User data:', response.user);
+      console.log('💾 Storing access_token:', response.access_token ? 'Yes' : 'No');
+
+      // Set user first
+      setUser(response.user);
+
+      // Try to load team data if user has a team
+      if (response.team) {
+        try {
+          const fullTeam = await apiService.getTeam(response.team.id);
+          setTeam(fullTeam);
+        } catch (teamError) {
+          console.warn('Failed to load team data:', teamError);
+          setTeam(null);
+        }
+      } else {
+        setTeam(null);
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
     }
   };
 

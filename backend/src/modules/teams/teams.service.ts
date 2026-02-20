@@ -111,7 +111,7 @@ export class TeamsService {
     return { message: 'Team deleted successfully' };
   }
 
-  async inviteMember(teamId: string, userId: string, email: string, role: TeamRole, password?: string) {
+  async inviteMember(teamId: string, userId: string, email: string, role: TeamRole, password?: string, full_name?: string) {
     // Check if user is owner or admin
     const membership = await this.teamMemberRepository.findOne({
       where: { team_id: teamId, user_id: userId },
@@ -129,12 +129,12 @@ export class TeamsService {
     if (!user) {
       // User doesn't exist
       if (password) {
-        // Create user with provided password
+        // Create user with provided password and name
         const password_hash = await bcrypt.hash(password, 10);
         user = this.userRepository.create({
           email,
           password_hash,
-          full_name: email.split('@')[0], // 临时名字，用户可以后续修改
+          full_name: full_name || email.split('@')[0], // 使用提供的名字或临时名字
           role: UserRole.MEMBER,
           is_active: true,
         });
@@ -239,5 +239,31 @@ export class TeamsService {
     );
 
     return { message: 'Member role updated successfully' };
+  }
+
+  async updateMemberPassword(teamId: string, userId: string, memberId: string, password: string) {
+    // Check if user is owner or admin
+    const membership = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: userId },
+    });
+
+    if (!membership || (membership.role !== TeamRole.OWNER && membership.role !== TeamRole.ADMIN)) {
+      throw new ForbiddenException('Only owner or admin can update member passwords');
+    }
+
+    // Check if target member exists
+    const targetMember = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: memberId },
+    });
+
+    if (!targetMember) {
+      throw new NotFoundException('Member not found');
+    }
+
+    // Update user password
+    const password_hash = await bcrypt.hash(password, 10);
+    await this.userRepository.update(memberId, { password_hash });
+
+    return { message: 'Member password updated successfully' };
   }
 }

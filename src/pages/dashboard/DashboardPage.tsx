@@ -5,7 +5,7 @@ import { apiService } from '../../services/api.service';
 import type { Customer, Skill, SkillInteraction, Document } from '../../types';
 
 export default function DashboardPage() {
-  const { team } = useAuth();
+  const { team, user } = useAuth();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -13,24 +13,42 @@ export default function DashboardPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // System admin can access dashboard without a team
+  const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
+
   useEffect(() => {
-    if (!team) {
+    // System admin doesn't need a team to view dashboard
+    if (!team && !isSystemAdmin) {
       navigate('/login');
       return;
     }
 
     const loadData = async () => {
       try {
-        const [customersData, skillsData, interactionsData, documentsData] = await Promise.all([
-          apiService.getCustomers(team.id),
-          apiService.getSkills(),
-          apiService.getInteractions(team.id),
-          apiService.getDocuments(team.id),
-        ]);
-        setCustomers(customersData);
-        setSkills(skillsData);
-        setInteractions(interactionsData);
-        setDocuments(documentsData);
+        // System admin sees system stats instead of team data
+        if (isSystemAdmin) {
+          const [customersData, skillsData, interactionsData, documentsData] = await Promise.all([
+            apiService.getSystemCustomers(),
+            apiService.getSystemSkills(),
+            apiService.getSystemInteractions(),
+            apiService.getSystemDocuments(),
+          ]);
+          setCustomers(customersData.data);
+          setSkills(skillsData.data);
+          setInteractions(interactionsData.data);
+          setDocuments(documentsData.data);
+        } else if (team) {
+          const [customersData, skillsData, interactionsData, documentsData] = await Promise.all([
+            apiService.getCustomers(team.id),
+            apiService.getSkills(),
+            apiService.getInteractions(team.id),
+            apiService.getDocuments(team.id),
+          ]);
+          setCustomers(customersData);
+          setSkills(skillsData);
+          setInteractions(interactionsData);
+          setDocuments(documentsData);
+        }
       } catch (error) {
         console.error('加载仪表盘数据失败:', error);
       } finally {
@@ -39,7 +57,7 @@ export default function DashboardPage() {
     };
 
     loadData();
-  }, [team, navigate]);
+  }, [team, navigate, isSystemAdmin]);
 
   if (isLoading) {
     return (
