@@ -73,6 +73,7 @@ export interface Customer {
     address?: string;
   };
   metadata?: Record<string, any>;
+  ltc_context?: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
@@ -115,6 +116,8 @@ export interface SkillInteraction {
   title?: string;
   summary?: string;
   context?: Record<string, any>;
+  node_id?: string;
+  reference_document_id?: string;
   started_at?: string;
   completed_at?: string;
   created_at: string;
@@ -353,3 +356,102 @@ export interface ReviewTeamApplicationDto {
   status: 'approved' | 'rejected';
   rejectionReason?: string;
 }
+
+// LTC (Lead To Cash) Types
+export interface LtcNode {
+  id: string;
+  team_id: string;
+  name: string;
+  order: number;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  skills?: Skill[];
+}
+
+export interface NodeSkillBinding {
+  id: string;
+  node_id: string;
+  skill_id: string;
+  order: number;
+  skill?: Skill;
+}
+
+export interface CustomerProfile {
+  id: string;
+  customer_id: string;
+  background_info?: string;
+  decision_chain?: string;
+  history_notes?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+// Iron Triangle Role: AR (Account Representative), SR (Solution Representative), FR (Fulfillment Representative)
+export type IronTriangleRole = 'AR' | 'SR' | 'FR';
+
+export interface TeamMemberPreference {
+  id: string;
+  team_member_id: string;
+  iron_triangle_role?: IronTriangleRole;
+  favorite_skill_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Extended Customer with LTC context
+export interface CustomerWithLtc extends Customer {
+  ltc_context?: Record<string, any>;
+  profile?: CustomerProfile;
+}
+
+// Extended SkillInteraction with node_id
+export interface SkillInteractionWithNode extends SkillInteraction {
+  node_id?: string;
+}
+
+// Home Page Data
+export interface HomePageData {
+  customers: Customer[];
+  ltcNodes: LtcNode[];
+  favoriteSkills: Skill[];
+  recentInteractions: SkillInteraction[];
+}
+
+// LTC DTOs
+export interface CreateLtcNodeDto {
+  name: string;
+  description?: string;
+  order?: number;
+}
+
+export interface UpdateLtcNodeDto {
+  name?: string;
+  description?: string;
+  order?: number;
+}
+
+export interface ReorderLtcNodesDto {
+  nodeIds: string[];
+}
+
+export interface CreateNodeSkillBindingDto {
+  skill_id: string;
+  order?: number;
+}
+
+export interface UpdateCustomerProfileDto {
+  background_info?: string;
+  decision_chain?: string;
+  history_notes?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface UpdateTeamMemberPreferenceDto {
+  iron_triangle_role?: IronTriangleRole;
+  favorite_skill_ids?: string[];
+}
+
+// Skill Filter Type
+export type SkillFilterType = 'FAVORITE' | 'ALL';

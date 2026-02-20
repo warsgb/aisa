@@ -25,6 +25,17 @@ import type {
   TeamApplication,
   SubmitTeamApplicationDto,
   ReviewTeamApplicationDto,
+  LtcNode,
+  NodeSkillBinding,
+  CustomerProfile,
+  TeamMemberPreference,
+  CreateLtcNodeDto,
+  UpdateLtcNodeDto,
+  ReorderLtcNodesDto,
+  CreateNodeSkillBindingDto,
+  UpdateCustomerProfileDto,
+  UpdateTeamMemberPreferenceDto,
+  HomePageData,
 } from '../types';
 
 // Support relative paths for same-origin deployment, fallback to localhost
@@ -260,6 +271,13 @@ class ApiService {
 
   async getSkill(id: string): Promise<Skill> {
     return this.request<Skill>(`/skills/${id}`);
+  }
+
+  async updateSkill(id: string, data: Partial<Skill>): Promise<Skill> {
+    return this.request<Skill>(`/skills/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   async syncSkills(): Promise<void> {
@@ -504,6 +522,103 @@ class ApiService {
         body: JSON.stringify(dto),
       }
     );
+  }
+
+  // ========== LTC (Lead To Cash) API ==========
+
+  // LTC Nodes
+  async getLtcNodes(teamId: string): Promise<LtcNode[]> {
+    return this.request<LtcNode[]>(`/teams/${teamId}/ltc-nodes`);
+  }
+
+  async createLtcNode(teamId: string, data: CreateLtcNodeDto): Promise<LtcNode> {
+    return this.request<LtcNode>(`/teams/${teamId}/ltc-nodes`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateLtcNode(teamId: string, id: string, data: UpdateLtcNodeDto): Promise<LtcNode> {
+    return this.request<LtcNode>(`/teams/${teamId}/ltc-nodes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteLtcNode(teamId: string, id: string): Promise<void> {
+    return this.request<void>(`/teams/${teamId}/ltc-nodes/${id}`, { method: 'DELETE' });
+  }
+
+  async reorderLtcNodes(teamId: string, data: ReorderLtcNodesDto): Promise<LtcNode[]> {
+    return this.request<LtcNode[]>(`/teams/${teamId}/ltc-nodes/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async resetLtcNodes(teamId: string): Promise<LtcNode[]> {
+    return this.request<LtcNode[]>(`/teams/${teamId}/ltc-nodes/reset`, {
+      method: 'POST',
+    });
+  }
+
+  // Node-Skill Bindings
+  async getNodeSkillBindings(teamId: string, nodeId: string): Promise<NodeSkillBinding[]> {
+    return this.request<NodeSkillBinding[]>(`/teams/${teamId}/ltc-nodes/${nodeId}/bindings`);
+  }
+
+  async createNodeSkillBinding(
+    teamId: string,
+    nodeId: string,
+    data: CreateNodeSkillBindingDto
+  ): Promise<NodeSkillBinding> {
+    return this.request<NodeSkillBinding>(`/teams/${teamId}/ltc-nodes/${nodeId}/bindings`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteNodeSkillBinding(teamId: string, nodeId: string, bindingId: string): Promise<void> {
+    return this.request<void>(`/teams/${teamId}/ltc-nodes/${nodeId}/bindings/${bindingId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Customer Profile
+  async getCustomerProfile(teamId: string, customerId: string): Promise<CustomerProfile> {
+    return this.request<CustomerProfile>(`/teams/${teamId}/customers/${customerId}/profile`);
+  }
+
+  async updateCustomerProfile(
+    teamId: string,
+    customerId: string,
+    data: UpdateCustomerProfileDto
+  ): Promise<CustomerProfile> {
+    return this.request<CustomerProfile>(`/teams/${teamId}/customers/${customerId}/profile`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Team Member Preference (Iron Triangle Role)
+  async getTeamMemberPreference(teamId: string, memberId: string): Promise<TeamMemberPreference> {
+    return this.request<TeamMemberPreference>(`/teams/${teamId}/members/${memberId}/preference`);
+  }
+
+  async updateTeamMemberPreference(
+    teamId: string,
+    memberId: string,
+    data: UpdateTeamMemberPreferenceDto
+  ): Promise<TeamMemberPreference> {
+    return this.request<TeamMemberPreference>(`/teams/${teamId}/members/${memberId}/preference`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Home Page Data
+  async getHomePageData(teamId: string): Promise<HomePageData> {
+    return this.request<HomePageData>(`/teams/${teamId}/home`);
   }
 }
 

@@ -5,6 +5,7 @@ import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Skill } from '../../entities/skill.entity';
+import { IronTriangleRole } from '../../entities/team-member-preference.entity';
 
 interface SkillFrontmatter {
   slug: string;
@@ -22,6 +23,7 @@ interface SkillFrontmatter {
     placeholder?: string;
   }>;
   supports_multi_turn?: boolean;
+  role?: IronTriangleRole;
 }
 
 @Injectable()
@@ -109,6 +111,7 @@ export class SkillLoaderService {
         skill.parameters = parametersValue;
         skill.system_prompt = markdown;
         skill.supports_multi_turn = frontmatter.supports_multi_turn || false;
+        skill.iron_triangle_role = frontmatter.role || null;
       } else {
         // Create new skill
         skill = this.skillRepository.create({
@@ -121,6 +124,7 @@ export class SkillLoaderService {
           system_prompt: markdown,
           supports_streaming: true,
           supports_multi_turn: frontmatter.supports_multi_turn || false,
+          iron_triangle_role: frontmatter.role || null,
         });
       }
 
@@ -135,6 +139,15 @@ export class SkillLoaderService {
     // Extract the first # heading as the display name
     const titleMatch = markdown.match(/^#\s+(.+)$/m);
     return titleMatch ? titleMatch[1].trim() : null;
+  }
+
+  private parseRole(roleValue: string | null): IronTriangleRole | undefined {
+    if (!roleValue) return undefined;
+    const upperRole = roleValue.toUpperCase();
+    if (upperRole === 'AR') return IronTriangleRole.AR;
+    if (upperRole === 'SR') return IronTriangleRole.SR;
+    if (upperRole === 'FR') return IronTriangleRole.FR;
+    return undefined;
   }
 
   private parseFrontmatter(content: string): {
@@ -171,6 +184,7 @@ export class SkillLoaderService {
       category: this.extractYamlField(yamlContent, 'category') || undefined,
       usage_hint: this.extractYamlField(yamlContent, 'usage_hint') || undefined,
       supports_multi_turn: this.extractYamlField(yamlContent, 'supports_multi_turn') === 'true',
+      role: this.parseRole(this.extractYamlField(yamlContent, 'role')),
     };
 
     // Parse parameters - try both JSON and YAML formats

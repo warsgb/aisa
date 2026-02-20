@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/auth/LoginPage';
+import HomePage from './pages/home/HomePage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import CustomersPage from './pages/customers/CustomersPage';
 import SkillsPage from './pages/skills/SkillsPage';
@@ -9,7 +10,9 @@ import InteractionsPage from './pages/interactions/InteractionsPage';
 import InteractionDetailPage from './pages/interactions/InteractionDetailPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import SettingsPage from './pages/settings/SettingsPage';
+import SkillsManagementPage from './pages/settings/SkillsManagementPage';
 import SystemPage from './pages/system/SystemPage';
+import LtcConfigPage from './pages/ltc-config/LtcConfigPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -36,10 +39,34 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ltc-config"
+            element={
+              <ProtectedRoute>
+                <LtcConfigPage />
               </ProtectedRoute>
             }
           />
@@ -92,6 +119,14 @@ function App() {
             }
           />
           <Route
+            path="/settings/skills"
+            element={
+              <ProtectedRoute>
+                <SkillsManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/system"
             element={
               <ProtectedRoute>
@@ -99,7 +134,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -6,9 +6,11 @@ import {
   ManyToOne,
   JoinColumn,
   Unique,
+  OneToOne,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Team } from './team.entity';
+import { TeamMemberPreference } from './team-member-preference.entity';
 
 export enum TeamRole {
   OWNER = 'OWNER',
@@ -45,4 +47,7 @@ export class TeamMember {
   @ManyToOne(() => User, (user) => user.team_memberships, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @OneToOne(() => TeamMemberPreference, (preference) => preference.team_member)
+  preference: TeamMemberPreference;
 }

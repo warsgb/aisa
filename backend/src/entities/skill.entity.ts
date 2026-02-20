@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { IronTriangleRole } from './team-member-preference.entity';
 
 @Entity('skills')
 export class Skill {
@@ -40,6 +41,13 @@ export class Skill {
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: any;
+
+  @Column({
+    type: 'enum',
+    enum: IronTriangleRole,
+    nullable: true,
+  })
+  iron_triangle_role: IronTriangleRole | null;
 
   @CreateDateColumn()
   created_at: Date;

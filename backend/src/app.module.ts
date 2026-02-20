@@ -12,6 +12,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { ReferencesModule } from './modules/references/references.module';
 import { FrameworksModule } from './modules/frameworks/frameworks.module';
 import { SystemModule } from './modules/system/system.module';
+import { LtcModule } from './modules/ltc/ltc.module';
 import * as path from 'path';
 
 @Module({
@@ -49,6 +50,7 @@ import * as path from 'path';
     ReferencesModule,
     FrameworksModule,
     SystemModule,
+    LtcModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -7,11 +7,13 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { Team } from './team.entity';
 import { SkillInteraction } from './interaction.entity';
 import { Document } from './document.entity';
 import { ReferenceMaterial } from './reference-material.entity';
+import { CustomerProfile } from './customer-profile.entity';
 
 @Entity('customers')
 export class Customer {
@@ -44,6 +46,9 @@ export class Customer {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
+  @Column({ type: 'jsonb', nullable: true })
+  ltc_context: Record<string, any>;
+
   @CreateDateColumn()
   created_at: Date;
 
@@ -62,4 +67,7 @@ export class Customer {
 
   @OneToMany(() => ReferenceMaterial, (ref) => ref.customer)
   reference_materials: ReferenceMaterial[];
+
+  @OneToOne(() => CustomerProfile, (profile) => profile.customer)
+  profile: CustomerProfile;
 }

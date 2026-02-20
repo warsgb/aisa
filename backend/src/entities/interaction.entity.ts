@@ -64,6 +64,9 @@ export class SkillInteraction {
   @Column({ type: 'timestamp', nullable: true })
   completed_at: Date;
 
+  @Column({ name: 'node_id', nullable: true })
+  node_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -11,6 +11,7 @@ import { Customer } from './customer.entity';
 import { SkillInteraction } from './interaction.entity';
 import { Document } from './document.entity';
 import { ReferenceMaterial } from './reference-material.entity';
+import { LtcNode } from './ltc-node.entity';
 
 @Entity('teams')
 export class Team {
@@ -46,4 +47,7 @@ export class Team {
 
   @OneToMany(() => ReferenceMaterial, (ref) => ref.team)
   reference_materials: ReferenceMaterial[];
+
+  @OneToMany(() => LtcNode, (node) => node.team)
+  ltc_nodes: LtcNode[];
 }

@@ -16,34 +16,35 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const navItems = [
-    { path: '/dashboard', label: '仪表盘', icon: '📊' },
-    { path: '/customers', label: '客户', icon: '👥' },
-    { path: '/skills', label: '技能', icon: '🛠️' },
-    { path: '/interactions', label: '交互', icon: '💬' },
-    { path: '/documents', label: '文档', icon: '📄' },
-    { path: '/settings', label: '设置', icon: '⚙️' },
+    { path: '/', label: '首页', icon: '🏠' },
+    { path: '/customers', label: '客户管理', icon: '👥' },
+    { path: '/ltc-config', label: 'LTC流程配置', icon: '🔧' },
+    { path: '/skills', label: '技能管理', icon: '🛠️' },
+    { path: '/interactions', label: '交互记录', icon: '💬' },
+    { path: '/documents', label: '文档管理', icon: '📄' },
+    { path: '/settings', label: '系统设置', icon: '⚙️' },
     ...(user?.role === 'SYSTEM_ADMIN' ? [{ path: '/system', label: '系统管理', icon: '🔐' }] : []),
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[#F5F7FA]">
       {/* 顶部导航栏 */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-[#1E293B] shadow-sm fixed top-0 left-0 right-0 z-50">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-indigo-600">AISA</h1>
-              <span className="ml-2 text-sm text-gray-500">
+              <h1 className="text-xl font-bold text-white">AISA</h1>
+              <span className="ml-2 text-sm text-gray-300">
                 {team?.name || '未加入团队'}
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-200">
                 {user?.full_name || user?.email}
               </span>
               <button
                 onClick={handleLogout}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-gray-300 hover:text-white transition-colors"
               >
                 退出
               </button>
@@ -52,19 +53,19 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto flex">
+      <div className="flex">
         {/* 侧边栏 */}
-        <aside className="w-64 bg-white shadow-sm mt-6 mr-6 rounded-lg">
+        <aside className="w-64 bg-[#1E293B] shadow-sm fixed left-0 top-16 bottom-0 overflow-y-auto">
           <nav className="p-4">
             <ul className="space-y-1">
               {navItems.map((item) => (
                 <li key={item.path}>
                   <Link
                     to={item.path}
-                    className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg ${
-                      location.pathname === item.path
-                        ? 'bg-indigo-50 text-indigo-600'
-                        : 'text-gray-700 hover:bg-gray-50'
+                    className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                      (item.path === '/' ? location.pathname === '/' : location.pathname === item.path)
+                        ? 'bg-[#1677FF] text-white'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <span className="mr-3">{item.icon}</span>
@@ -77,7 +78,7 @@ export default function Layout({ children }: LayoutProps) {
         </aside>
 
         {/* 主内容区 */}
-        <main className="flex-1 mt-6 pb-10">
+        <main className="flex-1 ml-64 pt-20 pb-10 px-6">
           {children}
         </main>
       </div>
