@@ -1,0 +1,600 @@
+{
+  "info": {
+    "name": "AISA LTC 重构项目 API 测试集合",
+    "description": "AISA LTC重构项目的完整API测试集合，包含LTC节点、技能绑定、客户资料、成员偏好等模块",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "LTC 节点管理",
+      "item": [
+        {
+          "name": "获取LTC节点列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes"]
+            },
+            "description": "获取团队的所有LTC流程节点"
+          },
+          "response": []
+        },
+        {
+          "name": "创建LTC节点",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试节点\",\n  \"order\": 9,\n  \"description\": \"这是一个测试节点\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes"]
+            },
+            "description": "创建新的LTC流程节点"
+          },
+          "response": []
+        },
+        {
+          "name": "更新LTC节点",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"更新后的节点名称\",\n  \"description\": \"更新后的描述\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes/{{node_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes", "{{node_id}}"]
+            },
+            "description": "更新指定LTC节点的信息"
+          },
+          "response": []
+        },
+        {
+          "name": "删除LTC节点",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes/{{node_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes", "{{node_id}}"]
+            },
+            "description": "删除指定的LTC节点"
+          },
+          "response": []
+        },
+        {
+          "name": "批量排序节点",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nodes\": [\n    {\"id\": \"node-001\", \"order\": 2},\n    {\"id\": \"node-002\", \"order\": 1},\n    {\"id\": \"node-003\", \"order\": 3}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes/reorder",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes", "reorder"]
+            },
+            "description": "批量更新LTC节点的顺序"
+          },
+          "response": []
+        },
+        {
+          "name": "重置默认节点",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes/reset",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes", "reset"]
+            },
+            "description": "重置为8个默认LTC节点"
+          },
+          "response": []
+        }
+      ],
+      "description": "LTC流程节点管理相关API"
+    },
+    {
+      "name": "节点-技能绑定",
+      "item": [
+        {
+          "name": "获取节点技能绑定",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes/{{node_id}}/bindings",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes", "{{node_id}}", "bindings"]
+            },
+            "description": "获取指定节点绑定的所有技能"
+          },
+          "response": []
+        },
+        {
+          "name": "创建节点-技能绑定",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skill_id\": \"skill-001\",\n  \"order\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes/{{node_id}}/bindings",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes", "{{node_id}}", "bindings"]
+            },
+            "description": "将技能绑定到指定节点"
+          },
+          "response": []
+        },
+        {
+          "name": "删除节点-技能绑定",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/ltc-nodes/{{node_id}}/bindings/{{binding_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "ltc-nodes", "{{node_id}}", "bindings", "{{binding_id}}"]
+            },
+            "description": "删除节点-技能绑定关系"
+          },
+          "response": []
+        }
+      ],
+      "description": "节点与技能绑定管理相关API"
+    },
+    {
+      "name": "客户资料管理",
+      "item": [
+        {
+          "name": "获取客户资料",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/customers/{{customer_id}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "customers", "{{customer_id}}", "profile"]
+            },
+            "description": "获取客户的背景资料信息"
+          },
+          "response": []
+        },
+        {
+          "name": "更新客户资料",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"background_info\": \"# 公司背景\\n\\n## 基本信息\\n- 成立时间：2000年\\n- 员工：1000人\\n\",\n  \"decision_chain\": \"# 决策链\\n\\n1. CEO - 最终决策\\n2. CTO - 技术评估\\n\",\n  \"history_notes\": \"# 历史合作\\n\\n- 2023年：初次合作\\n- 2024年：续约\\n\",\n  \"metadata\": {\n    \"industry\": \"科技\",\n    \"scale\": \"大型企业\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/customers/{{customer_id}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "customers", "{{customer_id}}", "profile"]
+            },
+            "description": "更新客户的背景资料（支持Markdown格式）"
+          },
+          "response": []
+        }
+      ],
+      "description": "客户背景资料管理相关API"
+    },
+    {
+      "name": "成员偏好管理",
+      "item": [
+        {
+          "name": "获取成员偏好",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/members/{{member_id}}/preference",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "members", "{{member_id}}", "preference"]
+            },
+            "description": "获取团队成员的铁三角角色偏好和常用技能"
+          },
+          "response": []
+        },
+        {
+          "name": "更新成员偏好",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"iron_triangle_role\": \"AR\",\n  \"favorite_skill_ids\": [\"skill-001\", \"skill-002\", \"skill-010\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/members/{{member_id}}/preference",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "members", "{{member_id}}", "preference"]
+            },
+            "description": "更新团队成员的铁三角角色（AR/SR/FR）和常用技能"
+          },
+          "response": []
+        }
+      ],
+      "description": "团队成员偏好设置相关API"
+    },
+    {
+      "name": "首页聚合数据",
+      "item": [
+        {
+          "name": "获取首页数据",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/home",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "home"]
+            },
+            "description": "获取首页所需的所有聚合数据：客户列表、LTC配置、常用技能等"
+          },
+          "response": []
+        }
+      ],
+      "description": "首页数据聚合API"
+    },
+    {
+      "name": "技能执行",
+      "item": [
+        {
+          "name": "执行技能",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": \"cust-001\",\n  \"node_id\": \"node-001\",\n  \"params\": {\n    \"customer_name\": \"华为技术有限公司\"\n  },\n  \"reference_document_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/skills/{{skill_id}}/execute",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "skills", "{{skill_id}}", "execute"]
+            },
+            "description": "执行指定技能，支持引用历史文档"
+          },
+          "response": []
+        },
+        {
+          "name": "获取客户历史记录",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/customers/{{customer_id}}/interactions",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "customers", "{{customer_id}}", "interactions"]
+            },
+            "description": "获取客户的技能执行历史记录"
+          },
+          "response": []
+        }
+      ],
+      "description": "技能执行和历史记录相关API"
+    },
+    {
+      "name": "客户管理",
+      "item": [
+        {
+          "name": "获取客户列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/customers",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "customers"]
+            },
+            "description": "获取团队的所有客户列表"
+          },
+          "response": []
+        },
+        {
+          "name": "创建客户",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试客户\",\n  \"contact_name\": \"张三\",\n  \"contact_phone\": \"13800138000\",\n  \"contact_email\": \"zhangsan@test.com\",\n  \"industry\": \"互联网\",\n  \"revenue\": \"500万\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/customers",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "customers"]
+            },
+            "description": "创建新客户"
+          },
+          "response": []
+        }
+      ],
+      "description": "客户CRUD管理相关API"
+    },
+    {
+      "name": "技能管理",
+      "item": [
+        {
+          "name": "获取技能列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/skills",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "skills"]
+            },
+            "description": "获取团队的所有技能列表"
+          },
+          "response": []
+        },
+        {
+          "name": "更新技能状态",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams/{{team_id}}/skills/{{skill_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["teams", "{{team_id}}", "skills", "{{skill_id}}", "status"]
+            },
+            "description": "激活或停用技能"
+          },
+          "response": []
+        }
+      ],
+      "description": "技能管理相关API"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    },
+    {
+      "key": "team_id",
+      "value": "test-team-001",
+      "type": "string"
+    },
+    {
+      "key": "node_id",
+      "value": "node-001",
+      "type": "string"
+    },
+    {
+      "key": "skill_id",
+      "value": "skill-001",
+      "type": "string"
+    },
+    {
+      "key": "customer_id",
+      "value": "cust-001",
+      "type": "string"
+    },
+    {
+      "key": "member_id",
+      "value": "tm-ar-001",
+      "type": "string"
+    },
+    {
+      "key": "binding_id",
+      "value": "binding-001",
+      "type": "string"
+    }
+  ]
+}

@@ -138,7 +138,7 @@ export default function DocumentsPage() {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1677FF]"></div>
           <p className="mt-4 text-gray-600">加载中...</p>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function DocumentsPage() {
         <h1 className="text-2xl font-bold text-gray-900">文档管理</h1>
         <button
           onClick={() => setShowNewModal(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+          className="bg-[#1677FF] text-white px-4 py-2 rounded-lg hover:bg-[#4096FF]"
         >
           新建文档
         </button>
@@ -165,7 +165,7 @@ export default function DocumentsPage() {
             <select
               value={filterCustomer}
               onChange={(e) => setFilterCustomer(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
             >
               <option value="">全部客户</option>
               {customers.map((customer) => (
@@ -182,7 +182,7 @@ export default function DocumentsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索标题或内容..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
             />
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function DocumentsPage() {
           {!searchQuery && !filterCustomer && (
             <button
               onClick={() => setShowNewModal(true)}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+              className="bg-[#1677FF] text-white px-6 py-2 rounded-lg hover:bg-[#4096FF]"
             >
               创建文档
             </button>
@@ -230,7 +230,7 @@ export default function DocumentsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => openViewModal(doc)}
-                    className="flex-1 bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700"
+                    className="flex-1 bg-[#1677FF] text-white px-3 py-2 rounded-lg text-sm hover:bg-[#4096FF]"
                   >
                     查看
                   </button>
@@ -269,7 +269,7 @@ export default function DocumentsPage() {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                     placeholder="请输入文档标题"
                   />
                 </div>
@@ -279,7 +279,7 @@ export default function DocumentsPage() {
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={15}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF] font-mono text-sm"
                     placeholder="请输入文档内容（支持 Markdown 格式）"
                   />
                 </div>
@@ -298,7 +298,7 @@ export default function DocumentsPage() {
               <button
                 onClick={handleCreateDocument}
                 disabled={!formData.title.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 创建
               </button>
@@ -323,7 +323,7 @@ export default function DocumentsPage() {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   />
                 </div>
                 <div>
@@ -332,7 +332,7 @@ export default function DocumentsPage() {
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={15}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF] font-mono text-sm"
                   />
                 </div>
               </div>
@@ -351,7 +351,7 @@ export default function DocumentsPage() {
               <button
                 onClick={handleUpdateDocument}
                 disabled={!formData.title.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 保存
               </button>

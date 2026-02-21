@@ -81,4 +81,31 @@ export class InteractionsService {
 
     return messages;
   }
+
+  async updateMessage(id: string, messageId: string, teamId: string, userId: string, content: string) {
+    await this.verifyTeamAccess(teamId, userId);
+
+    const interaction = await this.interactionRepository.findOne({
+      where: { id, team_id: teamId },
+    });
+
+    if (!interaction) {
+      throw new NotFoundException('Interaction not found');
+    }
+
+    const message = await this.messageRepository.findOne({
+      where: { id: messageId, interaction_id: id },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    message.content = content;
+    message.metadata = { ...message.metadata, edited: true, edited_at: new Date().toISOString() };
+
+    await this.messageRepository.save(message);
+
+    return { success: true };
+  }
 }

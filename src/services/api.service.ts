@@ -5,6 +5,7 @@ import type {
   Team,
   Customer,
   Skill,
+  SkillParameter,
   SkillInteraction,
   Document,
   ReferenceMaterial,
@@ -265,8 +266,8 @@ class ApiService {
   }
 
   // Skills endpoints
-  async getSkills(): Promise<Skill[]> {
-    return this.request<Skill[]>('/skills');
+  async getSkills(includeDisabled: boolean = true): Promise<Skill[]> {
+    return this.request<Skill[]>(`/skills?includeDisabled=${includeDisabled}`);
   }
 
   async getSkill(id: string): Promise<Skill> {
@@ -284,6 +285,68 @@ class ApiService {
     return this.request<void>('/skills/sync', { method: 'POST' });
   }
 
+  async getSkillContent(id: string): Promise<{ content: string; filePath: string }> {
+    return this.request<{ content: string; filePath: string }>(`/skills/${id}/content`);
+  }
+
+  async toggleSkill(id: string): Promise<Skill> {
+    return this.request<Skill>(`/skills/${id}/toggle`, { method: 'PUT' });
+  }
+
+  async deleteSkill(id: string): Promise<void> {
+    return this.request<void>(`/skills/${id}`, { method: 'DELETE' });
+  }
+
+  async importSkill(data: { content: string; originalName: string; targetFolder?: string }): Promise<Skill> {
+    return this.request<Skill>('/skills/import', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createSkill(data: {
+    slug: string;
+    name: string;
+    description: string;
+    category?: string;
+    usage_hint?: string;
+    parameters?: SkillParameter[];
+    supports_multi_turn?: boolean;
+    role?: string;
+    system_prompt: string;
+  }): Promise<Skill> {
+    return this.request<Skill>('/skills', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Get skill files (for multi-file skills)
+  async getSkillFiles(id: string): Promise<any[]> {
+    return this.request<any[]>(`/skills/${id}/files`);
+  }
+
+  // Get skill file content
+  async getSkillFileContent(id: string, filePath: string): Promise<{ content: string }> {
+    return this.request<{ content: string }>(`/skills/${id}/files/content?path=${encodeURIComponent(filePath)}`);
+  }
+
+  // Update skill file content
+  async updateSkillFile(id: string, filePath: string, content: string): Promise<void> {
+    return this.request<void>(`/skills/${id}/files/content`, {
+      method: 'PUT',
+      body: JSON.stringify({ path: filePath, content }),
+    });
+  }
+
+  // Update skill parameter labels in SKILL.md
+  async updateSkillParameterLabels(id: string, parameters: any[]): Promise<void> {
+    return this.request<void>(`/skills/${id}/parameter-labels`, {
+      method: 'PUT',
+      body: JSON.stringify({ parameters }),
+    });
+  }
+
   // Interactions endpoints
   async getInteractions(teamId: string, filters?: { customerId?: string; skillId?: string }): Promise<SkillInteraction[]> {
     const params = new URLSearchParams();
@@ -299,6 +362,18 @@ class ApiService {
 
   async getInteractionMessages(teamId: string, id: string): Promise<any[]> {
     return this.request<any[]>(`/teams/${teamId}/interactions/${id}/messages`);
+  }
+
+  async updateInteractionMessage(
+    teamId: string,
+    interactionId: string,
+    messageId: string,
+    data: { content: string }
+  ): Promise<void> {
+    return this.request<void>(`/teams/${teamId}/interactions/${interactionId}/messages/${messageId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   // Documents endpoints

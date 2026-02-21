@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
 import type { SkillInteraction, InteractionMessage } from '../../types';
+import MDEditor from '@uiw/react-md-editor';
 
 export default function InteractionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +12,9 @@ export default function InteractionDetailPage() {
   const [interaction, setInteraction] = useState<SkillInteraction | null>(null);
   const [messages, setMessages] = useState<InteractionMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!id || !team) return;
@@ -84,11 +88,47 @@ export default function InteractionDetailPage() {
     return texts[status] || status;
   };
 
+  const handleEditClick = (message: InteractionMessage) => {
+    setEditingMessageId(message.id);
+    setEditContent(message.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  const handleSaveEdit = async (messageId: string) => {
+    if (!team || !id) return;
+
+    setIsSaving(true);
+    try {
+      await apiService.updateInteractionMessage(team.id, id, messageId, {
+        content: editContent,
+      });
+
+      // Update local state
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, content: editContent } : msg
+        )
+      );
+
+      setEditingMessageId(null);
+      setEditContent('');
+    } catch (error) {
+      console.error('保存消息失败:', error);
+      alert('保存失败');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1677FF]"></div>
           <p className="mt-4 text-gray-600">加载中...</p>
         </div>
       </div>
@@ -116,12 +156,20 @@ export default function InteractionDetailPage() {
     <div className="p-6">
       {/* 头部 */}
       <div className="mb-6">
-        <button
-          onClick={() => navigate('/interactions')}
-          className="text-indigo-600 hover:text-indigo-700 mb-4 flex items-center gap-2"
-        >
-          ← 返回列表
-        </button>
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => navigate('/interactions')}
+            className="text-[#1677FF] hover:text-[#4096FF] flex items-center gap-2"
+          >
+            ← 返回列表
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="text-gray-500 hover:text-[#1677FF] flex items-center gap-2"
+          >
+            ← 返回首页
+          </button>
+        </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-start justify-between mb-4">
@@ -181,31 +229,73 @@ export default function InteractionDetailPage() {
                 message.role === 'USER' ? 'ml-8' : 'mr-8'
               }`}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">{getRoleIcon(message.role)}</span>
-                <div>
-                  <div className="font-medium text-gray-900">
-                    {getRoleName(message.role)}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(message.created_at).toLocaleString('zh-CN')}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{getRoleIcon(message.role)}</span>
+                  <div>
+                    <div className="font-medium text-gray-900">
+                      {getRoleName(message.role)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(message.created_at).toLocaleString('zh-CN')}
+                    </div>
                   </div>
                 </div>
+                {/* Edit button */}
+                {editingMessageId !== message.id && (
+                  <button
+                    onClick={() => handleEditClick(message)}
+                    className="text-xs px-3 py-1.5 text-gray-500 hover:text-[#1677FF] hover:bg-[#1677FF]/10 rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    ✏️ 编辑
+                  </button>
+                )}
               </div>
 
-              <div className="prose max-w-none">
-                <div className="whitespace-pre-wrap text-gray-700">
-                  {message.content}
-                </div>
-              </div>
-
-              {message.metadata && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="text-xs text-gray-500">
-                    📊 Token: {message.metadata.token_count || 'N/A'} |
-                    Model: {message.metadata.model || 'N/A'}
+              {editingMessageId === message.id ? (
+                /* Edit mode */
+                <div className="space-y-4" data-color-mode="light">
+                  <MDEditor
+                    value={editContent}
+                    onChange={(v) => setEditContent(v || '')}
+                    height={300}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={() => handleSaveEdit(message.id)}
+                      disabled={isSaving}
+                      className="px-4 py-2 text-sm bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:opacity-50 transition-colors flex items-center gap-2"
+                    >
+                      {isSaving && (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      )}
+                      保存
+                    </button>
                   </div>
                 </div>
+              ) : (
+                /* View mode */
+                <>
+                  <div className="prose max-w-none" data-color-mode="light">
+                    <MDEditor.Markdown source={message.content} />
+                  </div>
+
+                  {message.metadata && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="text-xs text-gray-500">
+                        📊 Token: {message.metadata.token_count || 'N/A'} |
+                        Model: {message.metadata.model || 'N/A'}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ))

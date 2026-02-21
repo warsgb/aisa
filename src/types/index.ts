@@ -90,6 +90,12 @@ export interface Skill {
   system_prompt: string;
   supports_streaming: boolean;
   supports_multi_turn: boolean;
+  iron_triangle_role?: 'AR' | 'SR' | 'FR' | null;
+  // 文件管理字段
+  source?: 'file' | 'database';
+  file_path?: string | null;
+  is_enabled?: boolean;
+  last_synced_at?: string | null;
 }
 
 export interface SkillParameter {
@@ -433,7 +439,7 @@ export interface UpdateLtcNodeDto {
 }
 
 export interface ReorderLtcNodesDto {
-  nodeIds: string[];
+  node_ids: string[];
 }
 
 export interface CreateNodeSkillBindingDto {

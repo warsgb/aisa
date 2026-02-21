@@ -108,7 +108,7 @@ function SortableNodeItem({ node, index, isSelected, onSelect, onEdit, onDelete 
 
 export default function LtcConfigPage() {
   const { team } = useAuth();
-  const { nodes, bindings, setNodes, setBindings, setSaving, setError } = useLtcConfigStore();
+  const { nodes, bindings, setNodes, setBindings, setSaving } = useLtcConfigStore();
 
   // Local state
   const [isLoading, setIsLoading] = useState(true);
@@ -188,23 +188,28 @@ export default function LtcConfigPage() {
         order: index,
       }));
 
-      setNodes(newNodes);
-
       // Save to server
       if (team?.id) {
         try {
           setSaving(true);
-          await apiService.reorderLtcNodes(team.id, {
-            nodeIds: newNodes.map((n) => n.id)
+          // Call API and get updated nodes from server
+          const updatedNodes = await apiService.reorderLtcNodes(team.id, {
+            node_ids: newNodes.map((n) => n.id)
           });
+          // Use server response to update state
+          setNodes(updatedNodes.sort((a, b) => a.order - b.order));
         } catch (err) {
-          setError(err instanceof Error ? err.message : '保存顺序失败');
+          // If API fails, still update local state for better UX
+          setNodes(newNodes);
+          setLocalError(err instanceof Error ? err.message : '保存顺序失败');
         } finally {
           setSaving(false);
         }
+      } else {
+        setNodes(newNodes);
       }
     }
-  }, [nodes, team?.id, setNodes, setSaving, setError]);
+  }, [team?.id, setNodes, setSaving]);
 
   // Add new node
   const handleAddNode = useCallback(async () => {

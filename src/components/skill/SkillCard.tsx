@@ -11,11 +11,10 @@ export function SkillCard({ skill, onExecute, compact = false }: SkillCardProps)
     return (
       <button
         onClick={() => onExecute(skill)}
-        className="w-full text-left p-3 bg-white border border-gray-100 rounded-lg hover:border-[#1677FF] hover:shadow-sm transition-all duration-200 group"
-        style={{ borderRadius: '8px' }}
+        className="w-full text-left px-2 py-1.5 bg-white border border-gray-100 rounded-md hover:border-[#1677FF] hover:shadow-sm transition-all duration-200 group"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-[#1677FF] font-medium text-sm truncate flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[#1677FF] font-medium text-xs truncate flex-1 text-left">
             {skill.name}
           </span>
           <span className="text-gray-300 group-hover:text-[#1677FF] text-xs opacity-0 group-hover:opacity-100 transition-opacity">

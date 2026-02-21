@@ -48,7 +48,7 @@ mkdir -p "$BACKEND_DIR/logs"
 echo "▶️  Starting backend with node..."
 echo "📋 Logs will be saved to: $BACKEND_DIR/logs/backend.log"
 
-NODE_ENV=production node --enable-source-maps "$BACKEND_DIR/dist/main" 2>&1 | tee "$BACKEND_DIR/logs/backend.log" &
+NODE_ENV=production node --enable-source-maps "$BACKEND_DIR/dist/src/main" 2>&1 | tee "$BACKEND_DIR/logs/backend.log" &
 
 # Save the PID
 BACKEND_PID=$!

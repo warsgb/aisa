@@ -66,7 +66,6 @@ export class LtcService {
     return this.ltcNodeRepository.find({
       where: { team_id: teamId },
       order: { order: 'ASC' },
-      relations: ['skill_bindings', 'skill_bindings.skill'],
     });
   }
 
@@ -123,21 +122,26 @@ export class LtcService {
   }
 
   async reorderNodes(teamId: string, userId: string, nodeIds: string[]) {
-    await this.verifyTeamAccess(teamId, userId);
+    try {
+      await this.verifyTeamAccess(teamId, userId);
 
-    const nodes = await this.ltcNodeRepository.find({
-      where: { team_id: teamId, id: In(nodeIds) },
-    });
+      const nodes = await this.ltcNodeRepository.find({
+        where: { team_id: teamId, id: In(nodeIds) },
+      });
 
-    if (nodes.length !== nodeIds.length) {
-      throw new NotFoundException('Some LTC nodes not found');
+      if (nodes.length !== nodeIds.length) {
+        throw new NotFoundException('Some LTC nodes not found');
+      }
+
+      for (let i = 0; i < nodeIds.length; i++) {
+        await this.ltcNodeRepository.update(nodeIds[i], { order: i });
+      }
+
+      return this.findAllNodes(teamId, userId);
+    } catch (error) {
+      console.error('Error in reorderNodes:', error);
+      throw error;
     }
-
-    for (let i = 0; i < nodeIds.length; i++) {
-      await this.ltcNodeRepository.update(nodeIds[i], { order: i });
-    }
-
-    return this.findAllNodes(teamId, userId);
   }
 
   async resetToDefault(teamId: string, userId: string) {

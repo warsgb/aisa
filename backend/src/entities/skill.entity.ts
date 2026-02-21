@@ -49,6 +49,19 @@ export class Skill {
   })
   iron_triangle_role: IronTriangleRole | null;
 
+  // 文件管理字段
+  @Column({ type: 'varchar', default: 'file' })
+  source: 'file' | 'database';
+
+  @Column({ type: 'varchar', nullable: true })
+  file_path: string | null;
+
+  @Column({ default: true })
+  is_enabled: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  last_synced_at: Date;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -2,8 +2,10 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Param,
   Query,
+  Body,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -53,5 +55,16 @@ export class InteractionsController {
     @Request() req: RequestWithUser,
   ) {
     return this.interactionsService.getMessages(id, teamId, req.user.id);
+  }
+
+  @Put(':id/messages/:messageId')
+  updateMessage(
+    @Param('id') id: string,
+    @Param('messageId') messageId: string,
+    @Param('teamId') teamId: string,
+    @Request() req: RequestWithUser,
+    @Body() body: { content: string },
+  ) {
+    return this.interactionsService.updateMessage(id, messageId, teamId, req.user.id, body.content);
   }
 }

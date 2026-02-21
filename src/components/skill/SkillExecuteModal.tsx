@@ -38,6 +38,7 @@ export function SkillExecuteModal({
   const [streamOutput, setStreamOutput] = useState('');
   const [currentInteractionId, setCurrentInteractionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [executionStage, setExecutionStage] = useState<'idle' | 'preparing' | 'initiating' | 'waiting' | 'receiving' | 'completed'>('idle');
 
   const outputRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +87,7 @@ export function SkillExecuteModal({
     setStreamOutput('');
     setCurrentInteractionId(null);
     setError(null);
+    setExecutionStage('idle');
   }, [skill]);
 
   // Auto-scroll output
@@ -101,6 +103,7 @@ export function SkillExecuteModal({
 
     const handleStart = (data: { interactionId: string }) => {
       setCurrentInteractionId(data.interactionId);
+      setExecutionStage('receiving');
     };
 
     const handleChunk = (data: { chunk: string }) => {
@@ -109,12 +112,14 @@ export function SkillExecuteModal({
 
     const handleComplete = (data: { interactionId: string; documentId?: string; content: string }) => {
       setIsExecuting(false);
+      setExecutionStage('completed');
       setStreamOutput(data.content);
       onComplete?.(data.interactionId);
     };
 
     const handleError = (data: { message: string }) => {
       setIsExecuting(false);
+      setExecutionStage('idle');
       setError(data.message);
     };
 
@@ -160,20 +165,29 @@ export function SkillExecuteModal({
     return isValid;
   };
 
-  const handleExecute = useCallback(() => {
+  const handleExecute = useCallback(async () => {
     if (!skill || !team?.id) return;
 
     if (!validateParameters()) return;
 
     setIsExecuting(true);
+    setExecutionStage('preparing');
     setStreamOutput('');
     setError(null);
+
+    // Stage 1: Preparing parameters (with small delay for UI visibility)
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     // Build parameter object
     const paramValues: Record<string, any> = {};
     Object.entries(parameters).forEach(([key, param]) => {
       paramValues[key] = param.value;
     });
+
+    setExecutionStage('initiating');
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    setExecutionStage('waiting');
 
     // Execute skill via WebSocket
     webSocketService.executeSkill(
@@ -186,17 +200,20 @@ export function SkillExecuteModal({
       {
         onStart: (data) => {
           setCurrentInteractionId(data.interactionId);
+          setExecutionStage('receiving');
         },
         onChunk: (data) => {
           setStreamOutput((prev) => prev + data.chunk);
         },
         onComplete: (data) => {
           setIsExecuting(false);
+          setExecutionStage('completed');
           setStreamOutput(data.content);
           onComplete?.(data.interactionId);
         },
         onError: (data) => {
           setIsExecuting(false);
+          setExecutionStage('idle');
           setError(data.message);
         },
       }
@@ -208,6 +225,7 @@ export function SkillExecuteModal({
       webSocketService.cancelSkill(currentInteractionId);
     }
     setIsExecuting(false);
+    setExecutionStage('idle');
   }, [currentInteractionId]);
 
   const handleParameterChange = (paramName: string, value: any) => {
@@ -334,7 +352,7 @@ export function SkillExecuteModal({
                 {skill.parameters.map((param) => (
                   <div key={param.name}>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {param.label}
+                      {param.label} <span className="text-gray-400 font-normal">({param.name})</span>
                       {param.required && <span className="text-red-500 ml-1">*</span>}
                     </label>
                     {renderParameterInput(param)}
@@ -411,24 +429,114 @@ export function SkillExecuteModal({
 
           {/* Right: Stream output */}
           <div className="w-full md:w-1/2 flex flex-col bg-gray-50">
-            <div className="px-4 py-2 bg-gray-100 border-b border-gray-200">
+            <div className="px-4 py-2 bg-gray-100 border-b border-gray-200 flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-700">执行输出</h3>
+              {isExecuting && (
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1677FF] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1677FF]"></span>
+                  </span>
+                  <span className="text-xs text-[#1677FF]">执行中...</span>
+                </div>
+              )}
             </div>
             <div
               ref={outputRef}
               className="flex-1 overflow-y-auto p-4"
               data-color-mode="light"
             >
-              {streamOutput ? (
-                <MDEditor.Markdown source={streamOutput} />
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                  <span className="text-3xl mb-2">📝</span>
-                  <p className="text-sm">
-                    {isExecuting ? '等待输出...' : '点击"开始执行"查看结果'}
-                  </p>
+              {/* Execution Status Indicator */}
+              {isExecuting && (
+                <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <div className="space-y-3">
+                    {/* Stage 1: Preparing */}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                        executionStage === 'preparing' ? 'bg-[#1677FF] text-white animate-pulse' :
+                        executionStage === 'initiating' || executionStage === 'waiting' || executionStage === 'receiving' || executionStage === 'completed' ? 'bg-green-500 text-white' :
+                        'bg-gray-200 text-gray-400'
+                      }`}>
+                        {executionStage === 'preparing' ? '1' : '✓'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-700">准备参数</div>
+                        <div className="text-xs text-gray-500">正在组装技能参数...</div>
+                      </div>
+                      {executionStage === 'preparing' && (
+                        <div className="animate-spin h-4 w-4 border-2 border-[#1677FF] border-t-transparent rounded-full"></div>
+                      )}
+                    </div>
+
+                    {/* Stage 2: Initiating */}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                        executionStage === 'initiating' ? 'bg-[#1677FF] text-white animate-pulse' :
+                        executionStage === 'waiting' || executionStage === 'receiving' || executionStage === 'completed' ? 'bg-green-500 text-white' :
+                        'bg-gray-200 text-gray-400'
+                      }`}>
+                        {executionStage === 'initiating' || executionStage === 'preparing' ? '2' : '✓'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-700">发起请求</div>
+                        <div className="text-xs text-gray-500">正在连接AI模型服务...</div>
+                      </div>
+                      {executionStage === 'initiating' && (
+                        <div className="animate-spin h-4 w-4 border-2 border-[#1677FF] border-t-transparent rounded-full"></div>
+                      )}
+                    </div>
+
+                    {/* Stage 3: Waiting/Receiving */}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                        executionStage === 'waiting' || executionStage === 'receiving' ? 'bg-[#1677FF] text-white animate-pulse' :
+                        executionStage === 'completed' ? 'bg-green-500 text-white' :
+                        'bg-gray-200 text-gray-400'
+                      }`}>
+                        {executionStage === 'waiting' || executionStage === 'receiving' || executionStage === 'completed' ? '✓' : '3'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-700">
+                          {executionStage === 'waiting' ? '等待响应' :
+                           executionStage === 'receiving' ? '接收数据' :
+                           '模型处理'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {executionStage === 'waiting' ? '等待模型开始返回数据...' :
+                           executionStage === 'receiving' ? '正在接收流式输出...' :
+                           '等待模型返回结果...'}
+                        </div>
+                      </div>
+                      {(executionStage === 'waiting' || executionStage === 'receiving') && (
+                        <div className="animate-spin h-4 w-4 border-2 border-[#1677FF] border-t-transparent rounded-full"></div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="mt-4">
+                    <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+                      <div className={`h-full bg-[#1677FF] transition-all duration-500 ${
+                        executionStage === 'preparing' ? 'w-1/4' :
+                        executionStage === 'initiating' ? 'w-2/4' :
+                        executionStage === 'waiting' ? 'w-3/4' :
+                        executionStage === 'receiving' ? 'w-4/4 animate-pulse' :
+                        'w-0'
+                      }`}></div>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* Stream Output */}
+              {streamOutput ? (
+                <MDEditor.Markdown source={streamOutput} />
+              ) : !isExecuting ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                  <span className="text-3xl mb-2">📝</span>
+                  <p className="text-sm">点击"开始执行"查看结果</p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

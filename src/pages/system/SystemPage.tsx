@@ -283,7 +283,7 @@ export default function SystemPage() {
               onClick={() => setActiveTab('stats')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'stats'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-[#1677FF] text-[#1677FF]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -293,7 +293,7 @@ export default function SystemPage() {
               onClick={() => setActiveTab('users')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'users'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-[#1677FF] text-[#1677FF]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -303,7 +303,7 @@ export default function SystemPage() {
               onClick={() => setActiveTab('teams')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'teams'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-[#1677FF] text-[#1677FF]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -313,7 +313,7 @@ export default function SystemPage() {
               onClick={() => setActiveTab('applications')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'applications'
-                  ? 'border-indigo-500 text-indigo-600'
+                  ? 'border-[#1677FF] text-[#1677FF]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -332,11 +332,11 @@ export default function SystemPage() {
             onChange={(e) => setSearch(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             placeholder={activeTab === 'users' ? '搜索用户（邮箱或姓名）' : '搜索团队'}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
           />
           <button
             onClick={handleSearch}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="px-6 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF]"
           >
             搜索
           </button>
@@ -370,7 +370,7 @@ export default function SystemPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1677FF]"></div>
         </div>
       ) : (
         <>
@@ -640,7 +640,7 @@ export default function SystemPage() {
                                 setSelectedApplication(app);
                                 setShowReviewModal(true);
                               }}
-                              className="text-indigo-600 hover:text-indigo-700"
+                              className="text-[#1677FF] hover:text-[#4096FF]"
                             >
                               审核
                             </button>
@@ -702,7 +702,7 @@ export default function SystemPage() {
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入新密码（至少6位）"
                 />
               </div>
@@ -721,7 +721,7 @@ export default function SystemPage() {
               <button
                 onClick={handleResetPassword}
                 disabled={!newPassword.trim() || newPassword.length < 6}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 确认重置
               </button>
@@ -743,7 +743,7 @@ export default function SystemPage() {
                   required
                   value={newUser.full_name}
                   onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入姓名"
                 />
               </div>
@@ -754,7 +754,7 @@ export default function SystemPage() {
                   required
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入邮箱"
                 />
               </div>
@@ -765,7 +765,7 @@ export default function SystemPage() {
                   required
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入密码（至少6位）"
                 />
               </div>
@@ -774,7 +774,7 @@ export default function SystemPage() {
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                 >
                   <option value="MEMBER">成员</option>
                   <option value="ADMIN">管理员</option>
@@ -834,7 +834,7 @@ export default function SystemPage() {
                   required
                   value={newTeam.name}
                   onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入团队名称"
                 />
               </div>
@@ -843,7 +843,7 @@ export default function SystemPage() {
                 <textarea
                   value={newTeam.description}
                   onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入团队描述"
                   rows={3}
                 />
@@ -855,7 +855,7 @@ export default function SystemPage() {
                   required
                   value={newTeam.owner_id}
                   onChange={(e) => setNewTeam({ ...newTeam, owner_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入所有者用户ID"
                 />
                 <p className="text-xs text-gray-500 mt-1">从用户列表中复制用户ID</p>
@@ -911,7 +911,7 @@ export default function SystemPage() {
                 <textarea
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="如果拒绝申请，请填写原因"
                   rows={3}
                 />

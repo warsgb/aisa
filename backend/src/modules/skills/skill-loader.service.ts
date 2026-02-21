@@ -1,11 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import AdmZip = require('adm-zip');
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Skill } from '../../entities/skill.entity';
 import { IronTriangleRole } from '../../entities/team-member-preference.entity';
+
+export interface SkillFile {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+}
 
 interface SkillFrontmatter {
   slug: string;
@@ -102,6 +109,10 @@ export class SkillLoaderService {
       const categoryValue = frontmatter.category || category;
       const parametersValue = frontmatter.parameters || [];
 
+      // Calculate relative file path (parent of filePath which is SKILL.md)
+      const skillDir = path.dirname(filePath);
+      const relativePath = path.relative(this.skillsDir, skillDir).replace(/\\/g, '/');
+
       if (skill) {
         // Update existing skill
         skill.name = displayName; // Use Chinese name from markdown title
@@ -112,6 +123,9 @@ export class SkillLoaderService {
         skill.system_prompt = markdown;
         skill.supports_multi_turn = frontmatter.supports_multi_turn || false;
         skill.iron_triangle_role = frontmatter.role || null;
+        skill.source = 'file';
+        skill.file_path = relativePath;
+        skill.last_synced_at = new Date();
       } else {
         // Create new skill
         skill = this.skillRepository.create({
@@ -125,6 +139,9 @@ export class SkillLoaderService {
           supports_streaming: true,
           supports_multi_turn: frontmatter.supports_multi_turn || false,
           iron_triangle_role: frontmatter.role || null,
+          source: 'file',
+          file_path: relativePath,
+          last_synced_at: new Date(),
         });
       }
 
@@ -135,7 +152,7 @@ export class SkillLoaderService {
     }
   }
 
-  private extractTitleFromMarkdown(markdown: string): string | null {
+  public extractTitleFromMarkdown(markdown: string): string | null {
     // Extract the first # heading as the display name
     const titleMatch = markdown.match(/^#\s+(.+)$/m);
     return titleMatch ? titleMatch[1].trim() : null;
@@ -150,7 +167,7 @@ export class SkillLoaderService {
     return undefined;
   }
 
-  private parseFrontmatter(content: string): {
+  public parseFrontmatter(content: string): {
     frontmatter: SkillFrontmatter;
     markdown: string;
   } {
@@ -279,7 +296,7 @@ export class SkillLoaderService {
           currentParam = {
             name: paramName,
             type: 'string',
-            label: this.getParameterLabel(paramName),
+            label: this.getParameterLabel(paramName), // Default label (will be overridden if 'label' field is present)
             required: false,
             description: value || '',
             placeholder: '',
@@ -297,6 +314,10 @@ export class SkillLoaderService {
           switch (key) {
             case 'type':
               currentParam.type = value;
+              break;
+            case 'label':
+              // User-defined Chinese label (takes priority)
+              currentParam.label = value;
               break;
             case 'description':
               currentParam.description = value;
@@ -370,6 +391,38 @@ export class SkillLoaderService {
       content_type: '内容类型',
       platform: '发布平台',
       style: '风格偏好',
+      // Additional parameters for icebreaker and jargon skills
+      customer_location: '客户地区',
+      customer_industry: '客户行业',
+      customer_role: '客户角色',
+      scenario: '应酬场景',
+      topic_types: '话题类型',
+      conversation_style: '对话风格',
+      avoid_topics: '回避话题',
+      sub_industry: '子行业',
+      role: '角色',
+      research_depth: '研究深度',
+      include_bidding: '包含招投标',
+      include_subsidiaries: '包含子公司',
+      jd_text: '职位描述文本',
+      story_model: '故事模型',
+      mode: '模式',
+      analysis_result: '分析结果',
+      known_pain_points: '已知痛点',
+      customer_name: '客户名称',
+      price_gap: '价格差距',
+      existing_products: '已有产品',
+      customer_motivation: '客户动机',
+      chip_types: '筹码类型',
+      budget_constraint: '预算限制',
+      customer_personality: '客户性格',
+      product_solution: '产品方案',
+      attack_intensity: '攻击强度',
+      include_reference: '包含参考',
+      job_focus: '工作重点',
+      question_style: '提问风格',
+      include_simulation: '包含模拟',
+      current_status: '现状',
     };
 
     return labelMap[paramName] || paramName;
@@ -436,5 +489,322 @@ export class SkillLoaderService {
   async syncSkillsToDatabase(): Promise<void> {
     const skills = await this.loadAllSkills();
     this.logger.log(`Synced ${skills.length} skills to database`);
+  }
+
+  // 获取技能文件路径
+  getSkillFilePath(filePath: string): string {
+    return path.join(this.skillsDir, filePath);
+  }
+
+  // 从文件读取技能内容
+  async getSkillContentFromFile(filePath: string): Promise<string | null> {
+    try {
+      const fullPath = this.getSkillFilePath(filePath);
+      if (!fs.existsSync(fullPath)) {
+        return null;
+      }
+      const skillMdPath = path.join(fullPath, 'SKILL.md');
+      if (!fs.existsSync(skillMdPath)) {
+        return null;
+      }
+      return fs.readFileSync(skillMdPath, 'utf-8');
+    } catch (error) {
+      this.logger.error(`Error reading skill file ${filePath}:`, error);
+      return null;
+    }
+  }
+
+  // 保存技能内容到文件
+  async saveSkillToFile(
+    filePath: string,
+    data: {
+      name: string;
+      description: string;
+      category?: string;
+      usage_hint?: string;
+      parameters?: any[];
+      supports_multi_turn?: boolean;
+      role?: IronTriangleRole;
+      system_prompt: string;
+    },
+  ): Promise<boolean> {
+    try {
+      const fullPath = this.getSkillFilePath(filePath);
+
+      // 确保目录存在
+      if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, { recursive: true });
+      }
+
+      // 构建 frontmatter
+      const frontmatter = [
+        '---',
+        `slug: ${path.basename(filePath)}`,
+        `name: ${data.name}`,
+        `description: ${data.description}`,
+        data.category ? `category: ${data.category}` : null,
+        data.usage_hint ? `usage_hint: ${data.usage_hint}` : null,
+        data.role ? `role: ${data.role}` : null,
+        data.supports_multi_turn !== undefined ? `supports_multi_turn: ${data.supports_multi_turn}` : null,
+        data.parameters ? `parameters: ${JSON.stringify(data.parameters)}` : null,
+        '---',
+        '',
+      ].filter(Boolean).join('\n');
+
+      // 构建 markdown 内容
+      const markdownContent = `# ${data.name}\n\n${data.system_prompt}`;
+
+      // 写入文件
+      const skillMdPath = path.join(fullPath, 'SKILL.md');
+      fs.writeFileSync(skillMdPath, frontmatter + markdownContent, 'utf-8');
+
+      this.logger.log(`Skill saved to ${skillMdPath}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Error saving skill to file ${filePath}:`, error);
+      return false;
+    }
+  }
+
+  // 删除技能文件
+  async deleteSkillFile(filePath: string): Promise<boolean> {
+    try {
+      const fullPath = this.getSkillFilePath(filePath);
+      if (!fs.existsSync(fullPath)) {
+        this.logger.warn(`Skill directory does not exist: ${fullPath}`);
+        return false;
+      }
+
+      // 删除目录及其内容
+      fs.rmSync(fullPath, { recursive: true, force: true });
+      this.logger.log(`Skill file deleted: ${fullPath}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Error deleting skill file ${filePath}:`, error);
+      return false;
+    }
+  }
+
+  // 导入技能文件
+  async importSkillFromFile(
+    uploadedFile: { content: string; originalName: string },
+    targetFolder?: string,
+  ): Promise<{ success: boolean; filePath?: string; error?: string }> {
+    try {
+      // 解析上传的文件内容
+      const { frontmatter, markdown } = this.parseFrontmatter(uploadedFile.content);
+
+      if (!frontmatter.slug || !frontmatter.name || !frontmatter.description) {
+        return { success: false, error: '技能文件缺少必要的 frontmatter 字段 (slug, name, description)' };
+      }
+
+      // 确定目标文件夹
+      const folderName = targetFolder || frontmatter.slug;
+      const targetPath = path.join(this.skillsDir, folderName);
+
+      // 检查是否已存在
+      if (fs.existsSync(targetPath)) {
+        return { success: false, error: `技能文件夹已存在: ${folderName}` };
+      }
+
+      // 创建目录并写入文件
+      fs.mkdirSync(targetPath, { recursive: true });
+      const skillMdPath = path.join(targetPath, 'SKILL.md');
+      fs.writeFileSync(skillMdPath, uploadedFile.content, 'utf-8');
+
+      const relativePath = folderName;
+      this.logger.log(`Skill imported to ${relativePath}`);
+
+      return { success: true, filePath: relativePath };
+    } catch (error) {
+      this.logger.error('Error importing skill:', error);
+      return { success: false, error: `导入失败: ${error.message}` };
+    }
+  }
+
+  // 获取 skills 目录路径
+  getSkillsDir(): string {
+    return this.skillsDir;
+  }
+
+  // 导入技能从ZIP文件
+  async importSkillFromZip(
+    buffer: Buffer,
+    targetFolder?: string,
+  ): Promise<{ success: boolean; filePath?: string; error?: string }> {
+    const tmpDir = path.join(this.skillsDir, '.tmp_import_' + Date.now());
+
+    try {
+      // Ensure tmp directory doesn't exist
+      if (fs.existsSync(tmpDir)) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+      fs.mkdirSync(tmpDir, { recursive: true });
+
+      // Decompress ZIP
+      await this.decompressZip(buffer, tmpDir);
+
+      // Check for SKILL.md in the extracted files
+      const extractedFiles = this.listAllFiles(tmpDir);
+      const skillMdFile = extractedFiles.find(f => f.endsWith('SKILL.md'));
+
+      if (!skillMdFile) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        return { success: false, error: 'ZIP文件中未找到SKILL.md文件' };
+      }
+
+      // Determine target folder name
+      let folderName: string;
+      if (targetFolder) {
+        folderName = targetFolder;
+      } else {
+        // Try to read slug from SKILL.md
+        const content = fs.readFileSync(skillMdFile, 'utf-8');
+        const { frontmatter } = this.parseFrontmatter(content);
+        folderName = frontmatter.slug || 'imported-skill-' + Date.now();
+      }
+
+      const targetPath = path.join(this.skillsDir, folderName);
+
+      // Check if target already exists
+      if (fs.existsSync(targetPath)) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        return { success: false, error: `技能文件夹已存在: ${folderName}` };
+      }
+
+      // Move extracted directory to target
+      // If the ZIP has a single root directory, move its contents
+      // Otherwise, move everything in tmpDir to targetPath
+      const rootItems = fs.readdirSync(tmpDir);
+      if (rootItems.length === 1) {
+        const singleItem = path.join(tmpDir, rootItems[0]);
+        if (fs.statSync(singleItem).isDirectory()) {
+          // Move the single directory's contents up one level
+          fs.mkdirSync(targetPath, { recursive: true });
+          const items = fs.readdirSync(singleItem);
+          for (const item of items) {
+            fs.renameSync(
+              path.join(singleItem, item),
+              path.join(targetPath, item)
+            );
+          }
+        } else {
+          // Single file at root, rename tmpDir to targetPath
+          fs.renameSync(tmpDir, targetPath);
+        }
+      } else {
+        // Multiple items, rename tmpDir to targetPath
+        fs.renameSync(tmpDir, targetPath);
+      }
+
+      // Clean up tmpDir if it still exists
+      if (fs.existsSync(tmpDir)) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+
+      const relativePath = folderName;
+      this.logger.log(`Skill imported from ZIP to ${relativePath}`);
+
+      return { success: true, filePath: relativePath };
+    } catch (error) {
+      this.logger.error('Error importing skill from ZIP:', error);
+      // Clean up tmpDir
+      if (fs.existsSync(tmpDir)) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+      return { success: false, error: `导入失败: ${error.message}` };
+    }
+  }
+
+  // Decompress ZIP buffer to directory
+  private async decompressZip(buffer: Buffer, targetDir: string): Promise<void> {
+    try {
+      const zip = new AdmZip(buffer);
+      zip.extractAllTo(targetDir, true);
+    } catch (error) {
+      this.logger.error('Error decompressing ZIP:', error);
+      throw new BadRequestException(`ZIP解压失败: ${error.message}`);
+    }
+  }
+
+  // List all files in a directory recursively
+  private listAllFiles(dir: string, fileList: string[] = []): string[] {
+    const files = fs.readdirSync(dir);
+
+    for (const file of files) {
+      const filePath = path.join(dir, file);
+      const stat = fs.statSync(filePath);
+
+      if (stat.isDirectory()) {
+        this.listAllFiles(filePath, fileList);
+      } else {
+        fileList.push(filePath);
+      }
+    }
+
+    return fileList;
+  }
+
+  // Get all files in a skill directory
+  getSkillFiles(filePath: string): SkillFile[] {
+    const fullPath = this.getSkillFilePath(filePath);
+    if (!fs.existsSync(fullPath)) {
+      return [];
+    }
+
+    const files: SkillFile[] = [];
+    const items = fs.readdirSync(fullPath);
+
+    for (const item of items) {
+      const itemPath = path.join(fullPath, item);
+      const stat = fs.statSync(itemPath);
+      const relativePath = path.join(filePath, item);
+
+      files.push({
+        name: item,
+        path: relativePath.replace(/\\/g, '/'),
+        type: stat.isDirectory() ? 'directory' : 'file',
+      });
+    }
+
+    return files.sort((a, b) => {
+      // Directories first, then files
+      if (a.type === 'directory' && b.type === 'file') return -1;
+      if (a.type === 'file' && b.type === 'directory') return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  // Get content of a specific file in a skill directory
+  getFileContent(filePath: string, fileName: string): string | null {
+    const fullPath = this.getSkillFilePath(filePath);
+    const targetFile = path.join(fullPath, fileName);
+
+    if (!fs.existsSync(targetFile) || !fs.statSync(targetFile).isFile()) {
+      return null;
+    }
+
+    return fs.readFileSync(targetFile, 'utf-8');
+  }
+
+  // Save content to a specific file in a skill directory
+  saveFileContent(filePath: string, fileName: string, content: string): boolean {
+    try {
+      const fullPath = this.getSkillFilePath(filePath);
+      const targetFile = path.join(fullPath, fileName);
+
+      // Ensure directory exists
+      const targetDir = path.dirname(targetFile);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+
+      fs.writeFileSync(targetFile, content, 'utf-8');
+      this.logger.log(`File saved: ${targetFile}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Error saving file ${fileName} in ${filePath}:`, error);
+      return false;
+    }
   }
 }

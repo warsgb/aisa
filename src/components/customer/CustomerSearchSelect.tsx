@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useCurrentCustomerStore } from '../../stores';
 import type { Customer } from '../../types';
+import { Search, X, ChevronDown, Building2 } from 'lucide-react';
 
 interface CustomerSearchSelectProps {
   customers: Customer[];
@@ -58,62 +59,70 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`
-          w-full flex items-center justify-between px-4 py-2.5
-          bg-white border rounded-lg text-left
-          transition-colors duration-200
+          w-full flex items-center justify-between px-4 py-3
+          bg-white border rounded-xl text-left
+          transition-all duration-200
           ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'hover:border-[#1677FF] cursor-pointer'}
-          ${isOpen ? 'border-[#1677FF] ring-2 ring-[#1677FF]/20' : 'border-gray-300'}
+          ${isOpen ? 'border-[#1677FF] ring-2 ring-[#1677FF]/20 shadow-sm' : 'border-gray-200 hover:border-gray-300'}
         `}
-        style={{ borderRadius: '8px' }}
       >
-        <div className="flex items-center gap-2 overflow-hidden">
-          <span className="text-gray-500 shrink-0">👤</span>
-          <span className={`truncate ${currentCustomer ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-            {currentCustomer ? `当前客户：${currentCustomer.name}` : '请选择客户'}
-          </span>
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentCustomer ? 'bg-[#1677FF]/10' : 'bg-gray-100'}`}>
+            {currentCustomer ? (
+              <Building2 className="w-5 h-5 text-[#1677FF]" />
+            ) : (
+              <Building2 className="w-5 h-5 text-gray-400" />
+            )}
+          </div>
+          <div className="flex flex-col">
+            <span className={`text-sm ${currentCustomer ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+              {currentCustomer ? currentCustomer.name : '选择客户'}
+            </span>
+            {currentCustomer?.industry && (
+              <span className="text-xs text-gray-500">{currentCustomer.industry}</span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {currentCustomer && (
             <button
               type="button"
               onClick={handleClear}
-              className="p-0.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600"
+              className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           )}
-          <span className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </button>
 
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
-          style={{ borderRadius: '8px' }}
+          className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
         >
           {/* Search input */}
-          <div className="p-2 border-b border-gray-100">
+          <div className="p-3 border-b border-gray-100">
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 ref={inputRef}
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="搜索客户名称或行业..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#1677FF] focus:ring-1 focus:ring-[#1677FF]"
+                className="w-full pl-10 pr-3 py-2.5 text-sm bg-[#F5F7FA] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1677FF]/20"
               />
             </div>
           </div>
 
           {/* Customer list */}
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {filteredCustomers.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                {searchTerm ? '未找到匹配的客户' : '暂无客户数据'}
+              <div className="px-4 py-8 text-sm text-gray-500 text-center">
+                <Building2 className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p>{searchTerm ? '未找到匹配的客户' : '暂无客户数据'}</p>
               </div>
             ) : (
               <ul className="py-1">
@@ -123,12 +132,14 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
                       type="button"
                       onClick={() => handleSelect(customer)}
                       className={`
-                        w-full px-4 py-2.5 text-left flex items-center gap-3
+                        w-full px-4 py-3 text-left flex items-center gap-3
                         hover:bg-[#F5F7FA] transition-colors duration-150
                         ${currentCustomer?.id === customer.id ? 'bg-[#1677FF]/5 text-[#1677FF]' : 'text-gray-700'}
                       `}
                     >
-                      <span className="text-lg">🏢</span>
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentCustomer?.id === customer.id ? 'bg-[#1677FF]/10' : 'bg-gray-100'}`}>
+                        <Building2 className={`w-5 h-5 ${currentCustomer?.id === customer.id ? 'text-[#1677FF]' : 'text-gray-500'}`} />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{customer.name}</div>
                         {customer.industry && (
@@ -136,7 +147,9 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
                         )}
                       </div>
                       {currentCustomer?.id === customer.id && (
-                        <span className="text-[#1677FF] shrink-0">✓</span>
+                        <svg className="w-5 h-5 text-[#1677FF] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
                       )}
                     </button>
                   </li>

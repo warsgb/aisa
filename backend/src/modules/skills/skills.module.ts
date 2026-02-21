@@ -1,5 +1,6 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MulterModule } from '@nestjs/platform-express';
 import { SkillsController } from './skills.controller';
 import { SkillsService } from './skills.service';
 import { SkillLoaderService } from './skill-loader.service';
@@ -28,6 +29,11 @@ import { AuthModule } from '../auth/auth.module';
       TeamMember,
       Document,
     ]),
+    MulterModule.register({
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+      },
+    }),
     AuthModule,
   ],
   controllers: [SkillsController],

@@ -114,7 +114,7 @@ export default function InteractionsPage() {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1677FF]"></div>
           <p className="mt-4 text-gray-600">加载中...</p>
         </div>
       </div>
@@ -127,7 +127,7 @@ export default function InteractionsPage() {
         <h1 className="text-2xl font-bold text-gray-900">交互历史</h1>
         <button
           onClick={() => navigate('/skills')}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+          className="bg-[#1677FF] text-white px-4 py-2 rounded-lg hover:bg-[#4096FF]"
         >
           执行新技能
         </button>
@@ -141,7 +141,7 @@ export default function InteractionsPage() {
             <select
               value={filterCustomer}
               onChange={(e) => setFilterCustomer(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
             >
               <option value="">全部客户</option>
               {customers.map((customer) => (
@@ -156,7 +156,7 @@ export default function InteractionsPage() {
             <select
               value={filterSkill}
               onChange={(e) => setFilterSkill(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
             >
               <option value="">全部技能</option>
               {skills.map((skill) => (
@@ -188,7 +188,7 @@ export default function InteractionsPage() {
           <p className="text-gray-500 mb-6">执行技能后，交互记录将显示在这里</p>
           <button
             onClick={() => navigate('/skills')}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+            className="bg-[#1677FF] text-white px-6 py-2 rounded-lg hover:bg-[#4096FF]"
           >
             执行第一个技能
           </button>

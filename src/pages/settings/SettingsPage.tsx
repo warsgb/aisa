@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
-import type { SharedFramework, TeamMember, InviteMemberData, TeamApplication } from '../../types';
+import {
+  useSkillFilterStore,
+  IRON_TRIANGLE_LABELS,
+  IRON_TRIANGLE_DESCRIPTIONS,
+} from '../../stores';
+import type {
+  SharedFramework,
+  TeamMember,
+  InviteMemberData,
+  TeamApplication,
+  IronTriangleRole,
+  TeamMemberPreference,
+  Skill,
+} from '../../types';
 
 export default function SettingsPage() {
   const { user, team, logout } = useAuth();
@@ -23,9 +37,17 @@ export default function SettingsPage() {
   const [teamName, setTeamName] = useState('');
   const [teamDescription, setTeamDescription] = useState('');
 
+  // Iron triangle role states
+  const { favoriteSkillIds, setFavoriteSkills } = useSkillFilterStore();
+  const [myPreference, setMyPreference] = useState<TeamMemberPreference | null>(null);
+  const [selectedRole, setSelectedRole] = useState<IronTriangleRole | null>(null);
+  const [allSkills, setAllSkills] = useState<Skill[]>([]);
+  const [isSavingPreference, setIsSavingPreference] = useState(false);
+
   useEffect(() => {
     loadData();
     loadMyApplications();
+    loadMyPreference();
   }, [team]);
 
   const loadData = async () => {
@@ -34,16 +56,55 @@ export default function SettingsPage() {
       return;
     }
     try {
-      const [frameworksData, teamData] = await Promise.all([
+      const [frameworksData, teamData, skillsData] = await Promise.all([
         apiService.getFrameworks(),
         apiService.getTeam(team.id),
+        apiService.getSkills(),
       ]);
       setFrameworks(frameworksData);
       setTeamMembers(teamData.members || []);
+      setAllSkills(skillsData);
     } catch (error) {
       console.error('加载设置失败:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMyPreference = async () => {
+    if (!team?.id || !user) return;
+
+    try {
+      const preference = await apiService.getTeamMemberPreference(team.id, user.id);
+      setMyPreference(preference);
+      if (preference.iron_triangle_role) {
+        setSelectedRole(preference.iron_triangle_role);
+      }
+      if (preference.favorite_skill_ids) {
+        setFavoriteSkills(preference.favorite_skill_ids);
+      }
+    } catch {
+      // Preference may not exist yet
+      setMyPreference(null);
+    }
+  };
+
+  const handleSavePreference = async () => {
+    if (!team?.id || !user) return;
+
+    setIsSavingPreference(true);
+    try {
+      const preference = await apiService.updateTeamMemberPreference(team.id, user.id, {
+        iron_triangle_role: selectedRole || undefined,
+        favorite_skill_ids: favoriteSkillIds,
+      });
+      setMyPreference(preference);
+      alert('偏好设置已保存');
+    } catch (error) {
+      console.error('保存偏好失败:', error);
+      alert('保存失败');
+    } finally {
+      setIsSavingPreference(false);
     }
   };
 
@@ -191,7 +252,7 @@ export default function SettingsPage() {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1677FF]"></div>
           <p className="mt-4 text-gray-600">加载中...</p>
         </div>
       </div>
@@ -263,7 +324,7 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-gray-900">创建团队</h2>
               <button
                 onClick={() => setShowApplyModal(true)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm"
+                className="bg-[#1677FF] text-white px-4 py-2 rounded-lg hover:bg-[#4096FF] text-sm"
               >
                 申请创建团队
               </button>
@@ -294,6 +355,125 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {/* 铁三角角色配置 */}
+        {team && (
+          <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">我的角色偏好</h2>
+              {myPreference?.iron_triangle_role && (
+                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                  已保存: {IRON_TRIANGLE_LABELS[myPreference.iron_triangle_role]}
+                </span>
+              )}
+            </div>
+            <div className="space-y-6">
+              {/* Role selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  选择您的铁三角角色（用于筛选常用技能）
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {(['AR', 'SR', 'FR'] as IronTriangleRole[]).map((role) => (
+                    <button
+                      key={role}
+                      onClick={() => setSelectedRole(role)}
+                      className={`
+                        p-4 rounded-xl border-2 text-left transition-all
+                        ${selectedRole === role
+                          ? 'border-[#1677FF] bg-[#1677FF]/5'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">
+                          {role === 'AR' && '👤'}
+                          {role === 'SR' && '💡'}
+                          {role === 'FR' && '📦'}
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          {IRON_TRIANGLE_LABELS[role]}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {IRON_TRIANGLE_DESCRIPTIONS[role]}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Favorite skills */}
+              {allSkills.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    我的常用技能
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 bg-gray-50 rounded-lg">
+                    {allSkills.map((skill) => {
+                      const isFavorite = favoriteSkillIds.includes(skill.id);
+                      return (
+                        <label
+                          key={skill.id}
+                          className={`
+                            flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
+                            ${isFavorite ? 'border-[#1677FF] bg-white' : 'border-transparent hover:bg-white'}
+                          `}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isFavorite}
+                            onChange={() => {
+                              const newFavorites = isFavorite
+                                ? favoriteSkillIds.filter(id => id !== skill.id)
+                                : [...favoriteSkillIds, skill.id];
+                              setFavoriteSkills(newFavorites);
+                            }}
+                            className="w-4 h-4 text-[#1677FF] border-gray-300 rounded focus:ring-[#1677FF]"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate">{skill.name}</div>
+                            {skill.description && (
+                              <div className="text-xs text-gray-500 truncate">{skill.description}</div>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Save button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSavePreference}
+                  disabled={isSavingPreference}
+                  className="px-6 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:opacity-50 transition-colors"
+                >
+                  {isSavingPreference ? '保存中...' : '保存偏好设置'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 技能管理入口 */}
+        <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">技能管理</h2>
+              <p className="text-sm text-gray-500">查看和管理系统技能，配置技能参数</p>
+            </div>
+            <Link
+              to="/settings/skills"
+              className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] transition-colors"
+            >
+              进入管理 →
+            </Link>
+          </div>
+        </div>
+
         {/* 团队成员 */}
         <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
@@ -301,7 +481,7 @@ export default function SettingsPage() {
             {(team?.role === 'OWNER' || team?.role === 'ADMIN') && (
               <button
                 onClick={() => setShowInviteModal(true)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm"
+                className="bg-[#1677FF] text-white px-4 py-2 rounded-lg hover:bg-[#4096FF] text-sm"
               >
                 邀请成员
               </button>
@@ -418,7 +598,7 @@ export default function SettingsPage() {
                   required
                   value={inviteName}
                   onChange={(e) => setInviteName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="张三"
                 />
               </div>
@@ -429,7 +609,7 @@ export default function SettingsPage() {
                   required
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="user@example.com"
                 />
               </div>
@@ -439,7 +619,7 @@ export default function SettingsPage() {
                   type="password"
                   value={invitePassword}
                   onChange={(e) => setInvitePassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="留空则发送邮件验证，填写则直接设置密码"
                 />
               </div>
@@ -448,7 +628,7 @@ export default function SettingsPage() {
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as 'MEMBER' | 'ADMIN')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                 >
                   <option value="MEMBER">成员</option>
                   <option value="ADMIN">管理员</option>
@@ -471,7 +651,7 @@ export default function SettingsPage() {
               <button
                 onClick={handleInviteMember}
                 disabled={!inviteEmail.trim() || !inviteName.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 邀请
               </button>
@@ -496,7 +676,7 @@ export default function SettingsPage() {
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入新密码"
                 />
               </div>
@@ -515,7 +695,7 @@ export default function SettingsPage() {
               <button
                 onClick={handleUpdatePassword}
                 disabled={!newPassword.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 确认修改
               </button>
@@ -537,7 +717,7 @@ export default function SettingsPage() {
                   required
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入团队名称"
                 />
               </div>
@@ -546,7 +726,7 @@ export default function SettingsPage() {
                 <textarea
                   value={teamDescription}
                   onChange={(e) => setTeamDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                   placeholder="请输入团队描述（可选）"
                   rows={3}
                 />
@@ -566,7 +746,7 @@ export default function SettingsPage() {
               <button
                 onClick={handleSubmitApplication}
                 disabled={!teamName.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 提交申请
               </button>

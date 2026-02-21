@@ -61,7 +61,7 @@ fi
 mkdir -p logs
 
 # Start backend with logging
-NODE_ENV=production node --enable-source-maps "$BACKEND_DIR/dist/main" 2>&1 | tee logs/backend.log &
+NODE_ENV=production node --enable-source-maps "$BACKEND_DIR/dist/src/main" 2>&1 | tee logs/backend.log &
 
 BACKEND_PID=$!
 echo "✅ Backend started (PID: $BACKEND_PID)"

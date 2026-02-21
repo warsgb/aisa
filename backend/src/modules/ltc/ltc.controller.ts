@@ -59,6 +59,16 @@ export class LtcController {
     return this.ltcService.createNode(teamId, req.user.id, dto);
   }
 
+  // NOTE: reorder must come BEFORE :id route
+  @Put('ltc-nodes/reorder')
+  reorderNodes(
+    @Param('teamId') teamId: string,
+    @Request() req: RequestWithUser,
+    @Body() dto: ReorderLtcNodesDto,
+  ) {
+    return this.ltcService.reorderNodes(teamId, req.user.id, dto.node_ids);
+  }
+
   @Put('ltc-nodes/:id')
   updateNode(
     @Param('teamId') teamId: string,
@@ -76,15 +86,6 @@ export class LtcController {
     @Request() req: RequestWithUser,
   ) {
     return this.ltcService.deleteNode(teamId, id, req.user.id);
-  }
-
-  @Put('ltc-nodes/reorder')
-  reorderNodes(
-    @Param('teamId') teamId: string,
-    @Request() req: RequestWithUser,
-    @Body() dto: ReorderLtcNodesDto,
-  ) {
-    return this.ltcService.reorderNodes(teamId, req.user.id, dto.node_ids);
   }
 
   @Post('ltc-nodes/reset')

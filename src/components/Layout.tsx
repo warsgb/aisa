@@ -1,5 +1,20 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  Home,
+  Users,
+  Workflow,
+  Wrench,
+  MessageSquare,
+  FileText,
+  Settings,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Menu,
+} from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +24,7 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, team, logout } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -16,36 +32,50 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const navItems = [
-    { path: '/', label: '首页', icon: '🏠' },
-    { path: '/customers', label: '客户管理', icon: '👥' },
-    { path: '/ltc-config', label: 'LTC流程配置', icon: '🔧' },
-    { path: '/skills', label: '技能管理', icon: '🛠️' },
-    { path: '/interactions', label: '交互记录', icon: '💬' },
-    { path: '/documents', label: '文档管理', icon: '📄' },
-    { path: '/settings', label: '系统设置', icon: '⚙️' },
-    ...(user?.role === 'SYSTEM_ADMIN' ? [{ path: '/system', label: '系统管理', icon: '🔐' }] : []),
+    { path: '/', label: '首页', icon: Home },
+    { path: '/customers', label: '客户管理', icon: Users },
+    { path: '/ltc-config', label: 'LTC流程配置', icon: Workflow },
+    { path: '/skills', label: '技能管理', icon: Wrench },
+    { path: '/interactions', label: '交互记录', icon: MessageSquare },
+    { path: '/documents', label: '文档管理', icon: FileText },
+    { path: '/settings', label: '系统设置', icon: Settings },
+    ...(user?.role === 'SYSTEM_ADMIN' ? [{ path: '/system', label: '系统管理', icon: Shield }] : []),
   ];
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
-      {/* 顶部导航栏 */}
-      <header className="bg-[#1E293B] shadow-sm fixed top-0 left-0 right-0 z-50">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+      {/* 顶部导航栏 - 清新白色风格 */}
+      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50 border-b border-gray-100">
+        <div className="px-4 sm:px-6">
+          <div className="flex justify-between h-14">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-white">AISA</h1>
-              <span className="ml-2 text-sm text-gray-300">
+              {/* 菜单折叠按钮 */}
+              <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="mr-4 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                title={isCollapsed ? '展开菜单' : '收起菜单'}
+              >
+                {isCollapsed ? (
+                  <Menu className="w-5 h-5 text-gray-600" />
+                ) : (
+                  <Menu className="w-5 h-5 text-gray-600" />
+                )}
+              </button>
+
+              <h1 className="text-lg font-bold text-[#1677FF]">AISA</h1>
+              <span className="ml-3 text-sm text-gray-500">
                 {team?.name || '未加入团队'}
               </span>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-200">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">
                 {user?.full_name || user?.email}
               </span>
               <button
                 onClick={handleLogout}
-                className="text-sm text-gray-300 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
+                <LogOut className="w-4 h-4" />
                 退出
               </button>
             </div>
@@ -54,32 +84,74 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       <div className="flex">
-        {/* 侧边栏 */}
-        <aside className="w-64 bg-[#1E293B] shadow-sm fixed left-0 top-16 bottom-0 overflow-y-auto">
-          <nav className="p-4">
+        {/* 侧边栏 - 清新白色风格，可折叠 */}
+        <aside
+          className={`
+            bg-white shadow-sm fixed left-0 top-14 bottom-0 overflow-hidden
+            transition-all duration-300 ease-in-out z-40
+            border-r border-gray-100
+            ${isCollapsed ? 'w-16' : 'w-56'}
+          `}
+        >
+          <nav className="p-2 pt-3">
             <ul className="space-y-1">
-              {navItems.map((item) => (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                      (item.path === '/' ? location.pathname === '/' : location.pathname === item.path)
-                        ? 'bg-[#1677FF] text-white'
-                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+              {navItems.map((item) => {
+                const isActive = item.path === '/' ? location.pathname === '/' : location.pathname === item.path;
+                const Icon = item.icon;
+
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      className={`
+                        flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200
+                        ${isActive
+                          ? 'bg-[#1677FF] text-white shadow-sm shadow-[#1677FF]/25'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-[#1677FF]'
+                        }
+                        ${isCollapsed ? 'justify-center' : ''}
+                      `}
+                      title={isCollapsed ? item.label : undefined}
+                    >
+                      <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : ''}`} />
+                      {!isCollapsed && <span>{item.label}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </nav>
+
+          {/* 折叠/展开按钮 */}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`
+              absolute bottom-4 right-0 transform translate-x(1/2)
+              w-6 h-6 bg-white border border-gray-200 rounded-full
+              flex items-center justify-center
+              shadow-sm hover:shadow-md transition-all duration-200
+              ${isCollapsed ? 'left-1/2 -translate-x-1/2' : ''}
+            `}
+            title={isCollapsed ? '展开菜单' : '收起菜单'}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronLeft className="w-4 h-4 text-gray-500" />
+            )}
+          </button>
         </aside>
 
         {/* 主内容区 */}
-        <main className="flex-1 ml-64 pt-20 pb-10 px-6">
-          {children}
+        <main
+          className={`
+            flex-1 pt-14 pb-6 px-6 transition-all duration-300
+            ${isCollapsed ? 'ml-16' : 'ml-56'}
+          `}
+        >
+          <div className="pt-4">
+            {children}
+          </div>
         </main>
       </div>
     </div>

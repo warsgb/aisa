@@ -151,7 +151,7 @@ export default function SkillsPage() {
               <div
                 key={skill.id}
                 className={`bg-white rounded-lg shadow p-5 cursor-pointer transition-all ${
-                  selectedSkill?.id === skill.id ? 'ring-2 ring-indigo-500' : 'hover:shadow-md'
+                  selectedSkill?.id === skill.id ? 'ring-2 ring-[#1677FF]' : 'hover:shadow-md'
                 }`}
                 onClick={() => {
                   setSelectedSkill(skill);
@@ -161,7 +161,7 @@ export default function SkillsPage() {
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-semibold text-gray-900">{skill.name}</h3>
                   {skill.category && (
-                    <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
+                    <span className="text-xs bg-[#1677FF]/10 text-[#1677FF] px-2 py-1 rounded">
                       {skill.category}
                     </span>
                   )}
@@ -206,7 +206,7 @@ export default function SkillsPage() {
                   <select
                     value={selectedCustomer}
                     onChange={(e) => setSelectedCustomer(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
                     required
                   >
                     <option value="">请选择客户</option>
@@ -229,14 +229,14 @@ export default function SkillsPage() {
                     {selectedSkill.parameters.map((param) => (
                       <div key={param.name} className="mb-3">
                         <label className="block text-xs text-gray-600 mb-1">
-                          {param.label}
+                          {param.label} <span className="text-gray-400">({param.name})</span>
                           {param.required && <span className="text-red-500"> *</span>}
                         </label>
                         {param.options ? (
                           <select
                             value={parameters[param.name] || ''}
                             onChange={(e) => setParameters({ ...parameters, [param.name]: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF]"
                             required={param.required}
                           >
                             <option value="">请选择</option>
@@ -252,7 +252,7 @@ export default function SkillsPage() {
                             onChange={(e) => setParameters({ ...parameters, [param.name]: e.target.value })}
                             placeholder={param.placeholder || ''}
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF]"
                             required={param.required}
                           />
                         ) : (
@@ -261,7 +261,7 @@ export default function SkillsPage() {
                             value={parameters[param.name] || ''}
                             onChange={(e) => setParameters({ ...parameters, [param.name]: e.target.value })}
                             placeholder={param.placeholder || ''}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF]"
                             required={param.required}
                           />
                         )}
@@ -273,7 +273,7 @@ export default function SkillsPage() {
                 <button
                   onClick={handleExecuteSkill}
                   disabled={isExecuting || !selectedCustomer}
-                  className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="w-full bg-[#1677FF] text-white py-2 px-4 rounded-lg hover:bg-[#4096FF] disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {isExecuting ? '执行中...' : '执行技能'}
                 </button>
@@ -322,7 +322,7 @@ export default function SkillsPage() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#1677FF]"></div>
                   <p className="mt-4 text-gray-600">正在执行技能...</p>
                 </div>
               )}
@@ -344,7 +344,7 @@ export default function SkillsPage() {
                     navigator.clipboard.writeText(streamingContent);
                     alert('内容已复制到剪贴板');
                   }}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF]"
                 >
                   复制内容
                 </button>
