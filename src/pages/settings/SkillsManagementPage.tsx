@@ -5,6 +5,20 @@ import { apiService } from '../../services/api.service';
 import type { Skill } from '../../types';
 import MDEditor from '@uiw/react-md-editor';
 import { RoleSkillConfigPanel } from '../../components/skill';
+import {
+  Search,
+  Plus,
+  Upload,
+  RefreshCw,
+  Settings,
+  Wrench,
+  ArrowLeft,
+  Layers,
+  CheckCircle2,
+  XCircle,
+  Database,
+  Sparkles,
+} from 'lucide-react';
 
 interface SkillFormData {
   name: string;
@@ -407,175 +421,156 @@ export default function SkillsManagementPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1677FF]"></div>
-          <p className="mt-4 text-gray-600">加载中...</p>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-[#1677FF]/20 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-16 h-16 border-4 border-transparent border-t-[#1677FF] rounded-full animate-spin"></div>
+          </div>
+          <p className="mt-6 text-gray-600 font-medium">加载技能数据...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Link to="/settings" className="text-sm text-gray-500 hover:text-[#1677FF]">
-              ← 返回设置
-            </Link>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">技能管理</h1>
-          <p className="text-sm text-gray-500 mt-1">管理系统技能，查看详情和编辑配置</p>
-        </div>
-        {activeTab === 'skills' && (
-        <div className="flex gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".md,.zip"
-            onChange={handleImport}
-            className="hidden"
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            📥 导入技能
-          </button>
-          {isSystemAdmin && (
-            <button
-              onClick={handleCreate}
-              className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] transition-colors"
-            >
-              ➕ 新建技能
-            </button>
-          )}
-          <button
-            onClick={handleSync}
-            disabled={isSyncing}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
-          >
-            {isSyncing ? '🔄 同步中...' : '🔄 同步'}
-          </button>
-        </div>
-        )}
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white rounded-xl border border-gray-200 p-1 inline-flex">
-        <button
-          onClick={() => setActiveTab('skills')}
-          className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'skills'
-              ? 'bg-[#1677FF] text-white'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          技能列表
-        </button>
-        <button
-          onClick={() => setActiveTab('roles')}
-          className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'roles'
-              ? 'bg-[#1677FF] text-white'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          角色技能配置
-        </button>
-      </div>
-
-      {/* Skills List Tab */}
-      {activeTab === 'skills' && (
-        <>
-      {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <div className="flex gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".md,.zip"
-            onChange={handleImport}
-            className="hidden"
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            📥 导入技能
-          </button>
-          {isSystemAdmin && (
-            <button
-              onClick={handleCreate}
-              className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] transition-colors"
-            >
-              ➕ 新建技能
-            </button>
-          )}
-          <button
-            onClick={handleSync}
-            disabled={isSyncing}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
-          >
-            {isSyncing ? '🔄 同步中...' : '🔄 同步'}
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="搜索技能名称或描述..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#1677FF]"
-              />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <Link to="/settings" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#1677FF] mb-4 transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+                返回设置
+              </Link>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <span className="w-10 h-10 bg-[#1677FF] rounded-xl flex items-center justify-center">
+                  <Wrench className="w-5 h-5 text-white" />
+                </span>
+                技能管理
+              </h1>
+              <p className="text-gray-500">管理系统技能，查看详情和编辑配置</p>
             </div>
-          </div>
-
-          {/* Category filter */}
-          <div className="sm:w-40">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#1677FF]"
-            >
-              <option value="all">所有分类</option>
-              {categories
-                .filter((c) => c !== 'all')
-                .map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          {/* Status filter */}
-          <div className="sm:w-40">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#1677FF]"
-            >
-              <option value="all">全部状态</option>
-              <option value="enabled">已启用</option>
-              <option value="disabled">已禁用</option>
-            </select>
+            {activeTab === 'skills' && (
+              <div className="flex gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".md,.zip"
+                  onChange={handleImport}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200"
+                >
+                  <Upload className="w-4 h-4" />
+                  导入技能
+                </button>
+                {isSystemAdmin && (
+                  <button
+                    onClick={handleCreate}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] transition-all duration-200 shadow-lg shadow-[#1677FF]/30"
+                  >
+                    <Plus className="w-4 h-4" />
+                    新建技能
+                  </button>
+                )}
+                <button
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? '同步中...' : '同步'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Skills Grid */}
-      {filteredSkills.length === 0 ? (
+        {/* Tabs */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 inline-flex mb-6">
+          <button
+            onClick={() => setActiveTab('skills')}
+            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              activeTab === 'skills'
+                ? 'bg-[#1677FF] text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <Layers className="w-4 h-4 inline mr-2" />
+            技能列表
+          </button>
+          <button
+            onClick={() => setActiveTab('roles')}
+            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              activeTab === 'roles'
+                ? 'bg-[#1677FF] text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <Settings className="w-4 h-4 inline mr-2" />
+            角色技能配置
+          </button>
+        </div>
+
+        {/* Skills List Tab */}
+        {activeTab === 'skills' && (
+          <>
+            {/* Filters */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Search */}
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="搜索技能名称或描述..."
+                      className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Category filter */}
+                <div className="sm:w-48">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all appearance-none bg-white"
+                  >
+                    <option value="all">所有分类</option>
+                    {categories
+                      .filter((c) => c !== 'all')
+                      .map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* Status filter */}
+                <div className="sm:w-48">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as any)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all appearance-none bg-white"
+                  >
+                    <option value="all">全部状态</option>
+                    <option value="enabled">已启用</option>
+                    <option value="disabled">已禁用</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Skills Grid */}
+            {filteredSkills.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <div className="text-6xl mb-4">🛠️</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">暂无技能</h3>
@@ -702,6 +697,7 @@ export default function SkillsManagementPage() {
       {activeTab === 'roles' && (
         <RoleSkillConfigPanel skills={skills} />
       )}
+      </div>
 
       {/* View Modal */}
       {viewSkill && (

@@ -20,6 +20,20 @@ import { apiService } from '../../services/api.service';
 import { useAuth } from '../../context/AuthContext';
 import { useLtcConfigStore } from '../../stores';
 import type { LtcNode, Skill, NodeSkillBinding } from '../../types';
+import {
+  GripVertical,
+  Edit,
+  Trash2,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  Workflow,
+  Check,
+  X,
+  Save,
+  Layers,
+  Zap,
+} from 'lucide-react';
 
 // Sortable Node Item Component
 interface SortableNodeItemProps {
@@ -52,9 +66,9 @@ function SortableNodeItem({ node, index, isSelected, onSelect, onEdit, onDelete 
       ref={setNodeRef}
       style={style}
       className={`
-        flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all
-        ${isSelected ? 'border-[#1677FF] bg-[#1677FF]/5' : 'border-gray-200 hover:border-gray-300'}
-        ${isDragging ? 'opacity-50 shadow-lg' : ''}
+        group flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+        ${isSelected ? 'border-[#1677FF] bg-gradient-to-r from-[#1677FF]/5 to-transparent shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'}
+        ${isDragging ? 'opacity-50 shadow-xl scale-105' : ''}
       `}
       onClick={() => onSelect(node)}
     >
@@ -62,56 +76,58 @@ function SortableNodeItem({ node, index, isSelected, onSelect, onEdit, onDelete 
       <button
         {...attributes}
         {...listeners}
-        className="p-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
+        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg cursor-grab active:cursor-grabbing transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
-        ⋮⋮
+        <GripVertical className="w-5 h-5" />
       </button>
 
       {/* Step number */}
-      <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-gray-100 text-gray-600 text-sm font-medium rounded-full">
+      <span className="flex-shrink-0 w-9 h-9 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 text-gray-700 text-sm font-bold rounded-xl border border-gray-200 shadow-sm">
         {index + 1}
       </span>
 
       {/* Node info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900 truncate">{node.name}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`font-semibold truncate ${isSelected ? 'text-[#1677FF]' : 'text-gray-900'}`}>{node.name}</span>
           {node.source === 'SYSTEM' && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+              <Sparkles className="w-3 h-3 mr-1" />
               系统
             </span>
           )}
           {node.source === 'CUSTOM' && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+              <Zap className="w-3 h-3 mr-1" />
               自定义
             </span>
           )}
         </div>
         {node.description && (
-          <div className="text-xs text-gray-500 truncate">{node.description}</div>
+          <div className="text-xs text-gray-500 truncate mt-1">{node.description}</div>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onEdit(node);
           }}
-          className="p-1.5 text-gray-400 hover:text-[#1677FF] hover:bg-[#1677FF]/10 rounded-lg transition-colors"
+          className="p-2 text-gray-400 hover:text-[#1677FF] hover:bg-[#1677FF]/5 rounded-xl transition-colors"
         >
-          ✏️
+          <Edit className="w-4 h-4" />
         </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete(node);
           }}
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
         >
-          🗑️
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -366,191 +382,241 @@ export default function LtcConfigPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">LTC流程配置</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            配置销售流程节点，拖拽排序，绑定对应技能
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={handleResetDefault}
-            className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            重置默认
-          </button>
-          <button
-            onClick={handleAddNode}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#1677FF] rounded-lg hover:bg-[#4096FF] transition-colors"
-          >
-            + 添加节点
-          </button>
-        </div>
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Node list */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">流程节点</h2>
-
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          ) : nodes.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <p>暂无节点，点击"添加节点"创建</p>
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={nodes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {nodes.map((node, index) => (
-                    <SortableNodeItem
-                      key={node.id}
-                      node={node}
-                      index={index}
-                      isSelected={selectedNode?.id === node.id}
-                      onSelect={setSelectedNode}
-                      onEdit={handleEditNode}
-                      onDelete={handleDeleteNode}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
-        </div>
-
-        {/* Right: Skill binding */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">节点技能绑定</h2>
-
-          {!selectedNode ? (
-            <div className="text-center py-12 text-gray-400">
-              <span className="text-4xl mb-3 block">👈</span>
-              <p>请从左侧选择一个节点</p>
-            </div>
-          ) : (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="mb-4 p-3 bg-[#F5F7FA] rounded-lg">
-                <span className="text-xs text-gray-500">当前节点</span>
-                <div className="font-medium text-gray-900">{selectedNode.name}</div>
-                {selectedNode.description && (
-                  <div className="text-sm text-gray-500">{selectedNode.description}</div>
-                )}
-              </div>
-
-              <h3 className="text-sm font-medium text-gray-700 mb-3">选择要绑定的技能</h3>
-
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {allSkills.map((skill) => {
-                  const nodeBindings = bindings[selectedNode.id] || [];
-                  const isBound = nodeBindings.some((b) => b.skill_id === skill.id);
-
-                  return (
-                    <label
-                      key={skill.id}
-                      className={`
-                        flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
-                        ${isBound ? 'border-[#1677FF] bg-[#1677FF]/5' : 'border-gray-200 hover:border-gray-300'}
-                      `}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isBound}
-                        onChange={() => handleToggleSkill(skill, isBound)}
-                        className="w-4 h-4 text-[#1677FF] border-gray-300 rounded focus:ring-[#1677FF]"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">{skill.name}</div>
-                        {skill.description && (
-                          <div className="text-xs text-gray-500 truncate">{skill.description}</div>
-                        )}
-                      </div>
-                      {isBound && <span className="text-[#1677FF]">✓</span>}
-                    </label>
-                  );
-                })}
-              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <span className="w-10 h-10 bg-[#1677FF] rounded-xl flex items-center justify-center">
+                  <Workflow className="w-5 h-5 text-white" />
+                </span>
+                LTC 流程配置
+              </h1>
+              <p className="text-gray-500">配置销售流程节点，拖拽排序，绑定对应技能</p>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingNode?.id ? '编辑节点' : '新建节点'}
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  节点名称 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
-                  placeholder="例如：需求分析"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  描述
-                </label>
-                <textarea
-                  value={editForm.description}
-                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
-                  rows={3}
-                  placeholder="节点的详细描述..."
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3">
               <button
-                onClick={handleSaveNode}
-                disabled={!editForm.name.trim()}
-                className="flex-1 px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:opacity-50 transition-colors"
+                onClick={handleResetDefault}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200"
               >
-                保存
+                <RotateCcw className="w-4 h-4" />
+                重置默认
               </button>
               <button
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setEditingNode(null);
-                }}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={handleAddNode}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] transition-all duration-200 shadow-lg shadow-[#1677FF]/30"
               >
-                取消
+                <Plus className="w-4 h-4" />
+                添加节点
               </button>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={() => setLocalError(null)}
+              className="p-1 hover:bg-red-100 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left: Node list */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-gradient-to-br from-[#1677FF] to-[#4096FF] rounded-xl flex items-center justify-center shadow-lg shadow-[#1677FF]/30">
+                  <Layers className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">流程节点</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">拖拽节点调整顺序</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-20 bg-gray-50 rounded-xl animate-pulse border border-gray-100" />
+                  ))}
+                </div>
+              ) : nodes.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-2xl flex items-center justify-center">
+                    <Layers className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <p className="text-gray-500 mb-2">暂无节点</p>
+                  <p className="text-sm text-gray-400">点击"添加节点"创建第一个节点</p>
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={nodes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-3">
+                      {nodes.map((node, index) => (
+                        <SortableNodeItem
+                          key={node.id}
+                          node={node}
+                          index={index}
+                          isSelected={selectedNode?.id === node.id}
+                          onSelect={setSelectedNode}
+                          onEdit={handleEditNode}
+                          onDelete={handleDeleteNode}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Skill binding */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl flex items-center justify-center border border-gray-200">
+                  <Zap className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">节点技能绑定</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">为选中的节点配置技能</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {!selectedNode ? (
+                <div className="text-center py-20">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-2xl flex items-center justify-center">
+                    <Layers className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <p className="text-gray-500 font-medium mb-1">请从左侧选择一个节点</p>
+                  <p className="text-sm text-gray-400">选择节点后可配置绑定的技能</p>
+                </div>
+              ) : (
+                <div>
+                  <div className="mb-6 p-4 bg-gradient-to-r from-[#1677FF]/5 to-transparent border border-[#1677FF]/10 rounded-xl">
+                    <span className="text-xs font-semibold text-[#1677FF] mb-1 block">当前节点</span>
+                    <div className="font-bold text-gray-900 text-lg">{selectedNode.name}</div>
+                    {selectedNode.description && (
+                      <div className="text-sm text-gray-600 mt-1">{selectedNode.description}</div>
+                    )}
+                  </div>
+
+                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Check className="w-4 h-4 text-[#1677FF]" />
+                    选择要绑定的技能
+                  </h3>
+
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {allSkills.map((skill) => {
+                      const nodeBindings = bindings[selectedNode.id] || [];
+                      const isBound = nodeBindings.some((b) => b.skill_id === skill.id);
+
+                      return (
+                        <label
+                          key={skill.id}
+                          className={`
+                            group flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                            ${isBound ? 'border-[#1677FF] bg-[#1677FF]/5 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}
+                          `}
+                        >
+                          <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isBound ? 'bg-[#1677FF] border-[#1677FF]' : 'border-gray-300'}`}>
+                            {isBound && <Check className="w-4 h-4 text-white" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`font-semibold truncate ${isBound ? 'text-[#1677FF]' : 'text-gray-900'}`}>{skill.name}</div>
+                            {skill.description && (
+                              <div className="text-xs text-gray-500 truncate mt-0.5">{skill.description}</div>
+                            )}
+                          </div>
+                          {isBound && (
+                            <Check className="w-5 h-5 text-[#1677FF]" />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Edit Modal */}
+        {isEditModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50/50">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Edit className="w-5 h-5 text-[#1677FF]" />
+                  {editingNode?.id ? '编辑节点' : '新建节点'}
+                </h3>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    节点名称 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                    placeholder="例如：需求分析"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">描述</label>
+                  <textarea
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all resize-none"
+                    rows={3}
+                    placeholder="节点的详细描述..."
+                  />
+                </div>
+              </div>
+
+              <div className="px-6 py-5 border-t border-gray-100 flex gap-3 bg-gray-50/50">
+                <button
+                  onClick={handleSaveNode}
+                  disabled={!editForm.name.trim()}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] disabled:opacity-50 transition-colors shadow-lg shadow-[#1677FF]/30"
+                >
+                  <Save className="w-4 h-4" />
+                  保存
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setEditingNode(null);
+                  }}
+                  className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -10,7 +10,11 @@ import {
   Pause,
   FileText,
   Workflow,
-  Eye,
+  ArrowRight,
+  User,
+  Wrench,
+  Calendar,
+  TrendingUp,
 } from 'lucide-react';
 
 interface InteractionTimelineProps {
@@ -20,13 +24,49 @@ interface InteractionTimelineProps {
   maxItems?: number;
 }
 
-const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-  COMPLETED: { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-100' },
-  RUNNING: { icon: Loader2, color: 'text-blue-600', bg: 'bg-blue-100' },
-  PENDING: { icon: Clock, color: 'text-gray-600', bg: 'bg-gray-100' },
-  FAILED: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100' },
-  CANCELLED: { icon: Ban, color: 'text-gray-500', bg: 'bg-gray-100' },
-  PAUSED: { icon: Pause, color: 'text-yellow-600', bg: 'bg-yellow-100' },
+const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string; border: string; emoji: string }> = {
+  COMPLETED: {
+    icon: CheckCircle2,
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+    border: 'border-green-200',
+    emoji: '✅',
+  },
+  RUNNING: {
+    icon: Loader2,
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    emoji: '🔄',
+  },
+  PENDING: {
+    icon: Clock,
+    color: 'text-gray-600',
+    bg: 'bg-gray-50',
+    border: 'border-gray-200',
+    emoji: '⏳',
+  },
+  FAILED: {
+    icon: XCircle,
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    emoji: '❌',
+  },
+  CANCELLED: {
+    icon: Ban,
+    color: 'text-gray-500',
+    bg: 'bg-gray-50',
+    border: 'border-gray-200',
+    emoji: '🚫',
+  },
+  PAUSED: {
+    icon: Pause,
+    color: 'text-yellow-600',
+    bg: 'bg-yellow-50',
+    border: 'border-yellow-200',
+    emoji: '⏸️',
+  },
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -46,13 +86,14 @@ export function InteractionTimeline({
 }: InteractionTimelineProps) {
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex gap-3 p-4 bg-gray-50 rounded-xl animate-pulse">
-            <div className="w-12 h-12 bg-gray-200 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-1/3" />
-              <div className="h-3 bg-gray-200 rounded w-2/3" />
+          <div key={i} className="flex gap-4 p-5 bg-white rounded-2xl border border-gray-100 animate-pulse">
+            <div className="w-14 h-14 bg-gray-100 rounded-xl" />
+            <div className="flex-1 space-y-3">
+              <div className="h-5 bg-gray-100 rounded w-1/3" />
+              <div className="h-4 bg-gray-100 rounded w-2/3" />
+              <div className="h-3 bg-gray-100 rounded w-1/4" />
             </div>
           </div>
         ))}
@@ -62,12 +103,12 @@ export function InteractionTimeline({
 
   if (interactions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-        <div className="w-14 h-14 mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-          <FileText className="w-7 h-7 text-gray-300" />
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+        <div className="w-16 h-16 mb-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center border border-gray-100">
+          <FileText className="w-8 h-8 text-gray-300" />
         </div>
-        <p className="text-sm font-medium text-gray-500">暂无交互记录</p>
-        <p className="text-xs text-gray-400 mt-1">执行技能后将显示在此处</p>
+        <p className="text-sm font-semibold text-gray-600 mb-1">暂无交互记录</p>
+        <p className="text-xs text-gray-400">执行技能后将显示在此处</p>
       </div>
     );
   }
@@ -80,11 +121,11 @@ export function InteractionTimeline({
   return (
     <div className="relative">
       {/* Timeline line */}
-      <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-100" />
+      <div className="absolute left-7 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#1677FF]/20 via-gray-100 to-transparent" />
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {displayInteractions.map((interaction) => {
-          const statusConfig = STATUS_CONFIG[interaction.status] || { icon: FileText, color: 'text-gray-600', bg: 'bg-gray-100' };
+          const statusConfig = STATUS_CONFIG[interaction.status] || STATUS_CONFIG.PENDING;
           const StatusIcon = statusConfig.icon;
           const isNewest = interaction.id === newestId;
           const ltcNode = interaction.node_id ? ltcNodesMap[interaction.node_id] : null;
@@ -94,67 +135,70 @@ export function InteractionTimeline({
               key={interaction.id}
               to={`/interactions/${interaction.id}`}
               className={`
-                relative flex gap-3 p-4 bg-white rounded-xl border transition-all duration-200 group
-                ${isNewest ? 'border-primary/30 bg-primary/5' : 'border-gray-100 hover:border-primary/30 hover:shadow-sm'}
+                relative flex gap-4 p-5 bg-white rounded-2xl border transition-all duration-300 group
+                ${isNewest ? 'border-[#1677FF]/30 bg-gradient-to-r from-[#1677FF]/5 to-transparent shadow-sm' : 'border-gray-100 hover:border-[#1677FF]/20 hover:shadow-md'}
               `}
             >
               {/* Status icon */}
-              <div className={`relative z-10 flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full ${statusConfig.bg} ${statusConfig.color}`}>
+              <div className={`relative z-10 flex-shrink-0 w-14 h-14 flex items-center justify-center rounded-xl border ${statusConfig.bg} ${statusConfig.border} ${statusConfig.color}`}>
                 <StatusIcon className={`w-6 h-6 ${interaction.status === 'RUNNING' ? 'animate-spin' : ''}`} />
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap mb-2">
                   {/* LTC Stage Tag */}
                   {ltcNode && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-medium rounded-full">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#1677FF]/10 text-[#1677FF] text-[11px] font-semibold rounded-lg border border-[#1677FF]/20">
                       <Workflow className="w-3 h-3" />
                       {ltcNode.name}
                     </span>
                   )}
 
-                  <h4 className="font-medium text-gray-900 truncate group-hover:text-primary transition-colors">
+                  <h4 className="font-semibold text-gray-900 truncate group-hover:text-[#1677FF] transition-colors">
                     {interaction.skill?.name || '未知技能'}
                   </h4>
-                  <span
-                    className={`
-                      text-xs px-2 py-0.5 rounded-full font-medium
-                      ${interaction.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : ''}
-                      ${interaction.status === 'RUNNING' ? 'bg-blue-100 text-blue-700' : ''}
-                      ${interaction.status === 'FAILED' ? 'bg-red-100 text-red-700' : ''}
-                      ${interaction.status === 'PENDING' ? 'bg-gray-100 text-gray-600' : ''}
-                      ${interaction.status === 'CANCELLED' ? 'bg-gray-100 text-gray-500' : ''}
-                      ${interaction.status === 'PAUSED' ? 'bg-yellow-100 text-yellow-700' : ''}
-                    `}
-                  >
+
+                  {/* Status Badge */}
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
+                    <span>{statusConfig.emoji}</span>
                     {STATUS_LABELS[interaction.status] || interaction.status}
                   </span>
                 </div>
 
                 {interaction.customer && (
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    {interaction.customer.name}
-                  </p>
+                  <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-1.5">
+                    <User className="w-3.5 h-3.5" />
+                    <span>{interaction.customer.name}</span>
+                  </div>
                 )}
 
                 {interaction.summary && (
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                  <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                     {interaction.summary}
                   </p>
                 )}
 
-                <p className="text-xs text-gray-400 mt-2">
-                  {formatDate(interaction.created_at)}
-                </p>
+                <div className="flex items-center gap-3 text-xs text-gray-400">
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {formatDate(interaction.created_at)}
+                  </span>
+                  {interaction.skill && (
+                    <span className="inline-flex items-center gap-1">
+                      <Wrench className="w-3 h-3" />
+                      {interaction.skill.name}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* View Details - show on hover */}
-              <div className="flex-shrink-0 self-center flex items-center gap-2 text-gray-300 group-hover:text-primary transition-all duration-200">
-                <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex-shrink-0 self-center flex items-center gap-2 text-gray-300 group-hover:text-[#1677FF] transition-all duration-200">
+                <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                   查看详情
                 </span>
-                <Eye className="w-4 h-4" />
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
           );
@@ -164,9 +208,10 @@ export function InteractionTimeline({
       {interactions.length > maxItems && (
         <Link
           to="/interactions"
-          className="block mt-4 text-center text-sm text-primary hover:text-primary/80 transition-colors"
+          className="group mt-6 flex items-center justify-center gap-2 px-6 py-3 bg-white rounded-xl border border-gray-100 hover:border-[#1677FF]/30 hover:shadow-md transition-all duration-200 text-sm font-medium text-gray-600 hover:text-[#1677FF]"
         >
-          查看全部 {interactions.length} 条记录 →
+          <span>查看全部 {interactions.length} 条记录</span>
+          <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </Link>
       )}
     </div>

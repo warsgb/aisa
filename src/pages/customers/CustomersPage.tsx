@@ -3,6 +3,23 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
 import type { Customer, CreateCustomerDto, CustomerProfile } from '../../types';
 import MDEditor from '@uiw/react-md-editor';
+import {
+  Users,
+  Plus,
+  Search,
+  Mail,
+  Phone,
+  Globe,
+  MapPin,
+  Building2,
+  Edit,
+  Trash2,
+  Eye,
+  FileText,
+  X,
+  Save,
+  Sparkles,
+} from 'lucide-react';
 
 export default function CustomersPage() {
   const { team, user } = useAuth();
@@ -171,55 +188,80 @@ export default function CustomersPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1677FF]"></div>
-          <p className="mt-4 text-gray-600">加载中...</p>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-[#1677FF]/20 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-16 h-16 border-4 border-transparent border-t-[#1677FF] rounded-full animate-spin"></div>
+          </div>
+          <p className="mt-6 text-gray-600 font-medium">加载客户数据...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">客户管理</h1>
-          <p className="text-sm text-gray-500 mt-1">管理您的客户信息，查看背景资料</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <span className="w-10 h-10 bg-[#1677FF] rounded-xl flex items-center justify-center">
+                  <Users className="w-5 h-5 text-white" />
+                </span>
+                客户管理
+              </h1>
+              <p className="text-gray-500">管理您的客户信息，维护背景资料和联系方式</p>
+            </div>
+            <button
+              onClick={() => {
+                resetForm();
+                setShowCreateModal(true);
+              }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#1677FF] text-white rounded-xl hover:bg-[#4096FF] transition-all duration-200 shadow-lg shadow-[#1677FF]/30 hover:shadow-xl hover:shadow-[#1677FF]/40 font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              添加客户
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
-          className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] transition-colors"
-        >
-          + 添加客户
-        </button>
-      </div>
 
-      {/* Customer Cards Grid */}
-      {customers.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-          <div className="text-6xl mb-4">👥</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">暂无客户</h3>
-          <p className="text-gray-500 mb-4">点击上方按钮添加您的第一个客户</p>
+        {/* Customer Cards Grid */}
+        {customers.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center border border-gray-200">
+              <Users className="w-10 h-10 text-gray-300" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">暂无客户</h3>
+            <p className="text-gray-500 mb-8 max-w-md mx-auto">开始添加您的第一个客户，建立完整的客户档案</p>
+            <button
+              onClick={() => {
+                resetForm();
+                setShowCreateModal(true);
+              }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#1677FF] text-white rounded-xl hover:bg-[#4096FF] transition-all duration-200 shadow-lg shadow-[#1677FF]/30 font-medium"
+            >
+              <Sparkles className="w-5 h-5" />
+              添加第一个客户
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {customers.map((customer) => (
+              <CustomerCard
+                key={customer.id}
+                customer={customer}
+                onView={() => openViewModal(customer)}
+                onEdit={() => openEditModal(customer)}
+                onDelete={() => handleDelete(customer)}
+                onEditProfile={() => openProfileModal(customer)}
+              />
+            ))}
+          </div>
+        )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {customers.map((customer) => (
-            <CustomerCard
-              key={customer.id}
-              customer={customer}
-              onView={() => openViewModal(customer)}
-              onEdit={() => openEditModal(customer)}
-              onDelete={() => handleDelete(customer)}
-              onEditProfile={() => openProfileModal(customer)}
-            />
-          ))}
-        </div>
-      )}
 
       {/* Create Modal */}
       {showCreateModal && (
@@ -304,80 +346,92 @@ interface CustomerCardProps {
 
 function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile }: CustomerCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 flex-shrink-0 bg-[#1677FF]/10 text-[#1677FF] rounded-lg flex items-center justify-center font-bold text-lg">
-            {customer.name.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-semibold text-gray-900 truncate">{customer.name}</h3>
-            {customer.industry && (
-              <span className="text-xs text-gray-500">{customer.industry}</span>
-            )}
+    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-[#1677FF]/20 overflow-hidden">
+      {/* Header with gradient */}
+      <div className="bg-gradient-to-r from-[#1677FF]/5 to-transparent p-5 pb-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-[#1677FF] to-[#4096FF] text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shadow-[#1677FF]/30">
+              {customer.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-gray-900 text-lg truncate group-hover:text-[#1677FF] transition-colors">
+                {customer.name}
+              </h3>
+              {customer.industry && (
+                <span className="inline-flex items-center gap-1 text-xs text-gray-500 mt-1">
+                  <Building2 className="w-3 h-3" />
+                  {customer.industry}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Info */}
-      <div className="space-y-2 mb-4">
+      <div className="p-5 pt-4 space-y-3">
         {customer.company_size && (
-          <div className="text-sm text-gray-600">
-            <span className="text-gray-400">规模:</span> {customer.company_size}
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Users className="w-4 h-4 text-gray-400" />
+            <span>{customer.company_size}</span>
           </div>
         )}
         {customer.contact_info?.email && (
-          <div className="text-sm text-gray-600 truncate">
-            <span className="text-gray-400">📧</span> {customer.contact_info.email}
+          <div className="flex items-center gap-2 text-sm text-gray-600 truncate">
+            <Mail className="w-4 h-4 text-gray-400" />
+            <span className="truncate">{customer.contact_info.email}</span>
           </div>
         )}
         {customer.contact_info?.phone && (
-          <div className="text-sm text-gray-600">
-            <span className="text-gray-400">📱</span> {customer.contact_info.phone}
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Phone className="w-4 h-4 text-gray-400" />
+            <span>{customer.contact_info.phone}</span>
           </div>
         )}
         {customer.description && (
-          <p className="text-sm text-gray-500 line-clamp-2">{customer.description}</p>
+          <p className="text-sm text-gray-500 line-clamp-2 mt-2">{customer.description}</p>
         )}
       </div>
 
       {/* Third-party data button */}
-      <div className="mb-4">
+      <div className="px-5 pb-4">
         <button
           onClick={() => alert('天眼查数据对接功能开发中...')}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 group-hover:bg-[#1677FF]/5 group-hover:border-[#1677FF]/20 group-hover:text-[#1677FF]"
         >
-          <span>🔍</span>
+          <Search className="w-4 h-4" />
           天眼查企业信息
         </button>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+      <div className="flex items-center gap-2 p-5 pt-0 border-t border-gray-100">
         <button
           onClick={onView}
-          className="flex-1 px-3 py-1.5 text-sm text-[#1677FF] bg-[#1677FF]/5 rounded-lg hover:bg-[#1677FF]/10 transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#1677FF] bg-[#1677FF]/5 rounded-xl hover:bg-[#1677FF]/10 transition-colors"
         >
+          <Eye className="w-4 h-4" />
           查看
         </button>
         <button
           onClick={onEditProfile}
-          className="flex-1 px-3 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
         >
+          <FileText className="w-4 h-4" />
           背景资料
         </button>
         <button
           onClick={onEdit}
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2.5 text-gray-400 hover:text-[#1677FF] hover:bg-[#1677FF]/5 rounded-xl transition-colors"
         >
-          ✏️
+          <Edit className="w-4 h-4" />
         </button>
         <button
           onClick={onDelete}
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
         >
-          🗑️
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -405,15 +459,25 @@ function CustomerFormModal({ title, formData, setFormData, onSubmit, onClose }: 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-white to-gray-50/50">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+            <p className="text-sm text-gray-500 mt-1">填写客户基本信息</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                 客户名称 <span className="text-red-500">*</span>
               </label>
               <input
@@ -421,85 +485,105 @@ function CustomerFormModal({ title, formData, setFormData, onSubmit, onClose }: 
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF] focus:ring-1 focus:ring-[#1677FF]"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                placeholder="请输入客户名称"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">行业</label>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">行业</label>
                 <input
                   type="text"
                   value={formData.industry || ''}
                   onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                  placeholder="例如：科技、金融"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">公司规模</label>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">公司规模</label>
                 <input
                   type="text"
                   value={formData.company_size || ''}
                   onChange={(e) => setFormData({ ...formData, company_size: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                  placeholder="例如：100-500人"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">描述</label>
               <textarea
                 value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all resize-none"
+                placeholder="简要描述客户背景..."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">联系方式</label>
+              <label className="block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <span>联系方式</span>
+                <span className="text-xs font-normal text-gray-400">(可选)</span>
+              </label>
               <div className="space-y-3">
-                <input
-                  type="email"
-                  value={formData.contact_info?.email || ''}
-                  onChange={(e) => updateContactInfo('email', e.target.value)}
-                  placeholder="📧 邮箱"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
-                />
-                <input
-                  type="tel"
-                  value={formData.contact_info?.phone || ''}
-                  onChange={(e) => updateContactInfo('phone', e.target.value)}
-                  placeholder="📱 电话"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
-                />
-                <input
-                  type="url"
-                  value={formData.contact_info?.website || ''}
-                  onChange={(e) => updateContactInfo('website', e.target.value)}
-                  placeholder="🌐 网站"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
-                />
-                <input
-                  type="text"
-                  value={formData.contact_info?.address || ''}
-                  onChange={(e) => updateContactInfo('address', e.target.value)}
-                  placeholder="📍 地址"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1677FF]"
-                />
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    value={formData.contact_info?.email || ''}
+                    onChange={(e) => updateContactInfo('email', e.target.value)}
+                    placeholder="邮箱地址"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                  />
+                </div>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="tel"
+                    value={formData.contact_info?.phone || ''}
+                    onChange={(e) => updateContactInfo('phone', e.target.value)}
+                    placeholder="联系电话"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                  />
+                </div>
+                <div className="relative">
+                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="url"
+                    value={formData.contact_info?.website || ''}
+                    onChange={(e) => updateContactInfo('website', e.target.value)}
+                    placeholder="官方网站"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                  />
+                </div>
+                <div className="relative">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.contact_info?.address || ''}
+                    onChange={(e) => updateContactInfo('address', e.target.value)}
+                    placeholder="公司地址"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
+                  />
+                </div>
               </div>
             </div>
           </div>
         </form>
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+        <div className="px-6 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
             取消
           </button>
           <button
-            onClick={onSubmit}
-            className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] transition-colors"
+            type="submit"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] transition-colors shadow-lg shadow-[#1677FF]/30"
           >
+            <Save className="w-4 h-4" />
             保存
           </button>
         </div>

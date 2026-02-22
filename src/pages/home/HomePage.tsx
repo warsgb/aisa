@@ -19,6 +19,9 @@ import {
   Settings,
   Star,
   ChevronRight,
+  Sparkles,
+  Timer,
+  Target,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -138,8 +141,10 @@ export default function HomePage() {
 
         // Store role skill configs for filtering
         const configsMap: Partial<Record<'AR' | 'SR' | 'FR', string[]>> = {};
-        roleConfigsData.forEach((c) => {
-          configsMap[c.role] = c.default_skill_ids;
+        roleConfigsData.forEach((c: any) => {
+          if (c.role && c.default_skill_ids) {
+            configsMap[c.role as 'AR' | 'SR' | 'FR'] = c.default_skill_ids;
+          }
         });
         setTeamRoleSkillConfigs(configsMap);
 
@@ -246,17 +251,18 @@ export default function HomePage() {
 
   if (!team) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <Users className="w-8 h-8 text-gray-400" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#1677FF]/10 to-[#1677FF]/5 rounded-2xl flex items-center justify-center border border-[#1677FF]/10">
+            <Users className="w-10 h-10 text-[#1677FF]/40" />
           </div>
-          <p className="text-gray-500 mb-4">请先加入或创建一个团队</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">欢迎使用 AISA</h2>
+          <p className="text-gray-500 mb-8">请先加入或创建一个团队，开始您的智能销售旅程</p>
           <Link
             to="/settings"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#1677FF] text-white rounded-xl hover:bg-[#4096FF] transition-all duration-200 shadow-lg shadow-[#1677FF]/30 font-medium"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-5 h-5" />
             前往设置
           </Link>
         </div>
@@ -265,109 +271,108 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Top navigation bar */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-          {/* Left: Customer selector + Role filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-            <CustomerSearchSelect
-              customers={customers}
-              onSelect={handleCustomerSelect}
-              disabled={isLoading}
-            />
-            <RoleFilterTab
-              activeRole={roleFilter}
-              onRoleChange={setRoleFilter}
-              disabled={isLoading}
-            />
-          </div>
+      <div className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-[1800px] mx-auto px-6 py-4">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            {/* Left: Customer selector + Role filter */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+              <CustomerSearchSelect
+                customers={customers}
+                onSelect={handleCustomerSelect}
+                disabled={isLoading}
+              />
+              <RoleFilterTab
+                activeRole={roleFilter}
+                onRoleChange={setRoleFilter}
+                disabled={isLoading}
+              />
+            </div>
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-3">
-            {/* Skill filter toggle */}
-            <button
-              onClick={() => setFilterType(filterType === 'FAVORITE' ? 'ALL' : 'FAVORITE')}
-              className={`
-                inline-flex items-center justify-center w-10 h-10 text-sm font-medium rounded-full transition-all duration-200
-                ${filterType === 'FAVORITE'
-                  ? 'bg-primary text-white shadow-md shadow-primary/25'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
-                }
-              `}
-              title={filterType === 'FAVORITE' ? '显示全部技能' : '显示我的常用技能'}
-            >
-              <Star className={`w-4 h-4 ${filterType === 'FAVORITE' ? 'fill-current' : ''}`} />
-            </button>
+            {/* Right: Actions */}
+            <div className="flex items-center gap-3">
+              {/* Skill filter toggle */}
+              <button
+                onClick={() => setFilterType(filterType === 'FAVORITE' ? 'ALL' : 'FAVORITE')}
+                className={`
+                  relative inline-flex items-center justify-center w-11 h-11 text-sm font-medium rounded-xl transition-all duration-200
+                  ${filterType === 'FAVORITE'
+                    ? 'bg-[#1677FF] text-white shadow-lg shadow-[#1677FF]/30'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-[#1677FF]/30 hover:text-[#1677FF] hover:shadow-md'
+                  }
+                `}
+                title={filterType === 'FAVORITE' ? '显示全部技能' : '显示我的常用技能'}
+              >
+                <Star className={`w-5 h-5 ${filterType === 'FAVORITE' ? 'fill-current' : ''}`} />
+                {filterType === 'FAVORITE' && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                )}
+              </button>
 
-            {/* LTC Config button */}
-            <Link
-              to="/ltc-config"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:border-primary hover:text-primary transition-all duration-200"
-            >
-              <Workflow className="w-4 h-4" />
-              配置流程
-            </Link>
+              {/* LTC Config button */}
+              <Link
+                to="/ltc-config"
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-[#1677FF]/30 hover:text-[#1677FF] hover:shadow-md transition-all duration-200"
+              >
+                <Workflow className="w-4 h-4" />
+                配置流程
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="p-6 space-y-6">
+      <div className="max-w-[1800px] mx-auto p-6 space-y-6">
         {/* Error message */}
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center justify-between">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm flex items-center justify-between">
             <span>{error}</span>
             <button
               onClick={() => window.location.reload()}
-              className="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+              className="px-4 py-2 text-xs bg-red-100 hover:bg-red-200 rounded-xl transition-colors font-medium"
             >
               重试
             </button>
           </div>
         )}
 
-        {/* Customer indicator */}
-        {currentCustomer && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span className="text-gray-400">当前客户:</span>
-            <span className="font-medium text-gray-900">{currentCustomer.name}</span>
-            {currentCustomer.industry && (
-              <>
-                <span className="text-gray-300">|</span>
-                <span className="text-gray-500">{currentCustomer.industry}</span>
-              </>
-            )}
-          </div>
-        )}
 
         {/* LTC Process Timeline */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Workflow className="w-4 h-4 text-white" />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
+          <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-white to-gray-50/50">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 bg-gradient-to-br from-[#1677FF] to-[#4096FF] rounded-xl flex items-center justify-center shadow-lg shadow-[#1677FF]/30">
+                <Workflow className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">LTC 销售流程</h2>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">LTC 销售流程</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Lead to Cash 全流程管理</p>
+              </div>
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span>{nodes.length} 个阶段</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl">
+                <Sparkles className="w-4 h-4 text-gray-400" />
+                <span className="text-sm font-medium text-gray-600">{nodes.length} 个阶段</span>
+              </div>
               {currentCustomer && (
-                <span className="text-primary bg-primary/10 px-3 py-1 rounded-full">
-                  {currentCustomer.name}
-                </span>
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-[#1677FF]/10 rounded-xl border border-[#1677FF]/20">
+                  <Target className="w-4 h-4 text-[#1677FF]" />
+                  <span className="text-sm font-semibold text-[#1677FF]">{currentCustomer.name}</span>
+                </div>
               )}
             </div>
           </div>
 
           <div className="p-6">
             {!currentCustomer ? (
-              <div className="flex flex-col items-center justify-center py-16 bg-background rounded-xl">
-                <div className="w-16 h-16 mb-4 bg-gray-200 rounded-full flex items-center justify-center">
-                  <Users className="w-8 h-8 text-gray-400" />
+              <div className="flex flex-col items-center justify-center py-20 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border-2 border-dashed border-gray-200">
+                <div className="w-20 h-20 mb-6 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center border border-gray-200">
+                  <Users className="w-10 h-10 text-gray-300" />
                 </div>
-                <p className="text-gray-600 font-medium mb-1">请选择客户开始</p>
-                <p className="text-sm text-gray-400">从上方下拉菜单选择客户后，可查看和执行相关技能</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">请选择客户开始</h3>
+                <p className="text-sm text-gray-500 text-center max-w-md">从上方下拉菜单选择客户后，可查看专属销售流程并执行相关技能</p>
               </div>
             ) : (
               <LtcProcessTimeline
@@ -383,28 +388,28 @@ export default function HomePage() {
         </div>
 
         {/* Interaction History */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
+          <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-white to-gray-50/50">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl flex items-center justify-center border border-gray-200">
+                <Timer className="w-5 h-5 text-gray-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">历史交互</h2>
+                <h2 className="text-lg font-bold text-gray-900">历史交互</h2>
                 {currentCustomer && (
                   <p className="text-xs text-gray-400 mt-0.5">仅显示 {currentCustomer.name} 的记录</p>
                 )}
               </div>
-              <span className="text-sm text-gray-400">({interactions.length})</span>
+              <span className="inline-flex items-center justify-center w-7 h-7 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg">
+                {interactions.length}
+              </span>
             </div>
             <Link
               to="/interactions"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
+              className="group inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-[#1677FF] bg-[#1677FF]/5 rounded-xl hover:bg-[#1677FF]/10 transition-all duration-200"
             >
               查看全部
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 

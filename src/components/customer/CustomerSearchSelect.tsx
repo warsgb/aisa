@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useCurrentCustomerStore } from '../../stores';
 import type { Customer } from '../../types';
 import { Search, X, ChevronDown, Building2 } from 'lucide-react';
@@ -13,6 +14,7 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
   const { currentCustomer } = useCurrentCustomerStore();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -31,6 +33,20 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    } else {
+      setDropdownPosition(null);
     }
   }, [isOpen]);
 
@@ -98,9 +114,14 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
       </button>
 
       {/* Dropdown */}
-      {isOpen && (
+      {isOpen && dropdownPosition && createPortal(
         <div
-          className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+          className="fixed z-[100] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+          }}
         >
           {/* Search input */}
           <div className="p-3 border-b border-gray-100">
@@ -157,7 +178,8 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
               </ul>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
