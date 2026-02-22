@@ -7,6 +7,8 @@ import { SkillInteraction, InteractionStatus } from '../../entities/interaction.
 import { InteractionMessage, MessageRole } from '../../entities/interaction-message.entity';
 import { TeamMember } from '../../entities/team-member.entity';
 import { Document } from '../../entities/document.entity';
+import { Customer } from '../../entities/customer.entity';
+import { CustomerProfile } from '../../entities/customer-profile.entity';
 
 interface ExecuteSkillOptions {
   skillId: string;
@@ -16,6 +18,8 @@ interface ExecuteSkillOptions {
   parameters?: Record<string, any>;
   message?: string;
   interactionId?: string;
+  endConversation?: boolean; // New flag to signal conversation end
+  referenceDocumentId?: string; // Document to reference for context
   onChunk?: (chunk: string) => void;
   onStart?: (interactionId: string) => void;
   onComplete?: (result: {
@@ -42,6 +46,10 @@ export class SkillExecutorService {
     private teamMemberRepository: Repository<TeamMember>,
     @InjectRepository(Document)
     private documentRepository: Repository<Document>,
+    @InjectRepository(Customer)
+    private customerRepository: Repository<Customer>,
+    @InjectRepository(CustomerProfile)
+    private customerProfileRepository: Repository<CustomerProfile>,
     private aiService: AIService,
   ) {}
 
@@ -54,6 +62,8 @@ export class SkillExecutorService {
       parameters = {},
       message,
       interactionId: actionId,
+      endConversation = false,
+      referenceDocumentId,
       onChunk,
       onStart,
       onComplete,
@@ -137,6 +147,63 @@ export class SkillExecutorService {
           .execute();
       }
 
+      // Load customer and profile context
+      let customerContext = '';
+      if (customerId) {
+        console.log('📋 [Skill Executor] Loading customer context for:', customerId);
+        const customer = await this.customerRepository.findOne({
+          where: { id: customerId },
+        });
+
+        if (customer) {
+          customerContext = `\n\n[客户信息]\n客户名称: ${customer.name}\n`;
+          console.log('✅ [Skill Executor] Found customer:', customer.name);
+
+          // Load customer profile
+          const profile = await this.customerProfileRepository.findOne({
+            where: { customer_id: customerId },
+          });
+
+          if (profile) {
+            console.log('✅ [Skill Executor] Found customer profile');
+            if (customer.industry) {
+              customerContext += `行业: ${customer.industry}\n`;
+            }
+            if (profile.background_info) {
+              customerContext += `\n背景资料:\n${profile.background_info}\n`;
+            }
+            if (profile.decision_chain) {
+              customerContext += `\n决策链:\n${profile.decision_chain}\n`;
+            }
+            if (profile.history_notes) {
+              customerContext += `\n历史笔记:\n${profile.history_notes}\n`;
+            }
+          } else {
+            console.log('⚠️ [Skill Executor] No customer profile found');
+          }
+        } else {
+          console.log('⚠️ [Skill Executor] Customer not found');
+        }
+      } else {
+        console.log('ℹ️ [Skill Executor] No customerId provided');
+      }
+
+      // Load reference document
+      let documentContext = '';
+      if (referenceDocumentId) {
+        console.log('📄 [Skill Executor] Loading reference document:', referenceDocumentId);
+        const document = await this.documentRepository.findOne({
+          where: { id: referenceDocumentId },
+        });
+
+        if (document) {
+          console.log('✅ [Skill Executor] Found reference document:', document.title);
+          documentContext = `\n\n[参考文档]\n标题: ${document.title}\n内容:\n${document.content}\n`;
+        } else {
+          console.log('⚠️ [Skill Executor] Reference document not found');
+        }
+      }
+
       // Prepare AI messages
       const aiMessages: Message[] = [];
 
@@ -166,12 +233,28 @@ export class SkillExecutorService {
         });
       }
 
+      // Add conversation end signal if ending
+      if (endConversation && message === undefined) {
+        aiMessages.push({
+          role: 'user',
+          content: '请对我们的对话做一个总结，并给出最终结论或建议。',
+        });
+      }
+
       // Add parameters context
       if (Object.keys(parameters).length > 0) {
         const paramContext = `\n\n[Parameters]\n${JSON.stringify(parameters, null, 2)}`;
         aiMessages.push({
           role: 'user',
           content: `Use these parameters for context:${paramContext}`,
+        });
+      }
+
+      // Add customer and document context
+      if (customerContext || documentContext) {
+        aiMessages.push({
+          role: 'user',
+          content: `${customerContext}${documentContext}\n\n请基于以上上下文信息回答问题。`,
         });
       }
 

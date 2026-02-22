@@ -71,6 +71,8 @@ class WebSocketService {
       parameters?: Record<string, any>;
       message?: string;
       interactionId?: string;
+      endConversation?: boolean;
+      referenceDocumentId?: string;
     },
     handlers: EventHandlers
   ) {

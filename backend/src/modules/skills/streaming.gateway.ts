@@ -19,6 +19,8 @@ interface ExecuteSkillDto {
   parameters?: Record<string, any>;
   message?: string;
   interactionId?: string;
+  endConversation?: boolean;
+  referenceDocumentId?: string;
 }
 
 @WebSocketGateway({
@@ -102,6 +104,8 @@ export class StreamingGateway implements OnGatewayConnection, OnGatewayDisconnec
         parameters: data.parameters || {},
         message: data.message,
         interactionId: data.interactionId,
+        endConversation: data.endConversation,
+        referenceDocumentId: data.referenceDocumentId,
         onChunk: (chunk: string) => {
           client.emit('response:chunk', { chunk });
         },
