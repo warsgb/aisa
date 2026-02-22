@@ -149,8 +149,11 @@ export class AuthService {
         throw new UnauthorizedException('Invalid token');
       }
 
+      // Use team_id from token if available
       const teamMember = await this.teamMemberRepository.findOne({
-        where: { user_id: user.id },
+        where: payload.team_id
+          ? { user_id: user.id, team_id: payload.team_id }
+          : { user_id: user.id },
         relations: ['team'],
       });
 
@@ -186,7 +189,7 @@ export class AuthService {
     return user;
   }
 
-  async getMe(userId: string) {
+  async getMe(userId: string, teamId?: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -194,11 +197,19 @@ export class AuthService {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    // Get user's first team
-    const teamMember = await this.teamMemberRepository.findOne({
-      where: { user_id: user.id },
-      relations: ['team'],
-    });
+    // Get user's team - use teamId from token if provided, otherwise get first team
+    let teamMember;
+    if (teamId) {
+      teamMember = await this.teamMemberRepository.findOne({
+        where: { user_id: user.id, team_id: teamId },
+        relations: ['team'],
+      });
+    } else {
+      teamMember = await this.teamMemberRepository.findOne({
+        where: { user_id: user.id },
+        relations: ['team'],
+      });
+    }
 
     return {
       user: {
@@ -216,6 +227,45 @@ export class AuthService {
             role: teamMember.role,
           }
         : null,
+    };
+  }
+
+  async switchTeam(userId: string, teamId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+    if (!user || !user.is_active) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    // Verify user is a member of the team
+    const teamMember = await this.teamMemberRepository.findOne({
+      where: { user_id: userId, team_id: teamId },
+      relations: ['team'],
+    });
+
+    if (!teamMember) {
+      throw new UnauthorizedException('User is not a member of this team');
+    }
+
+    // Generate new tokens with the selected team
+    const tokens = await this.generateTokens(userId, teamId);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role,
+      },
+      team: {
+        id: teamMember.team.id,
+        name: teamMember.team.name,
+        description: teamMember.team.description,
+        logo_url: teamMember.team.logo_url,
+        role: teamMember.role,
+      },
+      ...tokens,
     };
   }
 

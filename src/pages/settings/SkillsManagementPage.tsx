@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
 import type { Skill } from '../../types';
 import MDEditor from '@uiw/react-md-editor';
+import { RoleSkillConfigPanel } from '../../components/skill';
 
 interface SkillFormData {
   name: string;
@@ -84,6 +85,7 @@ const SKILL_TEMPLATES: SkillTemplate[] = [
 
 export default function SkillsManagementPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'skills' | 'roles'>('skills');
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -427,6 +429,69 @@ export default function SkillsManagementPage() {
           <h1 className="text-2xl font-bold text-gray-900">技能管理</h1>
           <p className="text-sm text-gray-500 mt-1">管理系统技能，查看详情和编辑配置</p>
         </div>
+        {activeTab === 'skills' && (
+        <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.zip"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            📥 导入技能
+          </button>
+          {isSystemAdmin && (
+            <button
+              onClick={handleCreate}
+              className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] transition-colors"
+            >
+              ➕ 新建技能
+            </button>
+          )}
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+          >
+            {isSyncing ? '🔄 同步中...' : '🔄 同步'}
+          </button>
+        </div>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl border border-gray-200 p-1 inline-flex">
+        <button
+          onClick={() => setActiveTab('skills')}
+          className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'skills'
+              ? 'bg-[#1677FF] text-white'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          技能列表
+        </button>
+        <button
+          onClick={() => setActiveTab('roles')}
+          className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'roles'
+              ? 'bg-[#1677FF] text-white'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          角色技能配置
+        </button>
+      </div>
+
+      {/* Skills List Tab */}
+      {activeTab === 'skills' && (
+        <>
+      {/* Filters */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
         <div className="flex gap-2">
           <input
             ref={fileInputRef}
@@ -629,6 +694,13 @@ export default function SkillsManagementPage() {
             </div>
           ))}
         </div>
+      )}
+        </>
+      )}
+
+      {/* Role Config Tab */}
+      {activeTab === 'roles' && (
+        <RoleSkillConfigPanel skills={skills} />
       )}
 
       {/* View Modal */}

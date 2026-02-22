@@ -37,7 +37,7 @@ import * as path from 'path';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') === 'development',
+        synchronize: false, // Disable auto-sync after manual migration
         logging: configService.get('NODE_ENV') === 'development',
       }),
     }),

@@ -12,6 +12,7 @@ import DocumentsPage from './pages/documents/DocumentsPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import SkillsManagementPage from './pages/settings/SkillsManagementPage';
 import SystemPage from './pages/system/SystemPage';
+import SystemConfigPage from './pages/system/SystemConfigPage';
 import LtcConfigPage from './pages/ltc-config/LtcConfigPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <Layout>{children}</Layout>;
+}
+
+function SystemAdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== 'SYSTEM_ADMIN') {
+    return <Navigate to="/" replace />;
   }
 
   return <Layout>{children}</Layout>;
@@ -132,6 +155,14 @@ function App() {
               <ProtectedRoute>
                 <SystemPage />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/system-config"
+            element={
+              <SystemAdminRoute>
+                <SystemConfigPage />
+              </SystemAdminRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

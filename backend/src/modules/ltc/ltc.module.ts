@@ -9,6 +9,9 @@ import { TeamMemberPreference } from '../../entities/team-member-preference.enti
 import { TeamMember } from '../../entities/team-member.entity';
 import { Customer } from '../../entities/customer.entity';
 import { Skill } from '../../entities/skill.entity';
+import { SystemLtcNode } from '../../entities/system-ltc-node.entity';
+import { SystemRoleSkillConfig } from '../../entities/system-role-skill-config.entity';
+import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { Skill } from '../../entities/skill.entity';
       TeamMember,
       Customer,
       Skill,
+      SystemLtcNode,
+      SystemRoleSkillConfig,
+      TeamRoleSkillConfig,
     ]),
   ],
   controllers: [LtcController],

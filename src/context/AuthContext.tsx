@@ -11,6 +11,7 @@ interface AuthContextType {
   register: (data: RegisterDto) => Promise<void>;
   logout: () => void;
   setTeam: (team: Team | null) => void;
+  setCurrentTeam: (team: Team) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -97,8 +98,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTeam(null);
   };
 
+  const setCurrentTeam = async (newTeam: Team) => {
+    // Update team in auth context
+    setTeam(newTeam);
+
+    // Update token with new team_id
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      try {
+        // Refresh token with new team_id
+        const response = await apiService.login({ email: user!.email, password: '' });
+        if (response.team && response.team.id === newTeam.id) {
+          // Successfully got token for new team
+          localStorage.setItem('access_token', response.access_token);
+          localStorage.setItem('refresh_token', response.refresh_token);
+        }
+      } catch (error) {
+        console.error('Failed to refresh token for new team:', error);
+      }
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, team, isLoading, login, register, logout, setTeam }}>
+    <AuthContext.Provider value={{ user, team, isLoading, login, register, logout, setTeam, setCurrentTeam }}>
       {children}
     </AuthContext.Provider>
   );

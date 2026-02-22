@@ -5,15 +5,24 @@ import type { SkillFilterType, IronTriangleRole } from '../types';
 interface SkillFilterState {
   // State
   filterType: SkillFilterType;
+  roleFilter: IronTriangleRole | 'ALL';
   favoriteSkillIds: string[];
   isLoading: boolean;
 
+  // Team role skill configurations - team_role_skill_configs[role] = skill_ids[]
+  teamRoleSkillConfigs: Partial<Record<IronTriangleRole, string[]>>;
+
   // Actions
   setFilterType: (filterType: SkillFilterType) => void;
+  setRoleFilter: (role: IronTriangleRole | 'ALL') => void;
   toggleFavoriteSkill: (skillId: string) => void;
   setFavoriteSkills: (skillIds: string[]) => void;
   isFavoriteSkill: (skillId: string) => boolean;
   setLoading: (loading: boolean) => void;
+
+  // Team role skill configuration actions
+  setTeamRoleSkillConfigs: (configs: Partial<Record<IronTriangleRole, string[]>>) => void;
+  getRoleDefaultSkills: (role: IronTriangleRole) => string[];
 }
 
 export const useSkillFilterStore = create<SkillFilterState>()(
@@ -21,13 +30,20 @@ export const useSkillFilterStore = create<SkillFilterState>()(
     (set, get) => ({
       // Initial state
       filterType: 'ALL',
+      roleFilter: 'ALL',
       favoriteSkillIds: [],
       isLoading: false,
+      teamRoleSkillConfigs: {},
 
       // Actions
       setFilterType: (filterType) =>
         set({
           filterType,
+        }),
+
+      setRoleFilter: (roleFilter) =>
+        set({
+          roleFilter,
         }),
 
       toggleFavoriteSkill: (skillId) =>
@@ -53,12 +69,24 @@ export const useSkillFilterStore = create<SkillFilterState>()(
         set({
           isLoading: loading,
         }),
+
+      // Team role skill configuration actions
+      setTeamRoleSkillConfigs: (configs) =>
+        set({
+          teamRoleSkillConfigs: configs,
+        }),
+
+      getRoleDefaultSkills: (role) => {
+        return get().teamRoleSkillConfigs[role] || [];
+      },
     }),
     {
       name: 'skill-filter-storage',
       partialize: (state) => ({
         filterType: state.filterType,
+        roleFilter: state.roleFilter,
         favoriteSkillIds: state.favoriteSkillIds,
+        // Don't persist teamRoleSkillConfigs as they will be loaded from API
       }),
     }
   )

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../../services/api.service';
 import { useAuth } from '../../context/AuthContext';
@@ -9,7 +9,7 @@ import {
 } from '../../stores';
 import type { Customer, Skill, SkillInteraction, LtcNode } from '../../types';
 
-import { CustomerSearchSelect } from '../../components/customer/CustomerSearchSelect';
+import { CustomerSearchSelect, RoleFilterTab } from '../../components/customer';
 import { LtcProcessTimeline } from '../../components/ltc/LtcProcessTimeline';
 import { InteractionTimeline } from '../../components/interaction/InteractionTimeline';
 import { SkillExecuteModal } from '../../components/skill/SkillExecuteModal';
@@ -29,7 +29,7 @@ export default function HomePage() {
     setCustomerProfile,
   } = useCurrentCustomerStore();
   const { nodes, bindings, setNodes, setBindings } = useLtcConfigStore();
-  const { filterType, setFilterType, isFavoriteSkill } = useSkillFilterStore();
+  const { filterType, setFilterType, roleFilter, setRoleFilter, isFavoriteSkill, setTeamRoleSkillConfigs } = useSkillFilterStore();
 
   // Local state
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -44,20 +44,58 @@ export default function HomePage() {
   const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
 
   // Process bindings to group skills by node, with filter applied
-  const processedBindings = nodes.reduce<Record<string, Skill[]>>((acc, node) => {
-    const nodeBindings = bindings[node.id] || [];
-    let skills = nodeBindings
-      .map((b) => b.skill)
-      .filter((s): s is Skill => !!s);
+  const processedBindings = useMemo(() => {
+    return nodes.reduce<Record<string, Skill[]>>((acc, node) => {
+      const nodeBindings = bindings[node.id] || [];
+      let skills = nodeBindings
+        .map((b) => b.skill)
+        .filter((s): s is Skill => !!s);
 
-    // Apply filter: if FAVORITE, only show favorite skills
-    if (filterType === 'FAVORITE') {
-      skills = skills.filter((skill) => isFavoriteSkill(skill.id));
-    }
+      // Apply role filter: if a specific role is selected, only show that role's default skills
+      if (roleFilter !== 'ALL') {
+        const roleSkillIds = useSkillFilterStore.getState().getRoleDefaultSkills(roleFilter);
+        skills = skills.filter((skill) => roleSkillIds.includes(skill.id));
+      }
+      // Apply favorite filter: if FAVORITE, only show favorite skills
+      else if (filterType === 'FAVORITE') {
+        skills = skills.filter((skill) => isFavoriteSkill(skill.id));
+      }
 
-    acc[node.id] = skills;
-    return acc;
-  }, {});
+      acc[node.id] = skills;
+      return acc;
+    }, {});
+  }, [nodes, bindings, filterType, isFavoriteSkill, roleFilter]);
+
+  // Calculate skill usage counts
+  const skillUsageCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    interactions.forEach((interaction) => {
+      if (interaction.skill_id) {
+        counts[interaction.skill_id] = (counts[interaction.skill_id] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [interactions]);
+
+  // Calculate executed skills for current customer (green button state)
+  const executedSkillIds = useMemo(() => {
+    const executed = new Set<string>();
+    interactions.forEach((interaction) => {
+      // Only count interactions for the current customer and completed status
+      if (interaction.skill_id && interaction.status === 'COMPLETED') {
+        executed.add(interaction.skill_id);
+      }
+    });
+    return executed;
+  }, [interactions]);
+
+  // Create LTC nodes map for timeline
+  const ltcNodesMap = useMemo(() => {
+    return nodes.reduce((acc, node) => {
+      acc[node.id] = node;
+      return acc;
+    }, {} as Record<string, LtcNode>);
+  }, [nodes]);
 
   // Load initial data (only load customers and nodes, interactions will be loaded separately)
   useEffect(() => {
@@ -68,10 +106,11 @@ export default function HomePage() {
       setError(null);
 
       try {
-        // Load customers, LTC nodes (interactions loaded separately)
-        const [customersData, nodesData] = await Promise.all([
+        // Load customers, LTC nodes, and role skill configs (interactions loaded separately)
+        const [customersData, nodesData, roleConfigsData] = await Promise.all([
           apiService.getCustomers(team.id),
           apiService.getLtcNodes(team.id).catch(() => [] as LtcNode[]),
+          apiService.getTeamRoleSkillConfigs(team.id).catch(() => [] as any[]),
         ]);
 
         setCustomers(customersData);
@@ -97,6 +136,13 @@ export default function HomePage() {
           setBindings(nodeId, nodeBindings ?? []);
         });
 
+        // Store role skill configs for filtering
+        const configsMap: Partial<Record<'AR' | 'SR' | 'FR', string[]>> = {};
+        roleConfigsData.forEach((c) => {
+          configsMap[c.role] = c.default_skill_ids;
+        });
+        setTeamRoleSkillConfigs(configsMap);
+
         hasInitialized.current = true;
       } catch (err) {
         setError(err instanceof Error ? err.message : '加载数据失败');
@@ -106,7 +152,7 @@ export default function HomePage() {
     };
 
     loadData();
-  }, [team?.id, setNodes, setBindings]);
+  }, [team?.id, setNodes, setBindings, setTeamRoleSkillConfigs]);
 
   // Filter interactions when customer changes or after initial load completes
   useEffect(() => {
@@ -208,7 +254,7 @@ export default function HomePage() {
           <p className="text-gray-500 mb-4">请先加入或创建一个团队</p>
           <Link
             to="/settings"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Settings className="w-4 h-4" />
             前往设置
@@ -219,15 +265,20 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
+    <div className="min-h-screen bg-background">
       {/* Top navigation bar */}
       <div className="bg-white border-b border-gray-100 px-6 py-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Left: Customer selector */}
-          <div className="flex-1 max-w-md">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          {/* Left: Customer selector + Role filter */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
             <CustomerSearchSelect
               customers={customers}
               onSelect={handleCustomerSelect}
+              disabled={isLoading}
+            />
+            <RoleFilterTab
+              activeRole={roleFilter}
+              onRoleChange={setRoleFilter}
               disabled={isLoading}
             />
           </div>
@@ -238,21 +289,21 @@ export default function HomePage() {
             <button
               onClick={() => setFilterType(filterType === 'FAVORITE' ? 'ALL' : 'FAVORITE')}
               className={`
-                inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
+                inline-flex items-center justify-center w-10 h-10 text-sm font-medium rounded-full transition-all duration-200
                 ${filterType === 'FAVORITE'
-                  ? 'bg-[#1677FF] text-white shadow-md shadow-[#1677FF]/25'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-[#1677FF] hover:text-[#1677FF]'
+                  ? 'bg-primary text-white shadow-md shadow-primary/25'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
                 }
               `}
+              title={filterType === 'FAVORITE' ? '显示全部技能' : '显示我的常用技能'}
             >
               <Star className={`w-4 h-4 ${filterType === 'FAVORITE' ? 'fill-current' : ''}`} />
-              {filterType === 'FAVORITE' ? '我的常用' : '全部技能'}
             </button>
 
             {/* LTC Config button */}
             <Link
               to="/ltc-config"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:border-[#1677FF] hover:text-[#1677FF] transition-all duration-200"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:border-primary hover:text-primary transition-all duration-200"
             >
               <Workflow className="w-4 h-4" />
               配置流程
@@ -294,7 +345,7 @@ export default function HomePage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#1677FF] rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Workflow className="w-4 h-4 text-white" />
               </div>
               <h2 className="text-lg font-semibold text-gray-900">LTC 销售流程</h2>
@@ -302,7 +353,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span>{nodes.length} 个阶段</span>
               {currentCustomer && (
-                <span className="text-[#1677FF] bg-[#1677FF]/10 px-3 py-1 rounded-full">
+                <span className="text-primary bg-primary/10 px-3 py-1 rounded-full">
                   {currentCustomer.name}
                 </span>
               )}
@@ -311,7 +362,7 @@ export default function HomePage() {
 
           <div className="p-6">
             {!currentCustomer ? (
-              <div className="flex flex-col items-center justify-center py-16 bg-[#F5F7FA] rounded-xl">
+              <div className="flex flex-col items-center justify-center py-16 bg-background rounded-xl">
                 <div className="w-16 h-16 mb-4 bg-gray-200 rounded-full flex items-center justify-center">
                   <Users className="w-8 h-8 text-gray-400" />
                 </div>
@@ -322,6 +373,8 @@ export default function HomePage() {
               <LtcProcessTimeline
                 nodes={nodes}
                 bindings={processedBindings}
+                skillUsageCounts={skillUsageCounts}
+                executedSkillIds={executedSkillIds}
                 onSkillExecute={handleSkillExecute}
                 isLoading={isLoading}
               />
@@ -348,7 +401,7 @@ export default function HomePage() {
             </div>
             <Link
               to="/interactions"
-              className="inline-flex items-center gap-1 text-sm text-[#1677FF] hover:text-[#4096FF] transition-colors"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
             >
               查看全部
               <ChevronRight className="w-4 h-4" />
@@ -358,6 +411,7 @@ export default function HomePage() {
           <div className="p-6">
             <InteractionTimeline
               interactions={interactions}
+              ltcNodesMap={ltcNodesMap}
               isLoading={isLoading}
               maxItems={5}
             />

@@ -37,6 +37,11 @@ import type {
   UpdateCustomerProfileDto,
   UpdateTeamMemberPreferenceDto,
   HomePageData,
+  TeamRoleSkillConfig,
+  IronTriangleRole,
+  SystemLtcNode,
+  SystemRoleSkillConfig,
+  SyncResult,
 } from '../types';
 
 // Support relative paths for same-origin deployment, fallback to localhost
@@ -178,6 +183,10 @@ class ApiService {
 
   async getMe(): Promise<{ user: User; team: Team | null }> {
     return this.request<{ user: User; team: Team | null }>('/auth/me');
+  }
+
+  async getUserById(userId: string): Promise<{ user: User; teams: Array<{ id: string; name: string; role: string }> }> {
+    return this.request<{ user: User; teams: Array<{ id: string; name: string; role: string }> }>(`/system/users/${userId}`);
   }
 
   // Teams endpoints
@@ -516,6 +525,13 @@ class ApiService {
     return this.request<{ message: string }>(`/system/teams/${id}`, { method: 'DELETE' });
   }
 
+  async changeTeamOwner(teamId: string, dto: { owner_id: string }): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/system/teams/${teamId}/owner`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    });
+  }
+
   async getSystemStats(): Promise<SystemStats> {
     return this.request<SystemStats>('/system/stats');
   }
@@ -558,6 +574,22 @@ class ApiService {
     return this.request<SystemTeam>('/system/teams', {
       method: 'POST',
       body: JSON.stringify(dto),
+    });
+  }
+
+  // Update user teams
+  async updateUserTeams(userId: string, dto: { team_ids: string[] }): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/system/users/${userId}/teams`, {
+      method: 'PUT',
+      body: JSON.stringify(dto),
+    });
+  }
+
+  // Switch current team
+  async switchTeam(teamId: string): Promise<{ access_token: string; refresh_token: string }> {
+    return this.request<{ access_token: string; refresh_token: string }>('/auth/switch-team', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId }),
     });
   }
 
@@ -694,6 +726,123 @@ class ApiService {
   // Home Page Data
   async getHomePageData(teamId: string): Promise<HomePageData> {
     return this.request<HomePageData>(`/teams/${teamId}/home`);
+  }
+
+  // ========== Team Role Skill Configuration API ==========
+
+  // Get all role skill configurations for a team
+  async getTeamRoleSkillConfigs(teamId: string): Promise<TeamRoleSkillConfig[]> {
+    return this.request<TeamRoleSkillConfig[]>(`/teams/${teamId}/role-skill-configs`);
+  }
+
+  // Get a specific role's skill configuration
+  async getTeamRoleSkillConfig(teamId: string, role: IronTriangleRole): Promise<TeamRoleSkillConfig> {
+    return this.request<TeamRoleSkillConfig>(`/teams/${teamId}/role-skill-configs/${role}`);
+  }
+
+  // Update a role's default skill list
+  async updateTeamRoleSkillConfig(
+    teamId: string,
+    role: IronTriangleRole,
+    skillIds: string[]
+  ): Promise<TeamRoleSkillConfig> {
+    return this.request<TeamRoleSkillConfig>(`/teams/${teamId}/role-skill-configs/${role}`, {
+      method: 'PUT',
+      body: JSON.stringify({ skill_ids: skillIds }),
+    });
+  }
+
+  // Get team's default member role
+  async getTeamDefaultRole(teamId: string): Promise<{ default_role: IronTriangleRole | null }> {
+    return this.request<{ default_role: IronTriangleRole | null }>(`/teams/${teamId}/default-role`);
+  }
+
+  // Set team's default member role
+  async setTeamDefaultRole(teamId: string, role: IronTriangleRole): Promise<Team> {
+    return this.request<Team>(`/teams/${teamId}/default-role`, {
+      method: 'PUT',
+      body: JSON.stringify({ default_role: role }),
+    });
+  }
+
+  // ========== System-Level Configuration API (Admin Only) ==========
+
+  // System LTC Nodes
+  async getSystemLtcNodes(): Promise<SystemLtcNode[]> {
+    return this.request<SystemLtcNode[]>('/system/ltc-nodes');
+  }
+
+  async createSystemLtcNode(data: {
+    name: string;
+    description?: string;
+    order?: number;
+    default_skill_ids?: string[];
+  }): Promise<SystemLtcNode> {
+    return this.request<SystemLtcNode>('/system/ltc-nodes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSystemLtcNode(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      order?: number;
+      default_skill_ids?: string[];
+    }
+  ): Promise<SystemLtcNode> {
+    return this.request<SystemLtcNode>(`/system/ltc-nodes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSystemLtcNode(id: string): Promise<void> {
+    return this.request<void>(`/system/ltc-nodes/${id}`, { method: 'DELETE' });
+  }
+
+  async reorderSystemLtcNodes(nodes: Array<{ id: string; order: number }>): Promise<SystemLtcNode[]> {
+    return this.request<SystemLtcNode[]>('/system/ltc-nodes/reorder', {
+      method: 'PUT',
+      body: JSON.stringify(nodes),
+    });
+  }
+
+  // System Role Skill Configs
+  async getSystemRoleSkillConfigs(): Promise<SystemRoleSkillConfig[]> {
+    return this.request<SystemRoleSkillConfig[]>('/system/role-skill-configs');
+  }
+
+  async updateSystemRoleSkillConfig(
+    role: IronTriangleRole,
+    skillIds: string[]
+  ): Promise<SystemRoleSkillConfig> {
+    return this.request<SystemRoleSkillConfig>(`/system/role-skill-configs/${role}`, {
+      method: 'PUT',
+      body: JSON.stringify({ skill_ids: skillIds }),
+    });
+  }
+
+  // Sync Operations
+  async syncSystemToAllTeams(): Promise<SyncResult> {
+    return this.request<SyncResult>('/system/sync-to-all-teams', {
+      method: 'POST',
+    });
+  }
+
+  // Reset Operations (Team Level)
+  async resetTeamLtcNodes(teamId: string): Promise<LtcNode[]> {
+    return this.request<LtcNode[]>(`/teams/${teamId}/ltc-nodes/reset`, {
+      method: 'POST',
+    });
+  }
+
+  async resetTeamRoleSkillConfigs(teamId: string): Promise<TeamRoleSkillConfig[]> {
+    return this.request<TeamRoleSkillConfig[]>(`/teams/${teamId}/role-skill-configs/reset`, {
+      method: 'POST',
+    });
   }
 }
 

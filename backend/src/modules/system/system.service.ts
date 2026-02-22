@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../../entities/user.entity';
 import { Team } from '../../entities/team.entity';
@@ -10,6 +10,32 @@ import { Skill } from '../../entities/skill.entity';
 import { SkillInteraction } from '../../entities/interaction.entity';
 import { Document } from '../../entities/document.entity';
 import { TeamApplication } from '../../entities/team-application.entity';
+import { SystemLtcNode } from '../../entities/system-ltc-node.entity';
+import { SystemRoleSkillConfig } from '../../entities/system-role-skill-config.entity';
+import { LtcNode } from '../../entities/ltc-node.entity';
+import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
+import { NodeSkillBinding } from '../../entities/node-skill-binding.entity';
+import { IronTriangleRole } from '../../entities/team-member-preference.entity';
+
+export interface TeamSyncChanges {
+  hasChanges: boolean;
+  changes: {
+    ltcNodes: { added: number; updated: number; skipped: number };
+    roleConfigs: { updated: number; skipped: number };
+  };
+}
+
+export interface SyncResult {
+  success: number;
+  skipped: number;
+  errors: number;
+  details: Array<{
+    teamId: string;
+    teamName?: string;
+    changes?: TeamSyncChanges;
+    error?: string;
+  }>;
+}
 
 export interface SystemStats {
   totalUsers: number;
@@ -37,6 +63,16 @@ export class SystemService {
     private documentRepository: Repository<Document>,
     @InjectRepository(TeamApplication)
     private teamApplicationRepository: Repository<TeamApplication>,
+    @InjectRepository(SystemLtcNode)
+    private systemLtcNodeRepository: Repository<SystemLtcNode>,
+    @InjectRepository(SystemRoleSkillConfig)
+    private systemRoleSkillConfigRepository: Repository<SystemRoleSkillConfig>,
+    @InjectRepository(LtcNode)
+    private ltcNodeRepository: Repository<LtcNode>,
+    @InjectRepository(TeamRoleSkillConfig)
+    private teamRoleSkillConfigRepository: Repository<TeamRoleSkillConfig>,
+    @InjectRepository(NodeSkillBinding)
+    private nodeSkillBindingRepository: Repository<NodeSkillBinding>,
   ) {}
 
   async getAllUsers(page: number = 1, pageSize: number = 20, search?: string) {
@@ -248,6 +284,61 @@ export class SystemService {
     };
   }
 
+  async changeTeamOwner(teamId: string, newOwnerId: string) {
+    const team = await this.teamRepository.findOne({
+      where: { id: teamId },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    const newOwner = await this.userRepository.findOne({
+      where: { id: newOwnerId },
+    });
+
+    if (!newOwner) {
+      throw new NotFoundException('New owner user not found');
+    }
+
+    // Find current owner
+    const currentOwner = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, role: TeamRole.OWNER },
+    });
+
+    if (!currentOwner) {
+      throw new NotFoundException('Current owner not found');
+    }
+
+    // Check if new owner is already a member
+    const existingMember = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: newOwnerId },
+    });
+
+    if (existingMember) {
+      // If already a member, remove them first
+      await this.teamMemberRepository.delete(existingMember.id);
+    }
+
+    // Demote current owner to admin
+    await this.teamMemberRepository.update(currentOwner.id, {
+      role: TeamRole.ADMIN,
+    });
+
+    // Create new owner
+    const newOwnerMember = this.teamMemberRepository.create({
+      team_id: teamId,
+      user_id: newOwnerId,
+      role: TeamRole.OWNER,
+    });
+
+    await this.teamMemberRepository.save(newOwnerMember);
+
+    return {
+      message: 'Team owner changed successfully',
+    };
+  }
+
   async getSystemStats(): Promise<SystemStats> {
     const totalUsers = await this.userRepository.count();
     const activeUsers = await this.userRepository.count({
@@ -404,6 +495,7 @@ export class SystemService {
     password: string;
     role?: string;
     is_active?: boolean;
+    team_ids?: string[];
   }) {
     // Check if email already exists
     const existingUser = await this.userRepository.findOne({
@@ -428,6 +520,21 @@ export class SystemService {
 
     await this.userRepository.save(user);
 
+    // Add user to teams if team_ids provided
+    if (data.team_ids && data.team_ids.length > 0) {
+      for (const teamId of data.team_ids) {
+        const team = await this.teamRepository.findOne({ where: { id: teamId } });
+        if (team) {
+          const teamMember = this.teamMemberRepository.create({
+            team_id: teamId,
+            user_id: user.id,
+            role: TeamRole.MEMBER,
+          });
+          await this.teamMemberRepository.save(teamMember);
+        }
+      }
+    }
+
     return {
       id: user.id,
       email: user.email,
@@ -435,6 +542,43 @@ export class SystemService {
       role: user.role,
       is_active: user.is_active,
       created_at: user.created_at,
+    };
+  }
+
+  // Update user teams
+  async updateUserTeams(userId: string, teamIds: string[]) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Get current team memberships
+    const currentMemberships = await this.teamMemberRepository.find({
+      where: { user_id: userId },
+    });
+
+    // Remove all current memberships
+    await this.teamMemberRepository.delete({ user_id: userId });
+
+    // Add new memberships
+    for (const teamId of teamIds) {
+      const team = await this.teamRepository.findOne({ where: { id: teamId } });
+      if (team) {
+        // Check if user was already a member and had OWNER role
+        const existingMembership = currentMemberships.find(m => m.team_id === teamId);
+        const role = existingMembership?.role === TeamRole.OWNER ? TeamRole.OWNER : TeamRole.MEMBER;
+
+        const teamMember = this.teamMemberRepository.create({
+          team_id: teamId,
+          user_id: userId,
+          role,
+        });
+        await this.teamMemberRepository.save(teamMember);
+      }
+    }
+
+    return {
+      message: 'User teams updated successfully',
     };
   }
 
@@ -643,6 +787,266 @@ export class SystemService {
         id: team.id,
         name: team.name,
       } : null,
+    };
+  }
+
+  // ========== System-Level Configuration Management ==========
+
+  // System LTC Node Management
+  async getSystemLtcNodes() {
+    return this.systemLtcNodeRepository.find({
+      order: { order: 'ASC' },
+    });
+  }
+
+  async createSystemLtcNode(data: {
+    name: string;
+    description?: string;
+    order?: number;
+    default_skill_ids?: string[];
+  }) {
+    // Get max order if not provided
+    if (data.order === undefined) {
+      const maxOrder = await this.systemLtcNodeRepository
+        .createQueryBuilder('node')
+        .select('MAX(node.order)', 'max')
+        .getRawOne();
+      data.order = maxOrder?.max ? parseInt(maxOrder.max) + 1 : 0;
+    }
+
+    const node = this.systemLtcNodeRepository.create({
+      name: data.name,
+      description: data.description,
+      order: data.order,
+      default_skill_ids: data.default_skill_ids || [],
+    });
+
+    return this.systemLtcNodeRepository.save(node);
+  }
+
+  async updateSystemLtcNode(id: string, data: {
+    name?: string;
+    description?: string;
+    order?: number;
+    default_skill_ids?: string[];
+  }) {
+    const node = await this.systemLtcNodeRepository.findOne({
+      where: { id },
+    });
+
+    if (!node) {
+      throw new NotFoundException('System LTC node not found');
+    }
+
+    Object.assign(node, data);
+    return this.systemLtcNodeRepository.save(node);
+  }
+
+  async deleteSystemLtcNode(id: string) {
+    const node = await this.systemLtcNodeRepository.findOne({
+      where: { id },
+    });
+
+    if (!node) {
+      throw new NotFoundException('System LTC node not found');
+    }
+
+    await this.systemLtcNodeRepository.delete(id);
+    return { message: 'System LTC node deleted successfully' };
+  }
+
+  async reorderSystemLtcNodes(nodes: Array<{ id: string; order: number }>) {
+    for (const node of nodes) {
+      await this.systemLtcNodeRepository.update(node.id, {
+        order: node.order,
+      });
+    }
+
+    return this.getSystemLtcNodes();
+  }
+
+  // System Role Skill Configuration Management
+  async getSystemRoleSkillConfigs() {
+    return this.systemRoleSkillConfigRepository.find();
+  }
+
+  async updateSystemRoleSkillConfig(role: IronTriangleRole, skillIds: string[]) {
+    let config = await this.systemRoleSkillConfigRepository.findOne({
+      where: { role },
+    });
+
+    if (!config) {
+      config = this.systemRoleSkillConfigRepository.create({
+        role,
+        default_skill_ids: skillIds,
+      });
+    } else {
+      config.default_skill_ids = skillIds;
+    }
+
+    return this.systemRoleSkillConfigRepository.save(config);
+  }
+
+  // ========== Sync Logic ==========
+
+  async syncToAllTeams(): Promise<SyncResult> {
+    const teams = await this.teamRepository.find();
+    const results: SyncResult = {
+      success: 0,
+      skipped: 0,
+      errors: 0,
+      details: [],
+    };
+
+    for (const team of teams) {
+      try {
+        const teamChanges = await this.syncToTeam(team.id);
+        if (teamChanges.hasChanges) {
+          results.success++;
+          results.details.push({
+            teamId: team.id,
+            teamName: team.name,
+            changes: teamChanges,
+          });
+        } else {
+          results.skipped++;
+        }
+      } catch (error) {
+        results.errors++;
+        results.details.push({
+          teamId: team.id,
+          teamName: team.name,
+          error: error.message,
+        });
+      }
+    }
+
+    return results;
+  }
+
+  async syncToTeam(teamId: string): Promise<TeamSyncChanges> {
+    const changes = {
+      ltcNodes: { added: 0, updated: 0, skipped: 0 },
+      roleConfigs: { updated: 0, skipped: 0 },
+    };
+
+    // 1. Sync LTC nodes (smart merge)
+    const systemNodes = await this.systemLtcNodeRepository.find({
+      order: { order: 'ASC' },
+    });
+    const teamNodes = await this.ltcNodeRepository.find({
+      where: { team_id: teamId },
+    });
+
+    // Create mapping of existing team nodes by system_node_id
+    const teamNodeMap = new Map<string, LtcNode>();
+    teamNodes.forEach(node => {
+      if (node.system_node_id) {
+        teamNodeMap.set(node.system_node_id, node);
+      }
+    });
+
+    for (const systemNode of systemNodes) {
+      const existingNode = teamNodeMap.get(systemNode.id);
+
+      if (!existingNode) {
+        // Add new system node to team
+        await this.ltcNodeRepository.save({
+          team_id: teamId,
+          name: systemNode.name,
+          description: systemNode.description,
+          order: systemNode.order,
+          source: 'SYSTEM',
+          system_node_id: systemNode.id,
+        });
+        changes.ltcNodes.added++;
+      } else if (existingNode.source === 'SYSTEM') {
+        // Update existing system node if content changed
+        if (
+          existingNode.name !== systemNode.name ||
+          existingNode.description !== systemNode.description ||
+          existingNode.order !== systemNode.order
+        ) {
+          await this.ltcNodeRepository.update(existingNode.id, {
+            name: systemNode.name,
+            description: systemNode.description,
+            order: systemNode.order,
+          });
+          changes.ltcNodes.updated++;
+        } else {
+          changes.ltcNodes.skipped++;
+        }
+      } else {
+        // Skip custom nodes
+        changes.ltcNodes.skipped++;
+      }
+    }
+
+    // 2. Sync role skill configurations
+    const systemConfigs = await this.systemRoleSkillConfigRepository.find();
+
+    for (const systemConfig of systemConfigs) {
+      const teamConfig = await this.teamRoleSkillConfigRepository.findOne({
+        where: { team_id: teamId, role: systemConfig.role },
+      });
+
+      if (!teamConfig || teamConfig.source === 'SYSTEM') {
+        // Use upsert to handle both insert and update cases
+        if (teamConfig) {
+          // Update existing system config
+          await this.teamRoleSkillConfigRepository.update(teamConfig.id, {
+            default_skill_ids: systemConfig.default_skill_ids,
+            source: 'SYSTEM',
+          });
+        } else {
+          // Create new system config
+          await this.teamRoleSkillConfigRepository.save({
+            team_id: teamId,
+            role: systemConfig.role,
+            default_skill_ids: systemConfig.default_skill_ids,
+            source: 'SYSTEM',
+          });
+        }
+        changes.roleConfigs.updated++;
+      } else {
+        changes.roleConfigs.skipped++;
+      }
+    }
+
+    // 3. Sync node-skill bindings for system nodes
+    const teamNodesAfterSync = await this.ltcNodeRepository.find({
+      where: { team_id: teamId },
+    });
+
+    for (const systemNode of systemNodes) {
+      const teamNode = teamNodesAfterSync.find(
+        (tn) => tn.system_node_id === systemNode.id && tn.source === 'SYSTEM'
+      );
+
+      if (teamNode) {
+        // Delete old bindings
+        await this.nodeSkillBindingRepository.delete({
+          node_id: teamNode.id,
+        });
+
+        // Create new bindings from system config
+        let order = 1;
+        for (const skillId of systemNode.default_skill_ids) {
+          await this.nodeSkillBindingRepository.save({
+            node_id: teamNode.id,
+            skill_id: skillId,
+            order: order++,
+          });
+        }
+      }
+    }
+
+    return {
+      hasChanges:
+        changes.ltcNodes.added > 0 ||
+        changes.ltcNodes.updated > 0 ||
+        changes.roleConfigs.updated > 0,
+      changes,
     };
   }
 }

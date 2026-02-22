@@ -4,6 +4,7 @@ import {
   Put,
   Post,
   Delete,
+  Patch,
   Body,
   Param,
   Query,
@@ -21,6 +22,9 @@ import { CreateSystemUserDto } from './dto/create-system-user.dto';
 import { CreateSystemTeamDto } from './dto/create-system-team.dto';
 import { SubmitTeamApplicationDto } from './dto/submit-team-application.dto';
 import { ReviewTeamApplicationDto } from './dto/review-team-application.dto';
+import { CreateSystemLtcNodeDto } from './dto/create-system-ltc-node.dto';
+import { UpdateSystemLtcNodeDto } from './dto/update-system-ltc-node.dto';
+import { UpdateSystemRoleSkillConfigDto } from './dto/update-system-role-skill-config.dto';
 
 @Controller('system')
 @UseGuards(JwtAuthGuard, SystemAdminGuard)
@@ -63,6 +67,14 @@ export class SystemController {
     return this.systemService.resetUserPassword(id, dto.new_password);
   }
 
+  @Put('users/:id/teams')
+  async updateUserTeams(
+    @Param('id') userId: string,
+    @Body() dto: { team_ids: string[] },
+  ) {
+    return this.systemService.updateUserTeams(userId, dto.team_ids);
+  }
+
   // Team Management Endpoints
   @Get('teams')
   async getAllTeams(
@@ -86,6 +98,14 @@ export class SystemController {
   @Post('teams')
   async createTeam(@Body() dto: CreateSystemTeamDto) {
     return this.systemService.createTeam(dto);
+  }
+
+  @Patch('teams/:id/owner')
+  async changeTeamOwner(
+    @Param('id') teamId: string,
+    @Body() dto: { owner_id: string },
+  ) {
+    return this.systemService.changeTeamOwner(teamId, dto.owner_id);
   }
 
   // Team Application Endpoints
@@ -166,5 +186,61 @@ export class SystemController {
     @Query('search') search?: string,
   ) {
     return this.systemService.getAllDocuments(page, pageSize, search);
+  }
+
+  // ========== System Configuration Management ==========
+
+  // System LTC Node Management
+  @Get('ltc-nodes')
+  async getSystemLtcNodes() {
+    return this.systemService.getSystemLtcNodes();
+  }
+
+  @Post('ltc-nodes')
+  async createSystemLtcNode(@Body() dto: CreateSystemLtcNodeDto) {
+    return this.systemService.createSystemLtcNode(dto);
+  }
+
+  @Put('ltc-nodes/:id')
+  async updateSystemLtcNode(
+    @Param('id') id: string,
+    @Body() dto: UpdateSystemLtcNodeDto,
+  ) {
+    return this.systemService.updateSystemLtcNode(id, dto);
+  }
+
+  @Delete('ltc-nodes/:id')
+  async deleteSystemLtcNode(@Param('id') id: string) {
+    return this.systemService.deleteSystemLtcNode(id);
+  }
+
+  @Put('ltc-nodes/reorder')
+  async reorderSystemLtcNodes(
+    @Body() nodes: Array<{ id: string; order: number }>,
+  ) {
+    return this.systemService.reorderSystemLtcNodes(nodes);
+  }
+
+  // System Role Skill Configuration Management
+  @Get('role-skill-configs')
+  async getSystemRoleSkillConfigs() {
+    return this.systemService.getSystemRoleSkillConfigs();
+  }
+
+  @Put('role-skill-configs/:role')
+  async updateSystemRoleSkillConfig(
+    @Param('role') role: string,
+    @Body() dto: UpdateSystemRoleSkillConfigDto,
+  ) {
+    return this.systemService.updateSystemRoleSkillConfig(
+      role as any,
+      dto.skill_ids,
+    );
+  }
+
+  // Sync Operations
+  @Post('sync-to-all-teams')
+  async syncToAllTeams() {
+    return this.systemService.syncToAllTeams();
   }
 }

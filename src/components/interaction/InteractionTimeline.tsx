@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { SkillInteraction } from '../../types';
+import type { SkillInteraction, LtcNode } from '../../types';
 import { formatDate } from '../../utils';
 import {
   CheckCircle2,
@@ -9,11 +9,13 @@ import {
   Ban,
   Pause,
   FileText,
-  ArrowRight,
+  Workflow,
+  Eye,
 } from 'lucide-react';
 
 interface InteractionTimelineProps {
   interactions: SkillInteraction[];
+  ltcNodesMap?: Record<string, LtcNode>;
   isLoading?: boolean;
   maxItems?: number;
 }
@@ -38,6 +40,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function InteractionTimeline({
   interactions,
+  ltcNodesMap = {},
   isLoading,
   maxItems = 10,
 }: InteractionTimelineProps) {
@@ -46,7 +49,7 @@ export function InteractionTimeline({
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="flex gap-3 p-4 bg-gray-50 rounded-xl animate-pulse">
-            <div className="w-10 h-10 bg-gray-200 rounded-full" />
+            <div className="w-12 h-12 bg-gray-200 rounded-full" />
             <div className="flex-1 space-y-2">
               <div className="h-4 bg-gray-200 rounded w-1/3" />
               <div className="h-3 bg-gray-200 rounded w-2/3" />
@@ -72,32 +75,46 @@ export function InteractionTimeline({
   const displayInteractions = maxItems
     ? interactions.slice(0, maxItems)
     : interactions;
+  const newestId = interactions[0]?.id;
 
   return (
     <div className="relative">
       {/* Timeline line */}
-      <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100" />
+      <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-100" />
 
       <div className="space-y-3">
         {displayInteractions.map((interaction) => {
           const statusConfig = STATUS_CONFIG[interaction.status] || { icon: FileText, color: 'text-gray-600', bg: 'bg-gray-100' };
           const StatusIcon = statusConfig.icon;
+          const isNewest = interaction.id === newestId;
+          const ltcNode = interaction.node_id ? ltcNodesMap[interaction.node_id] : null;
 
           return (
             <Link
               key={interaction.id}
               to={`/interactions/${interaction.id}`}
-              className="relative flex gap-3 p-4 bg-white rounded-xl border border-gray-100 hover:border-[#1677FF]/30 hover:shadow-sm transition-all duration-200 group"
+              className={`
+                relative flex gap-3 p-4 bg-white rounded-xl border transition-all duration-200 group
+                ${isNewest ? 'border-primary/30 bg-primary/5' : 'border-gray-100 hover:border-primary/30 hover:shadow-sm'}
+              `}
             >
               {/* Status icon */}
-              <div className={`relative z-10 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${statusConfig.bg} ${statusConfig.color}`}>
-                <StatusIcon className={`w-5 h-5 ${interaction.status === 'RUNNING' ? 'animate-spin' : ''}`} />
+              <div className={`relative z-10 flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full ${statusConfig.bg} ${statusConfig.color}`}>
+                <StatusIcon className={`w-6 h-6 ${interaction.status === 'RUNNING' ? 'animate-spin' : ''}`} />
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="font-medium text-gray-900 truncate group-hover:text-[#1677FF] transition-colors">
+                  {/* LTC Stage Tag */}
+                  {ltcNode && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-medium rounded-full">
+                      <Workflow className="w-3 h-3" />
+                      {ltcNode.name}
+                    </span>
+                  )}
+
+                  <h4 className="font-medium text-gray-900 truncate group-hover:text-primary transition-colors">
                     {interaction.skill?.name || '未知技能'}
                   </h4>
                   <span
@@ -132,9 +149,12 @@ export function InteractionTimeline({
                 </p>
               </div>
 
-              {/* Arrow */}
-              <div className="flex-shrink-0 self-center text-gray-300 group-hover:text-[#1677FF] transition-colors">
-                <ArrowRight className="w-4 h-4" />
+              {/* View Details - show on hover */}
+              <div className="flex-shrink-0 self-center flex items-center gap-2 text-gray-300 group-hover:text-primary transition-all duration-200">
+                <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                  查看详情
+                </span>
+                <Eye className="w-4 h-4" />
               </div>
             </Link>
           );
@@ -144,7 +164,7 @@ export function InteractionTimeline({
       {interactions.length > maxItems && (
         <Link
           to="/interactions"
-          className="block mt-4 text-center text-sm text-[#1677FF] hover:text-[#4096FF] transition-colors"
+          className="block mt-4 text-center text-sm text-primary hover:text-primary/80 transition-colors"
         >
           查看全部 {interactions.length} 条记录 →
         </Link>

@@ -12,6 +12,8 @@ import { SkillInteraction } from './interaction.entity';
 import { Document } from './document.entity';
 import { ReferenceMaterial } from './reference-material.entity';
 import { LtcNode } from './ltc-node.entity';
+import { TeamRoleSkillConfig } from './team-role-skill-config.entity';
+import { IronTriangleRole } from './team-member-preference.entity';
 
 @Entity('teams')
 export class Team {
@@ -50,4 +52,14 @@ export class Team {
 
   @OneToMany(() => LtcNode, (node) => node.team)
   ltc_nodes: LtcNode[];
+
+  @OneToMany(() => TeamRoleSkillConfig, (config) => config.team)
+  role_skill_configs: TeamRoleSkillConfig[];
+
+  @Column({
+    type: 'enum',
+    enum: IronTriangleRole,
+    nullable: true,
+  })
+  default_member_role: IronTriangleRole | null;
 }

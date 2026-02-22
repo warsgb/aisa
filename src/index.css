@@ -36,3 +36,21 @@
     text-wrap: balance;
   }
 }
+
+/* Global typography classes */
+.heading-lg {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.body {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.number {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', monospace;
+  font-weight: 600;
+}

@@ -23,18 +23,25 @@ export default function SystemPage() {
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showChangeOwnerModal, setShowChangeOwnerModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<SystemTeam | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<TeamApplication | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [allUsersForSelection, setAllUsersForSelection] = useState<SystemUser[]>([]);
+  const [allTeams, setAllTeams] = useState<SystemTeam[]>([]);
+  const [showManageUserTeamsModal, setShowManageUserTeamsModal] = useState(false);
+  const [selectedUserForTeams, setSelectedUserForTeams] = useState<SystemUser | null>(null);
 
   // Create user form
-  const [newUser, setNewUser] = useState<CreateSystemUserDto>({
+  const [newUser, setNewUser] = useState<CreateSystemUserDto & { team_ids?: string[] }>({
     email: '',
     full_name: '',
     password: '',
     role: 'MEMBER',
     is_active: true,
+    team_ids: [],
   });
 
   // Create team form
@@ -46,7 +53,29 @@ export default function SystemPage() {
 
   useEffect(() => {
     loadData();
+    // Load all users for owner selection
+    loadAllUsers();
+    // Load all teams for team assignment
+    loadAllTeams();
   }, [activeTab, usersPagination.page, teamsPagination.page, applicationsPagination.page]);
+
+  const loadAllUsers = async () => {
+    try {
+      const result = await apiService.getAllSystemUsers(1, 1000);
+      setAllUsersForSelection(result.data);
+    } catch (error) {
+      console.error('加载用户列表失败:', error);
+    }
+  };
+
+  const loadAllTeams = async () => {
+    try {
+      const result = await apiService.getAllSystemTeams(1, 1000);
+      setAllTeams(result.data);
+    } catch (error) {
+      console.error('加载团队列表失败:', error);
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -136,6 +165,21 @@ export default function SystemPage() {
     }
   };
 
+  const handleChangeOwner = async (newOwnerId: string) => {
+    if (!selectedTeam) return;
+
+    try {
+      await apiService.changeTeamOwner(selectedTeam.id, { owner_id: newOwnerId });
+      setShowChangeOwnerModal(false);
+      setSelectedTeam(null);
+      alert('团队所有者更换成功');
+      loadData();
+    } catch (error) {
+      console.error('更换所有者失败:', error);
+      alert('更换所有者失败');
+    }
+  };
+
   const handleCreateUser = async () => {
     try {
       await apiService.createSystemUser(newUser);
@@ -146,12 +190,40 @@ export default function SystemPage() {
         password: '',
         role: 'MEMBER',
         is_active: true,
+        team_ids: [],
       });
       alert('用户创建成功');
       loadData();
     } catch (error) {
       console.error('创建用户失败:', error);
       alert('创建用户失败');
+    }
+  };
+
+  const handleManageUserTeams = async (userId: string) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        setSelectedUserForTeams(user);
+        setShowManageUserTeamsModal(true);
+      }
+    } catch (error) {
+      console.error('加载用户团队失败:', error);
+    }
+  };
+
+  const handleUpdateUserTeams = async (teamIds: string[]) => {
+    if (!selectedUserForTeams) return;
+
+    try {
+      await apiService.updateUserTeams(selectedUserForTeams.id, { team_ids: teamIds });
+      setShowManageUserTeamsModal(false);
+      setSelectedUserForTeams(null);
+      alert('用户团队更新成功');
+      loadData();
+    } catch (error) {
+      console.error('更新用户团队失败:', error);
+      alert('更新用户团队失败');
     }
   };
 
@@ -477,6 +549,12 @@ export default function SystemPage() {
                         <td className="py-3 px-4 text-sm">
                           <div className="flex gap-2">
                             <button
+                              onClick={() => handleManageUserTeams(userItem.id)}
+                              className="text-purple-600 hover:text-purple-700"
+                            >
+                              管理团队
+                            </button>
+                            <button
                               onClick={() => handleToggleUserStatus(userItem.id, userItem.is_active)}
                               className={`${
                                 userItem.is_active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'
@@ -559,12 +637,23 @@ export default function SystemPage() {
                           {new Date(team.created_at).toLocaleDateString('zh-CN')}
                         </td>
                         <td className="py-3 px-4 text-sm">
-                          <button
-                            onClick={() => handleDeleteTeam(team.id, team.name)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            删除
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedTeam(team);
+                                setShowChangeOwnerModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              更换所有者
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTeam(team.id, team.name)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              删除
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -792,6 +881,30 @@ export default function SystemPage() {
                   <span className="text-sm text-gray-700">启用账号</span>
                 </label>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">分配团队</label>
+                <div className="border border-gray-300 rounded-lg p-3 max-h-40 overflow-y-auto">
+                  {allTeams.map((team) => (
+                    <label key={team.id} className="flex items-center mb-2">
+                      <input
+                        type="checkbox"
+                        checked={newUser.team_ids?.includes(team.id) || false}
+                        onChange={(e) => {
+                          const teamIds = newUser.team_ids || [];
+                          if (e.target.checked) {
+                            setNewUser({ ...newUser, team_ids: [...teamIds, team.id] });
+                          } else {
+                            setNewUser({ ...newUser, team_ids: teamIds.filter(id => id !== team.id) });
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">{team.name}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">选择用户要加入的团队（可多选）</p>
+              </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button
@@ -803,6 +916,7 @@ export default function SystemPage() {
                     password: '',
                     role: 'MEMBER',
                     is_active: true,
+                    team_ids: [],
                   });
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -849,16 +963,23 @@ export default function SystemPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">所有者用户ID *</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-gray-700 mb-1">所有者 *</label>
+                <select
                   required
                   value={newTeam.owner_id}
                   onChange={(e) => setNewTeam({ ...newTeam, owner_id: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
-                  placeholder="请输入所有者用户ID"
-                />
-                <p className="text-xs text-gray-500 mt-1">从用户列表中复制用户ID</p>
+                >
+                  <option value="">请选择所有者</option>
+                  {allUsersForSelection
+                    .filter(u => u.is_active)
+                    .map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.full_name} ({user.email})
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">从现有用户中选择团队所有者</p>
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
@@ -881,6 +1002,125 @@ export default function SystemPage() {
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 创建团队
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 更换所有者弹窗 */}
+      {showChangeOwnerModal && selectedTeam && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">更换团队所有者</h2>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">团队:</span> {selectedTeam.name}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">当前所有者:</span> {selectedTeam.owner?.full_name || '-'}
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">新所有者 *</label>
+                <select
+                  required
+                  defaultValue=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleChangeOwner(e.target.value);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
+                >
+                  <option value="">请选择新所有者</option>
+                  {allUsersForSelection
+                    .filter(u => u.is_active && u.id !== selectedTeam.owner?.id)
+                    .map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.full_name} ({user.email})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowChangeOwnerModal(false);
+                  setSelectedTeam(null);
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 管理用户团队弹窗 */}
+      {showManageUserTeamsModal && selectedUserForTeams && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">管理用户团队</h2>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">用户:</span> {selectedUserForTeams.full_name} ({selectedUserForTeams.email})
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">当前团队:</span> {selectedUserForTeams.teams.map(t => t.name).join(', ') || '无'}
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">选择团队</label>
+                <div className="border border-gray-300 rounded-lg p-3 max-h-60 overflow-y-auto">
+                  {allTeams.map((team) => {
+                    const isMember = selectedUserForTeams.teams.some(t => t.id === team.id);
+                    return (
+                      <label key={team.id} className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          checked={isMember}
+                          onChange={(e) => {
+                            const updatedTeamIds = e.target.checked
+                              ? [...selectedUserForTeams.teams.map(t => t.id), team.id]
+                              : selectedUserForTeams.teams.map(t => t.id).filter(id => id !== team.id);
+                            // Update local state for UI
+                            setSelectedUserForTeams({
+                              ...selectedUserForTeams,
+                              teams: e.target.checked
+                                ? [...selectedUserForTeams.teams, { id: team.id, name: team.name, role: 'MEMBER' }]
+                                : selectedUserForTeams.teams.filter(t => t.id !== team.id)
+                            } as any);
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">{team.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">勾选要分配给用户的团队</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowManageUserTeamsModal(false);
+                  setSelectedUserForTeams(null);
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleUpdateUserTeams(selectedUserForTeams.teams.map(t => t.id))}
+                className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF]"
+              >
+                保存
               </button>
             </div>
           </div>

@@ -10,13 +10,16 @@ import {
   UsePipes,
   Request,
   ValidationPipe,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
+import { UpdateTeamRoleSkillsDto, SetTeamDefaultRoleDto } from './dto/update-team-role-skills.dto';
 import { TeamRole } from '../../entities/team-member.entity';
+import { IronTriangleRole } from '../../entities/team-member-preference.entity';
 
 interface RequestWithUser extends Request {
   user: {
@@ -92,5 +95,51 @@ export class TeamsController {
     @Body('role') role: TeamRole,
   ) {
     return this.teamsService.updateMemberRole(id, req.user.id, memberId, role);
+  }
+
+  // Team Role Skill Configuration endpoints
+  @Get(':id/role-skill-configs')
+  getRoleSkillConfigs(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.teamsService.getRoleSkillConfigs(id, req.user.id);
+  }
+
+  @Get(':id/role-skill-configs/:role')
+  getRoleSkillConfig(
+    @Param('id') id: string,
+    @Param('role', new ParseEnumPipe(IronTriangleRole)) role: IronTriangleRole,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.teamsService.getRoleSkillConfig(id, req.user.id, role);
+  }
+
+  @Put(':id/role-skill-configs/:role')
+  @UsePipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false, transform: true }))
+  updateRoleSkillConfig(
+    @Param('id') id: string,
+    @Param('role', new ParseEnumPipe(IronTriangleRole)) role: IronTriangleRole,
+    @Request() req: RequestWithUser,
+    @Body() dto: UpdateTeamRoleSkillsDto,
+  ) {
+    return this.teamsService.updateRoleSkillConfig(id, req.user.id, role, dto.skill_ids);
+  }
+
+  @Get(':id/default-role')
+  getDefaultRole(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.teamsService.getDefaultRole(id, req.user.id);
+  }
+
+  @Put(':id/default-role')
+  @UsePipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false, transform: true }))
+  setDefaultRole(
+    @Param('id') id: string,
+    @Request() req: RequestWithUser,
+    @Body() dto: SetTeamDefaultRoleDto,
+  ) {
+    return this.teamsService.setDefaultRole(id, req.user.id, dto.default_role);
+  }
+
+  @Post(':id/role-skill-configs/reset')
+  resetRoleSkillConfigs(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.teamsService.resetRoleSkillConfigs(id, req.user.id);
   }
 }

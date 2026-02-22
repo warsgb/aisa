@@ -34,6 +34,8 @@ export interface Team {
   role: TeamRole;
   created_at: string;
   members?: TeamMember[];
+  default_member_role?: IronTriangleRole | null;
+  role_skill_configs?: TeamRoleSkillConfig[];
 }
 
 export interface InviteMemberData {
@@ -372,6 +374,8 @@ export interface LtcNode {
   description?: string;
   created_at: string;
   updated_at: string;
+  source?: 'SYSTEM' | 'CUSTOM';
+  system_node_id?: string;
   skills?: Skill[];
 }
 
@@ -461,3 +465,54 @@ export interface UpdateTeamMemberPreferenceDto {
 
 // Skill Filter Type
 export type SkillFilterType = 'FAVORITE' | 'ALL';
+
+// Team Role Skill Config
+export interface TeamRoleSkillConfig {
+  id: string;
+  team_id: string;
+  role: IronTriangleRole;
+  default_skill_ids: string[];
+  created_at: string;
+  updated_at: string;
+  source?: 'SYSTEM' | 'CUSTOM';
+}
+
+// System-Level Configuration Types
+export interface SystemLtcNode {
+  id: string;
+  name: string;
+  description: string | null;
+  order: number;
+  default_skill_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SystemRoleSkillConfig {
+  id: string;
+  role: IronTriangleRole;
+  default_skill_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Sync Result Types
+export interface TeamSyncChanges {
+  hasChanges: boolean;
+  changes: {
+    ltcNodes: { added: number; updated: number; skipped: number };
+    roleConfigs: { updated: number; skipped: number };
+  };
+}
+
+export interface SyncResult {
+  success: number;
+  skipped: number;
+  errors: number;
+  details: Array<{
+    teamId: string;
+    teamName?: string;
+    changes?: TeamSyncChanges;
+    error?: string;
+  }>;
+}

@@ -75,7 +75,19 @@ function SortableNodeItem({ node, index, isSelected, onSelect, onEdit, onDelete 
 
       {/* Node info */}
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-gray-900 truncate">{node.name}</div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-900 truncate">{node.name}</span>
+          {node.source === 'SYSTEM' && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
+              系统
+            </span>
+          )}
+          {node.source === 'CUSTOM' && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">
+              自定义
+            </span>
+          )}
+        </div>
         {node.description && (
           <div className="text-xs text-gray-500 truncate">{node.description}</div>
         )}
@@ -253,11 +265,17 @@ export default function LtcConfigPage() {
         description: editForm.description,
       });
 
-      const newNodes = nodes.map((n) => (n.id === updated.id ? updated : n));
+      // If editing a system node, mark it as custom
+      const finalUpdated = updated.source === 'SYSTEM' ? {
+        ...updated,
+        source: 'CUSTOM' as const,
+      } : updated;
+
+      const newNodes = nodes.map((n) => (n.id === finalUpdated.id ? finalUpdated : n));
       setNodes(newNodes);
 
-      if (selectedNode?.id === updated.id) {
-        setSelectedNode(updated);
+      if (selectedNode?.id === finalUpdated.id) {
+        setSelectedNode(finalUpdated);
       }
 
       setIsEditModalOpen(false);
@@ -293,36 +311,19 @@ export default function LtcConfigPage() {
   // Reset to default nodes
   const handleResetDefault = useCallback(async () => {
     if (!team?.id) return;
-    if (!confirm('确定要重置为默认的8个LTC节点吗？这将删除所有自定义节点。')) return;
+    if (!confirm('确定要重置为系统默认配置吗？\n\n- 将删除所有系统来源的节点\n- 保留团队自定义节点不变\n- 从系统模板重新同步默认节点')) return;
 
     try {
       setSaving(true);
-      const defaultNodes = await apiService.resetLtcNodes(team.id);
-      setNodes(defaultNodes.sort((a, b) => a.order - b.order));
+      const updatedNodes = await apiService.resetTeamLtcNodes(team.id);
+      setNodes(updatedNodes.sort((a, b) => a.order - b.order));
       setSelectedNode(null);
-
-      // Reload bindings
-      const bindingsMap: Record<string, NodeSkillBinding[]> = {};
-      await Promise.all(
-        defaultNodes.map(async (node) => {
-          try {
-            const nodeBindings = await apiService.getNodeSkillBindings(team.id, node.id);
-            bindingsMap[node.id] = nodeBindings;
-          } catch {
-            bindingsMap[node.id] = [];
-          }
-        })
-      );
-      // Update bindings for each node individually
-      Object.entries(bindingsMap).forEach(([nodeId, nodeBindings]) => {
-        setBindings(nodeId, nodeBindings ?? []);
-      });
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : '重置失败');
     } finally {
       setSaving(false);
     }
-  }, [team?.id, setNodes, setBindings, setSaving]);
+  }, [team?.id, setNodes, setSaving]);
 
   // Toggle skill binding
   const handleToggleSkill = useCallback(async (skill: Skill, isBound: boolean) => {

@@ -9,6 +9,9 @@ import * as bcrypt from 'bcrypt';
 import { Team } from '../../entities/team.entity';
 import { TeamMember, TeamRole } from '../../entities/team-member.entity';
 import { User, UserRole } from '../../entities/user.entity';
+import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
+import { SystemRoleSkillConfig } from '../../entities/system-role-skill-config.entity';
+import { IronTriangleRole } from '../../entities/team-member-preference.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 
@@ -21,6 +24,10 @@ export class TeamsService {
     private teamMemberRepository: Repository<TeamMember>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(TeamRoleSkillConfig)
+    private teamRoleSkillConfigRepository: Repository<TeamRoleSkillConfig>,
+    @InjectRepository(SystemRoleSkillConfig)
+    private systemRoleSkillConfigRepository: Repository<SystemRoleSkillConfig>,
   ) {}
 
   async create(userId: string, dto: CreateTeamDto) {
@@ -265,5 +272,156 @@ export class TeamsService {
     await this.userRepository.update(memberId, { password_hash });
 
     return { message: 'Member password updated successfully' };
+  }
+
+  // Team Role Skill Configuration methods
+
+  async getRoleSkillConfigs(teamId: string, userId: string) {
+    // Check if user is a member
+    const membership = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: userId },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('Not a member of this team');
+    }
+
+    const configs = await this.teamRoleSkillConfigRepository.find({
+      where: { team_id: teamId },
+    });
+
+    return configs;
+  }
+
+  async getRoleSkillConfig(teamId: string, userId: string, role: IronTriangleRole) {
+    // Check if user is a member
+    const membership = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: userId },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('Not a member of this team');
+    }
+
+    let config = await this.teamRoleSkillConfigRepository.findOne({
+      where: { team_id: teamId, role },
+    });
+
+    // If config doesn't exist, create an empty one
+    if (!config) {
+      config = this.teamRoleSkillConfigRepository.create({
+        team_id: teamId,
+        role,
+        default_skill_ids: [],
+      });
+      await this.teamRoleSkillConfigRepository.save(config);
+    }
+
+    return config;
+  }
+
+  async updateRoleSkillConfig(teamId: string, userId: string, role: IronTriangleRole, skillIds: string[]) {
+    // Check if user is owner or admin
+    const membership = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: userId },
+    });
+
+    if (!membership || (membership.role !== TeamRole.OWNER && membership.role !== TeamRole.ADMIN)) {
+      throw new ForbiddenException('Only owner or admin can update role skill configuration');
+    }
+
+    let config = await this.teamRoleSkillConfigRepository.findOne({
+      where: { team_id: teamId, role },
+    });
+
+    if (!config) {
+      config = this.teamRoleSkillConfigRepository.create({
+        team_id: teamId,
+        role,
+        default_skill_ids: skillIds,
+      });
+    } else {
+      config.default_skill_ids = skillIds;
+    }
+
+    await this.teamRoleSkillConfigRepository.save(config);
+
+    return config;
+  }
+
+  async getDefaultRole(teamId: string, userId: string) {
+    // Check if user is a member
+    const membership = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: userId },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('Not a member of this team');
+    }
+
+    const team = await this.teamRepository.findOne({
+      where: { id: teamId },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    return { default_role: team.default_member_role };
+  }
+
+  async setDefaultRole(teamId: string, userId: string, defaultRole: IronTriangleRole) {
+    // Check if user is owner
+    const membership = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: userId },
+    });
+
+    if (!membership || membership.role !== TeamRole.OWNER) {
+      throw new ForbiddenException('Only owner can set default member role');
+    }
+
+    await this.teamRepository.update(teamId, {
+      default_member_role: defaultRole,
+    });
+
+    const updatedTeam = await this.teamRepository.findOne({
+      where: { id: teamId },
+    });
+
+    return updatedTeam;
+  }
+
+  async resetRoleSkillConfigs(teamId: string, userId: string) {
+    // Check if user is owner or admin
+    const membership = await this.teamMemberRepository.findOne({
+      where: { team_id: teamId, user_id: userId },
+    });
+
+    if (!membership || (membership.role !== TeamRole.OWNER && membership.role !== TeamRole.ADMIN)) {
+      throw new ForbiddenException('Only owner or admin can reset role skill configurations');
+    }
+
+    // Delete all system configs for this team
+    await this.teamRoleSkillConfigRepository.delete({
+      team_id: teamId,
+      source: 'SYSTEM',
+    });
+
+    // Get all system configs
+    const systemConfigs = await this.systemRoleSkillConfigRepository.find();
+
+    // Create team configs from system templates
+    const configs = await Promise.all(
+      systemConfigs.map((systemConfig) =>
+        this.teamRoleSkillConfigRepository.save({
+          team_id: teamId,
+          role: systemConfig.role,
+          default_skill_ids: systemConfig.default_skill_ids,
+          source: 'SYSTEM',
+        }),
+      ),
+    );
+
+    return configs;
   }
 }

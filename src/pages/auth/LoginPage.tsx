@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       await login(formData);
       // Direct navigation after successful login
-      navigate('/dashboard', { replace: true });
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败');
     } finally {

@@ -60,18 +60,18 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
         disabled={disabled}
         className={`
           w-full flex items-center justify-between px-4 py-3
-          bg-white border rounded-xl text-left
+          bg-white border-2 rounded-2xl text-left
           transition-all duration-200
-          ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'hover:border-[#1677FF] cursor-pointer'}
-          ${isOpen ? 'border-[#1677FF] ring-2 ring-[#1677FF]/20 shadow-sm' : 'border-gray-200 hover:border-gray-300'}
+          ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'hover:border-primary/30 cursor-pointer'}
+          ${isOpen ? 'border-primary ring-2 ring-primary/20 shadow-sm' : 'border-gray-200 hover:border-gray-300'}
         `}
       >
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentCustomer ? 'bg-[#1677FF]/10' : 'bg-gray-100'}`}>
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentCustomer ? 'bg-primary/10' : 'bg-gray-100'}`}>
             {currentCustomer ? (
-              <Building2 className="w-5 h-5 text-[#1677FF]" />
+              <Building2 className="w-5 h-5 text-primary" />
             ) : (
-              <Building2 className="w-5 h-5 text-gray-400" />
+              <Search className="w-5 h-5 text-gray-400" />
             )}
           </div>
           <div className="flex flex-col">
@@ -112,7 +112,7 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="搜索客户名称或行业..."
-                className="w-full pl-10 pr-3 py-2.5 text-sm bg-[#F5F7FA] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1677FF]/20"
+                className="w-full pl-10 pr-3 py-2.5 text-sm bg-background border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
@@ -133,12 +133,12 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
                       onClick={() => handleSelect(customer)}
                       className={`
                         w-full px-4 py-3 text-left flex items-center gap-3
-                        hover:bg-[#F5F7FA] transition-colors duration-150
-                        ${currentCustomer?.id === customer.id ? 'bg-[#1677FF]/5 text-[#1677FF]' : 'text-gray-700'}
+                        hover:bg-background transition-colors duration-150
+                        ${currentCustomer?.id === customer.id ? 'bg-primary/5 text-primary' : 'text-gray-700'}
                       `}
                     >
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentCustomer?.id === customer.id ? 'bg-[#1677FF]/10' : 'bg-gray-100'}`}>
-                        <Building2 className={`w-5 h-5 ${currentCustomer?.id === customer.id ? 'text-[#1677FF]' : 'text-gray-500'}`} />
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentCustomer?.id === customer.id ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                        <Building2 className={`w-5 h-5 ${currentCustomer?.id === customer.id ? 'text-primary' : 'text-gray-500'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{customer.name}</div>
@@ -147,7 +147,7 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
                         )}
                       </div>
                       {currentCustomer?.id === customer.id && (
-                        <svg className="w-5 h-5 text-[#1677FF] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 text-primary shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}

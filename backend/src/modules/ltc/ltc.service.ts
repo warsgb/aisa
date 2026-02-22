@@ -12,6 +12,9 @@ import { TeamMemberPreference, IronTriangleRole } from '../../entities/team-memb
 import { TeamMember } from '../../entities/team-member.entity';
 import { Customer } from '../../entities/customer.entity';
 import { Skill } from '../../entities/skill.entity';
+import { SystemLtcNode } from '../../entities/system-ltc-node.entity';
+import { SystemRoleSkillConfig } from '../../entities/system-role-skill-config.entity';
+import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
 import { CreateLtcNodeDto } from './dto/create-ltc-node.dto';
 import { UpdateLtcNodeDto } from './dto/update-ltc-node.dto';
 import { CreateNodeSkillBindingDto } from './dto/create-node-skill-binding.dto';
@@ -47,6 +50,12 @@ export class LtcService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(Skill)
     private skillRepository: Repository<Skill>,
+    @InjectRepository(SystemLtcNode)
+    private systemLtcNodeRepository: Repository<SystemLtcNode>,
+    @InjectRepository(SystemRoleSkillConfig)
+    private systemRoleSkillConfigRepository: Repository<SystemRoleSkillConfig>,
+    @InjectRepository(TeamRoleSkillConfig)
+    private teamRoleSkillConfigRepository: Repository<TeamRoleSkillConfig>,
   ) {}
 
   private async verifyTeamAccess(teamId: string, userId: string): Promise<void> {
@@ -159,6 +168,74 @@ export class LtcService {
     );
 
     await this.ltcNodeRepository.save(nodes);
+    return this.findAllNodes(teamId, userId);
+  }
+
+  async resetToSystemDefaults(teamId: string, userId: string) {
+    await this.verifyTeamAccess(teamId, userId);
+
+    // 1. Delete all system nodes for this team
+    await this.ltcNodeRepository.delete({
+      team_id: teamId,
+      source: 'SYSTEM',
+    });
+
+    // 2. Delete all system role-skill configs for this team
+    await this.teamRoleSkillConfigRepository.delete({
+      team_id: teamId,
+      source: 'SYSTEM',
+    });
+
+    // 3. Sync from system defaults
+    return this.syncFromSystem(teamId, userId);
+  }
+
+  private async syncFromSystem(teamId: string, userId: string) {
+    // 1. Get all system LTC nodes
+    const systemNodes = await this.systemLtcNodeRepository.find({
+      order: { order: 'ASC' },
+    });
+
+    // 2. Create team nodes from system templates
+    const teamNodes = await Promise.all(
+      systemNodes.map((systemNode) =>
+        this.ltcNodeRepository.save({
+          team_id: teamId,
+          name: systemNode.name,
+          description: systemNode.description,
+          order: systemNode.order,
+          source: 'SYSTEM',
+          system_node_id: systemNode.id,
+        }),
+      ),
+    );
+
+    // 3. Create skill bindings for each node
+    for (let i = 0; i < systemNodes.length; i++) {
+      const systemNode = systemNodes[i];
+      const teamNode = teamNodes[i];
+
+      let order = 1;
+      for (const skillId of systemNode.default_skill_ids) {
+        await this.nodeSkillBindingRepository.save({
+          node_id: teamNode.id,
+          skill_id: skillId,
+          order: order++,
+        });
+      }
+    }
+
+    // 4. Sync role-skill configs
+    const systemConfigs = await this.systemRoleSkillConfigRepository.find();
+    for (const systemConfig of systemConfigs) {
+      await this.teamRoleSkillConfigRepository.save({
+        team_id: teamId,
+        role: systemConfig.role,
+        default_skill_ids: systemConfig.default_skill_ids,
+        source: 'SYSTEM',
+      });
+    }
+
     return this.findAllNodes(teamId, userId);
   }
 

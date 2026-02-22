@@ -11,6 +11,7 @@ interface AuthenticatedRequest extends Request {
     email: string;
     role: string;
     sub?: string;
+    team_id?: string;
   };
 }
 
@@ -46,6 +47,16 @@ export class AuthController {
     if (!userId) {
       throw new Error('User ID not found in request user object');
     }
-    return this.authService.getMe(userId);
+    return this.authService.getMe(userId, req.user.team_id);
+  }
+
+  @Post('switch-team')
+  @UseGuards(JwtAuthGuard)
+  async switchTeam(@Req() req: AuthenticatedRequest, @Body() dto: { team_id: string }) {
+    const userId = req.user?.id || req.user?.sub;
+    if (!userId) {
+      throw new Error('User ID not found in request user object');
+    }
+    return this.authService.switchTeam(userId, dto.team_id);
   }
 }

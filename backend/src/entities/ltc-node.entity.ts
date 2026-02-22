@@ -34,6 +34,12 @@ export class LtcNode {
   @UpdateDateColumn()
   updated_at: Date;
 
+  @Column({ type: 'enum', enum: ['SYSTEM', 'CUSTOM'], default: 'CUSTOM' })
+  source: 'SYSTEM' | 'CUSTOM';
+
+  @Column({ nullable: true })
+  system_node_id?: string;
+
   @ManyToOne(() => Team, (team) => team.ltc_nodes, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'team_id' })
   team: Team;

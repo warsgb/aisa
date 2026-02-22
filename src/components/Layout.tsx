@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import TeamSwitcher from './TeamSwitcher';
 import {
   Home,
   Users,
@@ -14,6 +15,7 @@ import {
   ChevronRight,
   LogOut,
   Menu,
+  Database,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -39,7 +41,10 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/interactions', label: '交互记录', icon: MessageSquare },
     { path: '/documents', label: '文档管理', icon: FileText },
     { path: '/settings', label: '系统设置', icon: Settings },
-    ...(user?.role === 'SYSTEM_ADMIN' ? [{ path: '/system', label: '系统管理', icon: Shield }] : []),
+    ...(user?.role === 'SYSTEM_ADMIN' ? [
+      { path: '/system-config', label: '系统配置', icon: Database },
+      { path: '/system', label: '系统管理', icon: Shield },
+    ] : []),
   ];
 
   return (
@@ -62,12 +67,13 @@ export default function Layout({ children }: LayoutProps) {
                 )}
               </button>
 
-              <h1 className="text-lg font-bold text-[#1677FF]">AISA</h1>
+              <h1 className="text-lg font-bold text-primary">AISA</h1>
               <span className="ml-3 text-sm text-gray-500">
                 {team?.name || '未加入团队'}
               </span>
             </div>
             <div className="flex items-center gap-3">
+              <TeamSwitcher />
               <span className="text-sm text-gray-600">
                 {user?.full_name || user?.email}
               </span>
@@ -104,16 +110,19 @@ export default function Layout({ children }: LayoutProps) {
                     <Link
                       to={item.path}
                       className={`
-                        flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200
+                        relative flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
                         ${isActive
-                          ? 'bg-[#1677FF] text-white shadow-sm shadow-[#1677FF]/25'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-[#1677FF]'
+                          ? 'text-primary bg-primary/5'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
                         }
                         ${isCollapsed ? 'justify-center' : ''}
                       `}
                       title={isCollapsed ? item.label : undefined}
                     >
-                      <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : ''}`} />
+                      {isActive && !isCollapsed && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
+                      )}
+                      <Icon className={`w-5 h-5 shrink-0`} />
                       {!isCollapsed && <span>{item.label}</span>}
                     </Link>
                   </li>

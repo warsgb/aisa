@@ -1,11 +1,12 @@
-import { useRef } from 'react';
 import type { LtcNode, Skill } from '../../types';
-import { SkillCard } from '../skill/SkillCard';
+import { EnhancedSkillCard } from '../skill/EnhancedSkillCard';
 import { Wrench } from 'lucide-react';
 
 interface LtcProcessTimelineProps {
   nodes: LtcNode[];
   bindings: Record<string, Skill[]>;
+  skillUsageCounts?: Record<string, number>;
+  executedSkillIds?: Set<string>;
   currentNodeId?: string;
   onNodeClick?: (node: LtcNode) => void;
   onSkillExecute: (skill: Skill, nodeId?: string) => void;
@@ -15,21 +16,24 @@ interface LtcProcessTimelineProps {
 export function LtcProcessTimeline({
   nodes,
   bindings,
+  skillUsageCounts = {},
+  executedSkillIds = new Set(),
   currentNodeId,
   onNodeClick,
   onSkillExecute,
   isLoading,
 }: LtcProcessTimelineProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
   if (isLoading) {
     return (
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="flex-shrink-0 w-44 h-48 bg-gray-100 rounded-lg animate-pulse"
-          />
+            className="bg-white rounded-xl p-3 border border-gray-100 animate-pulse min-w-[180px] flex-shrink-0"
+          >
+            <div className="w-10 h-10 mx-auto mb-3 bg-gray-200 rounded-full" />
+            <div className="h-3 bg-gray-200 rounded mb-2" />
+          </div>
         ))}
       </div>
     );
@@ -37,7 +41,7 @@ export function LtcProcessTimeline({
 
   if (nodes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 bg-[#F5F7FA] rounded-xl">
+      <div className="flex flex-col items-center justify-center py-8 bg-background rounded-xl">
         <div className="w-12 h-12 mb-2 bg-gray-200 rounded-full flex items-center justify-center">
           <Wrench className="w-6 h-6 text-gray-400" />
         </div>
@@ -48,77 +52,76 @@ export function LtcProcessTimeline({
 
   return (
     <div className="relative">
-      {/* Compact scroll container */}
-      <div
-        ref={scrollContainerRef}
-        className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
-        style={{ scrollbarWidth: 'thin' }}
-      >
+      {/* Horizontal scroll layout for nodes - single row */}
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         {nodes.map((node, index) => {
           const nodeSkills = bindings[node.id] || [];
           const isActive = currentNodeId === node.id;
+
           return (
             <div
               key={node.id}
               className={`
-                flex-shrink-0 w-44 flex flex-col
-                bg-white rounded-lg border transition-all duration-200
-                ${isActive ? 'border-[#1677FF] shadow-md shadow-[#1677FF]/10' : 'border-gray-200 hover:border-gray-300'}
+                relative bg-white rounded-xl p-3 border transition-all duration-200 min-w-[180px] flex-shrink-0
+                ${isActive ? 'border-primary shadow-md shadow-primary/10' : 'border-gray-100 hover:border-gray-200'}
               `}
             >
-              {/* Compact node header */}
+              {/* Connecting line (to next node) */}
+              {index < nodes.length - 1 && (
+                <div className="absolute top-5 -right-3 w-3 h-0.5 bg-gradient-to-r from-gray-300 to-gray-200" />
+              )}
+
+              {/* Circular node marker - compact size, always blue with white border */}
               <div
                 onClick={() => onNodeClick?.(node)}
                 className={`
-                  px-3 py-2 cursor-pointer
-                  ${isActive ? 'bg-[#1677FF]' : 'bg-[#1677FF]'}
-                  ${onNodeClick ? 'hover:opacity-90' : ''}
-                  transition-opacity duration-200
+                  relative w-10 h-10 mx-auto mb-3 flex items-center justify-center
+                  rounded-full transition-all duration-200 cursor-pointer border-2 shadow-sm
+                  bg-primary border-white
+                  ${isActive ? 'ring-2 ring-primary/30' : ''}
+                  ${onNodeClick ? 'hover:scale-105' : ''}
                 `}
               >
-                <div className="flex items-center gap-2">
-                  {/* Step number */}
-                  <span
-                    className={`
-                      flex-shrink-0 w-5 h-5 flex items-center justify-center
-                      text-xs font-bold rounded-full
-                      ${isActive ? 'bg-white text-[#1677FF]' : 'bg-white/20 text-white'}
-                    `}
-                  >
-                    {index + 1}
-                  </span>
-
-                  {/* Node name */}
-                  <h3 className="text-sm font-semibold text-white truncate">
-                    {node.name}
-                  </h3>
-                </div>
-              </div>
-
-              {/* Compact skills list */}
-              <div className="flex-1 p-2 overflow-y-auto max-h-32">
-                {nodeSkills.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-3 text-gray-400">
-                    <Wrench className="w-4 h-4 mb-1 text-gray-300" />
-                    <p className="text-xs">暂无</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    {nodeSkills.map((skill) => (
-                      <SkillCard
-                        key={skill.id}
-                        skill={skill}
-                        onExecute={(s) => onSkillExecute(s, node.id)}
-                        compact
-                      />
-                    ))}
-                  </div>
+                <span className="text-sm font-bold text-white">
+                  {index + 1}
+                </span>
+                {isActive && (
+                  <div className="absolute inset-0 rounded-full bg-white animate-ping opacity-30" />
                 )}
               </div>
 
-              {/* Compact footer */}
-              <div className="px-3 py-1.5 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-                {nodeSkills.length} 技能
+              {/* Node name with blue border */}
+              <div className="text-center mb-3">
+                <div
+                  onClick={() => onNodeClick?.(node)}
+                  className={`
+                    inline-block px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer
+                    ${isActive ? 'bg-primary text-white border-2 border-white shadow-sm' : 'bg-white text-primary border-2 border-primary hover:bg-primary/5'}
+                  `}
+                >
+                  {node.name}
+                </div>
+              </div>
+
+              {/* Skills grid */}
+              <div className="space-y-2">
+                {nodeSkills.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-3 text-gray-400">
+                    <Wrench className="w-4 h-4 mb-1 text-gray-300" />
+                    <p className="text-xs">暂无绑定技能</p>
+                  </div>
+                ) : (
+                  nodeSkills.map((skill) => (
+                    <EnhancedSkillCard
+                      key={skill.id}
+                      skill={skill}
+                      onExecute={(s) => onSkillExecute(s, node.id)}
+                      usageCount={skillUsageCounts[skill.id] || 0}
+                      isExecuted={executedSkillIds.has(skill.id)}
+                      compact={true}
+                    />
+                  ))
+                )}
               </div>
             </div>
           );
