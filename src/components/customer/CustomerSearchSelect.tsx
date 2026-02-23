@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useCurrentCustomerStore } from '../../stores';
 import type { Customer } from '../../types';
 import { Search, X, ChevronDown, Building2 } from 'lucide-react';
 
@@ -8,10 +7,10 @@ interface CustomerSearchSelectProps {
   customers: Customer[];
   onSelect: (customer: Customer | null) => void;
   disabled?: boolean;
+  value?: Customer | null; // 添加 value prop 来接收当前选中的客户
 }
 
-export function CustomerSearchSelect({ customers, onSelect, disabled }: CustomerSearchSelectProps) {
-  const { currentCustomer } = useCurrentCustomerStore();
+export function CustomerSearchSelect({ customers, onSelect, disabled, value }: CustomerSearchSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -21,7 +20,13 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      // Check if click is outside the container AND outside any portal dropdown
+      const isOutsideContainer = containerRef.current && !containerRef.current.contains(event.target as Node);
+      // Find the dropdown portal by checking if clicked element is inside a fixed positioned dropdown
+      const clickedElement = event.target as Node;
+      const isInsideDropdown = (clickedElement as HTMLElement).closest?.('.fixed.z-\\[100\\]') !== null;
+
+      if (isOutsideContainer && !isInsideDropdown) {
         setIsOpen(false);
       }
     }
@@ -57,9 +62,13 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
   );
 
   const handleSelect = (customer: Customer | null) => {
+    console.log('[CustomerSearchSelect] handleSelect called with:', customer);
     onSelect(customer);
-    setIsOpen(false);
-    setSearchTerm('');
+    // Small delay to ensure onSelect completes before closing
+    setTimeout(() => {
+      setIsOpen(false);
+      setSearchTerm('');
+    }, 0);
   };
 
   const handleClear = (e: React.MouseEvent) => {
@@ -83,31 +92,30 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
         `}
       >
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentCustomer ? 'bg-primary/10' : 'bg-gray-100'}`}>
-            {currentCustomer ? (
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${value ? 'bg-primary/10' : 'bg-gray-100'}`}>
+            {value ? (
               <Building2 className="w-5 h-5 text-primary" />
             ) : (
               <Search className="w-5 h-5 text-gray-400" />
             )}
           </div>
           <div className="flex flex-col">
-            <span className={`text-sm ${currentCustomer ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-              {currentCustomer ? currentCustomer.name : '选择客户'}
+            <span className={`text-sm ${value ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+              {value ? value.name : '选择客户'}
             </span>
-            {currentCustomer?.industry && (
-              <span className="text-xs text-gray-500">{currentCustomer.industry}</span>
+            {value?.industry && (
+              <span className="text-xs text-gray-500">{value.industry}</span>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {currentCustomer && (
-            <button
-              type="button"
+          {value && (
+            <div
               onClick={handleClear}
-              className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
-            </button>
+            </div>
           )}
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
@@ -155,11 +163,11 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
                       className={`
                         w-full px-4 py-3 text-left flex items-center gap-3
                         hover:bg-background transition-colors duration-150
-                        ${currentCustomer?.id === customer.id ? 'bg-primary/5 text-primary' : 'text-gray-700'}
+                        ${value?.id === customer.id ? 'bg-primary/5 text-primary' : 'text-gray-700'}
                       `}
                     >
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentCustomer?.id === customer.id ? 'bg-primary/10' : 'bg-gray-100'}`}>
-                        <Building2 className={`w-5 h-5 ${currentCustomer?.id === customer.id ? 'text-primary' : 'text-gray-500'}`} />
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${value?.id === customer.id ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                        <Building2 className={`w-5 h-5 ${value?.id === customer.id ? 'text-primary' : 'text-gray-500'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{customer.name}</div>
@@ -167,7 +175,7 @@ export function CustomerSearchSelect({ customers, onSelect, disabled }: Customer
                           <div className="text-xs text-gray-400 truncate">{customer.industry}</div>
                         )}
                       </div>
-                      {currentCustomer?.id === customer.id && (
+                      {value?.id === customer.id && (
                         <svg className="w-5 h-5 text-primary shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>

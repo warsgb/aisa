@@ -570,23 +570,23 @@ function CustomerFormModal({ title, formData, setFormData, onSubmit, onClose }: 
               </div>
             </div>
           </div>
+          <div className="px-6 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] transition-colors shadow-lg shadow-[#1677FF]/30"
+            >
+              <Save className="w-4 h-4" />
+              保存
+            </button>
+          </div>
         </form>
-        <div className="px-6 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            取消
-          </button>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] transition-colors shadow-lg shadow-[#1677FF]/30"
-          >
-            <Save className="w-4 h-4" />
-            保存
-          </button>
-        </div>
       </div>
     </div>
   );
