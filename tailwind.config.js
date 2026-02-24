@@ -67,6 +67,12 @@ export default {
         'card': '0 2px 8px rgba(0,0,0,0.08)',
         'card-hover': '0 4px 16px rgba(0,0,0,0.12)',
       },
+      spacing: {
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
     },
   },
   plugins: [],

@@ -25,13 +25,13 @@ export function LtcProcessTimeline({
 }: LtcProcessTimelineProps) {
   if (isLoading) {
     return (
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+      <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent snap-x snap-mandatory">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-xl p-3 border border-gray-100 animate-pulse min-w-[180px] flex-shrink-0"
+            className="bg-white rounded-xl p-2.5 sm:p-3 border border-gray-100 animate-pulse min-w-[140px] sm:min-w-[180px] flex-shrink-0 snap-start"
           >
-            <div className="w-10 h-10 mx-auto mb-3 bg-gray-200 rounded-full" />
+            <div className="w-11 h-11 sm:w-10 sm:h-10 mx-auto mb-3 bg-gray-200 rounded-full" />
             <div className="h-3 bg-gray-200 rounded mb-2" />
           </div>
         ))}
@@ -53,7 +53,7 @@ export function LtcProcessTimeline({
   return (
     <div className="relative">
       {/* Horizontal scroll layout for nodes - single row */}
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+      <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent snap-x snap-mandatory">
         {nodes.map((node, index) => {
           const nodeSkills = bindings[node.id] || [];
           const isActive = currentNodeId === node.id;
@@ -62,7 +62,8 @@ export function LtcProcessTimeline({
             <div
               key={node.id}
               className={`
-                relative bg-white rounded-xl p-3 border transition-all duration-200 min-w-[180px] flex-shrink-0
+                relative bg-white rounded-xl p-2.5 sm:p-3 border transition-all duration-200
+                min-w-[140px] sm:min-w-[180px] flex-shrink-0 snap-start
                 ${isActive ? 'border-primary shadow-md shadow-primary/10' : 'border-gray-100 hover:border-gray-200'}
               `}
             >
@@ -75,11 +76,11 @@ export function LtcProcessTimeline({
               <div
                 onClick={() => onNodeClick?.(node)}
                 className={`
-                  relative w-10 h-10 mx-auto mb-3 flex items-center justify-center
+                  relative w-11 h-11 sm:w-10 sm:h-10 mx-auto mb-3 flex items-center justify-center
                   rounded-full transition-all duration-200 cursor-pointer border-2 shadow-sm
                   bg-primary border-white
                   ${isActive ? 'ring-2 ring-primary/30' : ''}
-                  ${onNodeClick ? 'hover:scale-105' : ''}
+                  ${onNodeClick ? 'hover:scale-105 active:scale-95' : ''}
                 `}
               >
                 <span className="text-sm font-bold text-white">
@@ -95,8 +96,9 @@ export function LtcProcessTimeline({
                 <div
                   onClick={() => onNodeClick?.(node)}
                   className={`
-                    inline-block px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer
+                    inline-block px-3 py-1.5 sm:py-1 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer
                     ${isActive ? 'bg-primary text-white border-2 border-white shadow-sm' : 'bg-white text-primary border-2 border-primary hover:bg-primary/5'}
+                    active:scale-95
                   `}
                 >
                   {node.name}
@@ -104,7 +106,7 @@ export function LtcProcessTimeline({
               </div>
 
               {/* Skills grid */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {nodeSkills.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-3 text-gray-400">
                     <Wrench className="w-4 h-4 mb-1 text-gray-300" />

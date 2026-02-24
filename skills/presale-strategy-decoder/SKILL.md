@@ -3,6 +3,18 @@ slug: presale-strategy-decoder
 name: 财报年报战略解码技能
 description: WPS 365 财报年报战略解码技能。当用户提供企业年报、战略规划文件、官网战略信息时使用。从客户年报/规划文件中提取销售机会，识别战略关键词，深度推理业务痛点，匹配 WPS 365 解决方案，生成破冰话术。
 category: presale-strategy-decoder
+parameters:
+  - name: company_name
+    type: string
+    label: 公司名称
+    required: true
+    placeholder: 公司名称或年报文件
+  - name: year
+    type: number
+    label: 年份
+    required: false
+    placeholder: 年报年份（默认为最新年份）
+    default: 2025
 ---# 财报年报战略解码技能
 
 # WPS 365 财报年报战略解码技能

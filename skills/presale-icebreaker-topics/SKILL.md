@@ -1,37 +1,76 @@
 ---
-name: presale-icebreaker-topics
+slug: presale-icebreaker-topics
+name: 破冰话题库
 description: WPS 365 售前破冰话题库技能。当陪领导应酬、和客户吃饭需要破冰话题时使用。基于地域文化、行业趋势、角色特点生成安全连接的破冰话题，低认知门槛、高情绪价值，让客户多说，避免敏感话题。
-tools: Read
+category: presale-icebreaker-topics
 parameters:
-  customer_location:
-    type: string
-    description: 客户所在城市/地区（如："北京"、"上海"、"广州"）
+  - name: customer_region
+    type: select
+    label: 客户地区
     required: false
-  customer_industry:
-    type: string
-    description: 客户行业（如："金融"、"政府"、"制造业"）
+    placeholder: 选择客户所在地区
+    options:
+      - label: 北京
+        value: beijing
+      - label: 上海
+        value: shanghai
+      - label: 广州/深圳
+        value: guangzhou
+      - label: 成都
+        value: chengdu
+      - label: 杭州
+        value: hangzhou
+      - label: 西安
+        value: xian
+      - label: 其他
+        value: other
+  - name: customer_industry
+    type: select
+    label: 客户行业
     required: false
-  customer_role:
-    type: string
-    description: 客户角色（如："CEO"、"CIO"、"业务负责人"）
+    placeholder: 选择客户行业
+    options:
+      - label: 金融
+        value: financial
+      - label: 政府
+        value: government
+      - label: 制造业
+        value: manufacturing
+      - label: 能源
+        value: energy
+      - label: 教育
+        value: education
+      - label: 其他
+        value: other
+  - name: customer_role
+    type: select
+    label: 客户角色
     required: false
-  scenario:
-    type: string
-    description: 应酬场景（如：商务午餐、正式晚宴、茶歇、高尔夫）
+    placeholder: 选择客户角色
+    options:
+      - label: CEO/总经理
+        value: ceo
+      - label: CIO/技术负责人
+        value: cio
+      - label: 业务负责人
+        value: business_lead
+      - label: 其他
+        value: other
+  - name: social_scenario
+    type: select
+    label: 应酬场景
     required: false
-  topic_types:
-    type: array
-    description: 话题类型偏好（如：["地域文化", "行业趋势", "角色导向", "万能话题"]）
-    required: false
-  conversation_style:
-    type: string
-    description: 对话风格（relaxed/正式/幽默），默认 relaxed
-    required: false
-  avoid_topics:
-    type: array
-    description: 需要回避的话题（如：["股市", "房���"]）
-    required: false
----
+    placeholder: 选择应酬场景
+    options:
+      - label: 商务午餐
+        value: business_lunch
+      - label: 正式晚宴
+        value: formal_dinner
+      - label: 茶歇
+        value: tea_break
+      - label: 其他
+        value: other
+---# 破冰话题库
 
 # WPS 365 售前破冰话题库技能
 

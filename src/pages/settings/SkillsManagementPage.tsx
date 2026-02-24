@@ -4,20 +4,14 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
 import type { Skill } from '../../types';
 import MDEditor from '@uiw/react-md-editor';
-import { RoleSkillConfigPanel } from '../../components/skill';
 import {
   Search,
   Plus,
   Upload,
   RefreshCw,
-  Settings,
   Wrench,
   ArrowLeft,
   Layers,
-  CheckCircle2,
-  XCircle,
-  Database,
-  Sparkles,
 } from 'lucide-react';
 
 interface SkillFormData {
@@ -99,7 +93,6 @@ const SKILL_TEMPLATES: SkillTemplate[] = [
 
 export default function SkillsManagementPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'skills' | 'roles'>('skills');
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -452,8 +445,7 @@ export default function SkillsManagementPage() {
               </h1>
               <p className="text-gray-500">管理系统技能，查看详情和编辑配置</p>
             </div>
-            {activeTab === 'skills' && (
-              <div className="flex gap-3">
+            <div className="flex gap-3">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -486,40 +478,10 @@ export default function SkillsManagementPage() {
                   {isSyncing ? '同步中...' : '同步'}
                 </button>
               </div>
-            )}
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 inline-flex mb-6">
-          <button
-            onClick={() => setActiveTab('skills')}
-            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'skills'
-                ? 'bg-[#1677FF] text-white shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <Layers className="w-4 h-4 inline mr-2" />
-            技能列表
-          </button>
-          <button
-            onClick={() => setActiveTab('roles')}
-            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'roles'
-                ? 'bg-[#1677FF] text-white shadow-md'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <Settings className="w-4 h-4 inline mr-2" />
-            角色技能配置
-          </button>
-        </div>
-
-        {/* Skills List Tab */}
-        {activeTab === 'skills' && (
-          <>
-            {/* Filters */}
+        {/* Filters */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 {/* Search */}
@@ -689,13 +651,6 @@ export default function SkillsManagementPage() {
             </div>
           ))}
         </div>
-      )}
-        </>
-      )}
-
-      {/* Role Config Tab */}
-      {activeTab === 'roles' && (
-        <RoleSkillConfigPanel skills={skills} />
       )}
       </div>
 

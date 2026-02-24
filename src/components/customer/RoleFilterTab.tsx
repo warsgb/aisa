@@ -15,22 +15,23 @@ const ROLES: Array<{ value: IronTriangleRole | 'ALL'; label: string }> = [
 
 export function RoleFilterTab({ activeRole, onRoleChange, disabled }: RoleFilterTabProps) {
   return (
-    <div className="inline-flex items-center gap-1 px-1 py-1 bg-gray-100 rounded-xl">
+    <div className="inline-flex items-center gap-1 sm:gap-1 px-1 py-1 bg-gray-100 rounded-xl overflow-x-auto max-w-full">
       {ROLES.map((role) => (
         <button
           key={role.value}
           onClick={() => !disabled && onRoleChange(role.value)}
           disabled={disabled}
           className={`
-            px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
+            px-3 sm:px-4 py-2.5 min-h-[44px] text-sm sm:text-sm font-medium rounded-lg transition-all duration-200 shrink-0
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             ${activeRole === role.value
               ? 'bg-white text-primary shadow-sm'
               : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
             }
+            active:scale-95
           `}
         >
-          {role.label}
+          <span className="truncate">{role.label}</span>
         </button>
       ))}
     </div>

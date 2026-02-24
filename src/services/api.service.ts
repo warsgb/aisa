@@ -586,8 +586,8 @@ class ApiService {
   }
 
   // Switch current team
-  async switchTeam(teamId: string): Promise<{ access_token: string; refresh_token: string }> {
-    return this.request<{ access_token: string; refresh_token: string }>('/auth/switch-team', {
+  async switchTeam(teamId: string): Promise<{ access_token: string; refresh_token: string; user: User; team: Team }> {
+    return this.request<{ access_token: string; refresh_token: string; user: User; team: Team }>('/auth/switch-team', {
       method: 'POST',
       body: JSON.stringify({ team_id: teamId }),
     });

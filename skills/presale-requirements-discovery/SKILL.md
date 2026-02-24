@@ -1,89 +1,43 @@
 ---
-name: presale-requirements-discovery
+slug: presale-requirements-discovery
+name: 需求挖掘分析
 description: WPS 365 需求挖掘助手技能。当用户需要挖掘客户隐性痛点、生成 SPIN 提问脚本、进行顾问式诊断时使用。基于 JTBD 分析法和 SPIN 提问技术，结合 WPS 365 产品能力，将普通拜访转化为价值导向的咨询对话。
-tools: Read, WebSearch, Skill
+category: presale-requirements-discovery
 parameters:
-  target:
+  - name: customer_name
     type: string
-    description: 客户公司名称/行业
+    label: 客户公司名称
     required: true
-  role:
-    type: string
-    description: 目标角色（如：运管中心主任、CIO、业务负责人）
+    placeholder: 客户公司名称
+  - name: target_role
+    type: select
+    label: 目标角色
     required: true
-  scenario:
-    type: string
-    description: 具体业务场景（如：多地协同的应急指挥与预案修编）
+    placeholder: 选择目标客户角色
+    options:
+      - label: CEO/总经理
+        value: ceo
+      - label: CIO/技术负责人
+        value: cio
+      - label: 业务负责人
+        value: business_lead
+      - label: IT经理
+        value: it_manager
+  - name: scenario
+    type: textarea
+    label: 业务场景
     required: true
-  current_status:
-    type: string
-    description: 客户现状（如：使用传统办公软件，信息化程度中等）
-    required: false
-  job_focus:
-    type: string
-    description: 核心任务关注点（如：应急响应速度、协同效率、预案管理）
-    required: false
-  question_style:
-    type: string
-    description: 提问风格（consultative/探索式/挑战式），默认 consultative
-    required: false
-  include_simulation:
+    placeholder: 具体的业务场景，如：多地协同的应急指挥、跨地域协同办公等
+  - name: include_simulation
     type: boolean
-    description: 是否包含模拟实战演练
+    label: 包含模拟实战
     required: false
+    placeholder: 是否生成模拟实战对话
+    default: true
 ---
+# 需求挖掘分析
 
-# WPS 365 需求挖掘助手技能
-
-基于 JTBD（Jobs-to-be-Done）分析法和 SPIN 提问技术，挖掘客户隐性痛点，生成顾问式诊断脚本，将普通拜访转化为"顾问式诊断"。
-
-## 核心价值
-
-- **挖掘隐性痛点**：从 JTBD 视角分析日常工作中的"摩擦点"
-- **SPIN 提问脚本**：S/P/I/N 四类问题设计，不让客户反感
-- **后果牵连**：引导客户自己说出不解决问题的后果
-- **价值畅想**：让客户畅想解决问题后的美好状态
-- **模拟实战**：角色扮演，模拟"冷淡型"客户回应
-
-## 触发条件
-
-当用户提供以下任一信息时，启动本技能：
-
-1. **需要挖掘客户痛点**："帮我挖掘某公司的隐性需求"
-2. **生成提问脚本**："为 CEO 拜访生成 SPIN 提问脚本"
-3. **顾问式诊断准备**："我要拜访某客户，如何提问效果好？"
-4. **需求深度挖掘**："如何挖掘客户未明确表达的需求？"
-
-**示例**：
-- "帮我挖掘某轨道交通公司运管中心的隐性需求"
-- "为应急指挥场景生成 SPIN 提问脚本"
-- "我要拜访某大型国企 CIO，需要顾问式诊断脚本"
-
-## 使用流程
-
-### 第一步：理解客户场景
-
-#### 信息收集
-
-从用户输入中提取关键信息：
-- **target**：客户公司名称/行业
-- **role**：目标角色
-- **scenario**：具体业务场景
-- **current_status**：客户现状（可选）
-- **job_focus**：核心任务关注点（可选）
-
-#### 角色关注点分析
-
-基于 `decision-chain-framework.md` 分析目标角色的核心关注点：
-
-| 角色 | 核心关注 | 首选策略 |
-|------|----------|----------|
-| CEO/总经理 | 战略价值、ROI、风险控制、竞争优势 | 影响力 + 业务增长 |
-| CIO/CTO | 技术架构、运维成本、安全性、可扩展性 | 提效 + 安全 |
-| 业务负责人 | 业务效率、协作体验、业务价值 | 提效 + 业务增长 |
-| IT 经理 | 技术实现、兼容性、权限管理、数据迁移 | 技术细节 + 安全 |
-
----
+# 需求挖掘分析报告
 
 ### 第二步：JTBD 痛点挖掘分析
 

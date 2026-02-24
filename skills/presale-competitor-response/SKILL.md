@@ -1,146 +1,43 @@
 ---
-name: presale-competitor-response
+slug: presale-competitor-response
+name: 竞品反制策略报告
 description: WPS 365 竞品"杀手锏"反制技能。当客户提到竞品优势、面临竞品竞争、需要应对竞品话术时使用。采用 FUD 策略（捧杀-转折-重构），针对不同客户类型提供差异化反制策略，生成竞品反制话术。
-tools: Read
+category: presale-competitor-response
 parameters:
-  competitor:
-    type: string
-    description: 竞品名称，如"微软 365"、"飞书"、"钉钉"
+  - name: competitor
+    type: select
+    label: 竞品名称
     required: true
-  customer_type:
-    type: string
-    description: 客户类型（soe/financial/government/private）
-    required: false
-  competitor_advantage:
-    type: string
-    description: 客户提到的竞品优势
-    required: false
+    placeholder: 选择要应对的竞品
+    options:
+      - label: 微软 365 (Microsoft 365)
+        value: microsoft365
+      - label: 飞书
+        value: feishu
+      - label: 钉钉
+        value: dingtalk
+      - label: 石墨文档
+        value: shimo
+      - label: 腾讯文档
+        value: tencent_docs
+  - name: customer_type
+    type: select
+    label: 客户类型
+    required: true
+    placeholder: 选择客户类型
+    options:
+      - label: 国企/央企
+        value: soe
+      - label: 金融机构
+        value: financial
+      - label: 政府/涉密
+        value: government
+      - label: 民企/外企
+        value: private
+      - label: 其他
+        value: other
 ---
-
-# WPS 365 竞品"杀手锏"反制技能
-
-应对竞品"杀手锏"，采用 FUD 策略（捧杀-转折-重构），针对不同客户类型提供差异化反制策略，生成竞品反制话术。
-
-## 触发条件
-
-当用户遇到以下任一场景时，启动本技��：
-
-1. **客户提到竞品**："微软 365 也不错"、"飞书体验挺好"
-2. **客户对比竞品**："你们和飞书有什么区别？"
-3. **竞品优势明显**：客户强调竞品的某个优势
-4. **需要竞品对比表**：生成 WPS 365 vs 竞品对比表
-
-**示例**：
-- "客户说微软 365 更好用，怎么回应？"
-- "飞书和 WPS 365 的区别是什么？"
-- "国企客户看重信创，如何应对微软 365？"
-
-## 使用流程
-
-### 第一步：识别竞品和客户类型
-
-#### 识别竞品
-
-**主流竞品**：
-- 微软 365 (Microsoft 365)
-- 飞书 (Feishu/Lark)
-- 钉钉 (DingTalk)
-- 腾讯会议 (Tencent Meeting)
-- 企业微信 (WeCom)
-- Google Workspace
-
-#### 识别客户类型
-
-**客户类型分类**：
-
-| 客户类型 | 标签 | 核心关注 | 反制角度 |
-|---------|------|----------|----------|
-| 国企/央企 | soe | 信创、国产化、数据主权 | 强调信创、私有化、涉密认证 |
-| 金融机构 | financial | 合规、审计、数据安全 | 强调合规、等保、审计留痕 |
-| 政府/涉密 | government | 涉密认证、私有化 | 强调涉密、私有化、自主可控 |
-| 民企/外企 | private | 性价比、功能、体验 | 强调性价比、本土化服务 |
-
-### 第二步：分析竞品优势
-
-#### 微软 365 优势分析
-
-**核心优势**：
-1. 产品成熟度高、Office 品牌认知度高
-2. 生态完善、与 Windows、Azure 深度集成
-3. 协同体验好（Teams、SharePoint）
-4. AI 能力强（Copilot）
-
-**典型弱点**：
-1. 价格昂贵
-2. 数据出境（合规风险）
-3. 信创不支持
-4. 本土化服务弱
-5. 私有化部署受限
-
-#### 飞书优势分析
-
-**核心优势**：
-1. 互联网体验、UI/UX 设计优秀
-2. 集成度高、IM、文档、日历深度集成
-3. 开放平台、API 丰富
-4. 移动端体验好
-
-**典型弱点**：
-1. 无私有化部署（仅公有云）
-2. 学习成本高（互联网设计）
-3. 文档格式兼容不如 WPS
-4. 国企适配度低
-5. 信创支持弱
-
-#### 钉钉优势分析
-
-**核心优势**：
-1. 流程固化强（审批、考勤）
-2. 用户基数大、认知度高
-3. ISV 生态丰富
-4. 与钉钉硬件深度集成
-
-**典型弱点**：
-1. 定制难（流程固化）
-2. 封闭生态
-3. 文档协作弱
-4. 信创支持弱
-5. 企业级功能弱
-
-#### 腾讯会议优势分析
-
-**核心优势**：
-1. 会议体验好、音视频质量高
-2. 易用性强、界面简洁
-3. 用户基数大（依托微信）
-4. 免费版可用
-
-**典型弱点**：
-1. 功能单一（仅会议）
-2. 安全风险（数据出境）
-3. 缺乏协同集成
-4. 信创不支持
-5. 企业级功能弱
-
-### 第三步：FUD 策略应用
-
-#### 三步走结构
-
-**1. 捧杀（公允）**
-
-**目的**：建立信任，认可竞品优势
-
-**话术模板**：
-- "XX功能在个人场景确实很方便..."
-- "XX产品在XX行业确实有不错的表现..."
-- "XX公司的产品能力确实强..."
-
-**示例**：
-- "Office 产品确实成熟，个人场景用起来很方便"
-- "飞书在互联网企业体验确实不错"
-- "钉钉在中小企业确实普及度高"
-
----
+# 竞品反制策略报告
 
 **2. 转折（过渡）**
 

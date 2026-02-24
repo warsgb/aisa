@@ -1,33 +1,17 @@
 ---
-name: financial-customer-research
+slug: financial-customer-research
+name: 金融与国企客户深度研究
 description: WPS 365 金融行业与国企客户研究技能。当用户提供金融机构名称（如"招商银行"、"平安保险"）、国企名称（如"国家电网"、"中石油"、"中国移动"）、部门、岗位时使用。自动识别客户类型（金融/国企），生成6张结构化分析表格（基础客户情况、BU业务情况、部门业务逻辑、决策链条、招投标信息、子公司信息），完整的研究报告，并匹配 WPS 365 解决方案。支持从巨潮网、国资委官网、公司官网、行业协会等多个数据源获取信息。
+category: financial-customer-research
 parameters:
-  target:
+  - name: target
     type: string
     label: 研究目标
-    description: 研究目标，可以是公司名称、简称、部门、岗位等
     required: true
-  research_depth:
-    type: string
-    label: 研究深度
-    description: 研究深度（quick/standard/comprehensive），默认 standard
-    required: false
-  focus_areas:
-    type: array
-    label: 关注领域
-    description: 关注领域，如 ["协同办公", "数据安全", "AI应用"]
-    required: false
-  include_bidding:
-    type: boolean
-    label: 检索招投标
-    description: 是否包含招投标信息（默认 false）
-    required: false
-  include_subsidiaries:
-    type: boolean
-    label: 包含子公司
-    description: 是否包含子公司信息（默认 false）
-    required: false
+    placeholder: 公司名称、部门或岗位（如：招商银行零售金融部、中国平安寿险事业部、银行业CIO）
 ---
+# 金融与国企客户深度研究
+
 # WPS 365 金融行业与国企客户研究技能
 
 为 WPS 365 售前团队提供专业的金融行业与国企客户研究支持，自动识别客户类型，生成结构��分析报告和解决方案匹配。
@@ -223,9 +207,8 @@ parameters:
 
 **触发条件**（满足任一即触发）：
 1. 用户明确要求："帮我查一下XX银行的招投标信息"
-2. `research_depth` 为 `comprehensive`：自动查询最近6个月招投标信息
-3. IT投入>1亿/年：大客户，值得深入挖掘
-4. `include_bidding` 参数为 `true`
+2. 企业性质为大型集团：IT投入>1亿/年，值得深入挖掘
+3. 研究目标是大型国企或央企：自动查询招投标信息
 
 **数据获取方法**（按优先级，全面搜索）：
 
@@ -284,7 +267,7 @@ parameters:
 1. 用户明确要求："帮我查一下XX公司的子公司"
 2. 企业性质为集团（从基础信息判断）
 3. 公司规模>1000亿：大型集团，必有子公司
-4. `include_subsidiaries` 参数为 `true`
+4. 研究目标是大型国企或央企：自动查询子公司信息
 
 **数据获取方法**（按优先级）：
 1. **公司官网**（免费，主要数据源）

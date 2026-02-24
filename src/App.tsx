@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
+import { MobileLayout } from './components/layout/MobileLayout';
 import LoginPage from './pages/auth/LoginPage';
-import HomePage from './pages/home/HomePage';
+import { AdaptiveHomePage } from './pages/home/AdaptiveHomePage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import CustomersPage from './pages/customers/CustomersPage';
 import SkillsPage from './pages/skills/SkillsPage';
@@ -14,9 +15,11 @@ import SkillsManagementPage from './pages/settings/SkillsManagementPage';
 import SystemPage from './pages/system/SystemPage';
 import SystemConfigPage from './pages/system/SystemConfigPage';
 import LtcConfigPage from './pages/ltc-config/LtcConfigPage';
+import { useIsMobile } from './hooks/useMediaQuery';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+  const isMobile = useIsMobile();
 
   if (isLoading) {
     return (
@@ -28,6 +31,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Use mobile layout without sidebar for mobile screens
+  if (isMobile) {
+    return <MobileLayout>{children}</MobileLayout>;
   }
 
   return <Layout>{children}</Layout>;
@@ -65,7 +73,7 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <HomePage />
+                <AdaptiveHomePage />
               </ProtectedRoute>
             }
           />
@@ -73,7 +81,7 @@ function App() {
             path="/home"
             element={
               <ProtectedRoute>
-                <HomePage />
+                <AdaptiveHomePage />
               </ProtectedRoute>
             }
           />

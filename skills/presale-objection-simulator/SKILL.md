@@ -1,33 +1,51 @@
 ---
-name: presale-objection-simulator
+slug: presale-objection-simulator
+name: 异议攻防模拟器
 description: WPS 365 异议攻防模拟器技能。当用户需要模拟拜访挑剔客户、进行异议应对训练时使用。AI 扮演各种类型的挑剔客户，进行多轮攻防对话，提供教练复盘点评，帮助售前人员脱敏训练。
-tools: Read
+category: presale-objection-simulator
 parameters:
-  customer_role:
-    type: string
-    description: 客户角色类型（如：技术控CIO、务实CEO、合规狂人、信创强硬派、价格敏感型）
+  - name: customer_role
+    type: select
+    label: 客户角色类型
     required: true
-  customer_personality:
-    type: string
-    description: 客户性格特征（如：多疑、挑剔、技术控、反感SaaS、只信赖物理隔离、时间紧张）
-    required: false
-  product_solution:
-    type: string
-    description: 推销的 WPS 365 解决方案（如：混合云方案、私有化部署、一体化协同平台）
+    placeholder: 选择要模拟的客户角色
+    options:
+      - label: 技术控CIO
+        value: technical_cio
+      - label: 务实CEO
+        value: practical_ceo
+      - label: 合规狂人
+        value: compliance_expert
+      - label: 价格敏感型
+        value: price_sensitive
+      - label: 信创强硬派
+        value: domestic_hardliner
+  - name: solution
+    type: textarea
+    label: 推销的解决方案
     required: true
-  attack_intensity:
-    type: string
-    description: 攻击强度（mild/medium/harsh/brutal），默认 medium
+    placeholder: 描述您要推销的WPS 365解决方案
+  - name: attack_intensity
+    type: select
+    label: 攻击强度
     required: false
-  focus_areas:
-    type: array
-    description: 攻击关注点（如：[数据安全, 成本质疑, 竞品对比]）
+    placeholder: 选择客户攻击强度
+    options:
+      - label: 温和 (mild)
+        value: mild
+      - label: 中等 (medium)
+        value: medium
+      - label: 严厉 (harsh)
+        value: harsh
+      - label: 苛刻 (brutal)
+        value: brutal
+    default: medium
+  - name: focus_areas
+    type: textarea
+    label: 攻击关注点
     required: false
-  include_reference:
-    type: boolean
-    description: 是否在复盘中提供话术参考
-    required: false
----
+    placeholder: 如：数据安全、成本质疑、竞品对比等
+---# 异议攻防模拟器
 
 # WPS 365 异议攻防模拟器技能
 

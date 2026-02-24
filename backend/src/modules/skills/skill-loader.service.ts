@@ -171,7 +171,7 @@ export class SkillLoaderService {
     frontmatter: SkillFrontmatter;
     markdown: string;
   } {
-    const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+    const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/;
     const match = content.match(frontmatterRegex);
 
     if (!match) {
@@ -246,7 +246,7 @@ export class SkillLoaderService {
     this.logger.log(`[parseYamlParameters] First 200 chars:\n${parametersStr.substring(0, 200)}`);
 
     let currentParam: any = null;
-    let paramBaseIndent: number | null = null; // Indentation of parameter names (e.g., "target_role:")
+    let paramBaseIndent: number | null = null; // Indentation of parameter items (e.g., "- name:")
 
     for (const line of lines) {
       const trimmed = line.trim();
@@ -255,24 +255,58 @@ export class SkillLoaderService {
       const indent = line.search(/\S/);
       this.logger.log(`[parseYamlParameters] Line indent=${indent}, trimmed="${trimmed.substring(0, 30)}"`);
 
-      // Auto-detect the indentation level for parameter names
-      // Parameter names are the ones that have property definitions nested under them
+      // Auto-detect the indentation level for parameter items
+      // Parameters in YAML list format start with "- name:"
       if (paramBaseIndent === null) {
-        // Check if this line looks like a parameter name (followed by nested properties on next lines)
-        const isPotentialParamName = trimmed.match(/^\w+:\s*$/);
-        if (isPotentialParamName) {
-          // Look ahead to see if next line has more indentation (indicating nested properties)
+        // Check if this line looks like a YAML list item parameter
+        const isListItemParam = trimmed.match(/^-\s*name:\s*(.+)$/);
+        if (isListItemParam) {
+          // This is a parameter in YAML list format: "- name: xxx"
+          paramBaseIndent = indent;
+          this.logger.log(`[parseYamlParameters] Detected parameter base indent (list format): ${paramBaseIndent}`);
+
+          const paramName = isListItemParam[1].trim();
+
+          currentParam = {
+            name: paramName,
+            type: 'string',
+            label: this.getParameterLabel(paramName),
+            required: false,
+            description: '',
+            placeholder: '',
+          };
+
+          this.logger.log(`[parseYamlParameters] Found parameter (list format): ${paramName}`);
+          continue;
+        }
+
+        // Also check for non-list format (though it's less common now)
+        const isNonListParam = trimmed.match(/^name:\s*(.+)$/);
+        if (isNonListParam) {
+          // Look ahead to see if next line has more indentation
           const lineIndex = lines.indexOf(line);
           if (lineIndex < lines.length - 1) {
             const nextLine = lines[lineIndex + 1];
             const nextIndent = nextLine.search(/\S/);
             if (nextIndent > indent) {
-              // This is a parameter name with nested properties
               paramBaseIndent = indent;
-              this.logger.log(`[parseYamlParameters] Detected parameter base indent: ${paramBaseIndent}`);
+              this.logger.log(`[parseYamlParameters] Detected parameter base indent (non-list format): ${paramBaseIndent}`);
+
+              const paramName = isNonListParam[1].trim();
+              currentParam = {
+                name: paramName,
+                type: 'string',
+                label: this.getParameterLabel(paramName),
+                required: false,
+                description: '',
+                placeholder: '',
+              };
+              this.logger.log(`[parseYamlParameters] Found parameter (non-list format): ${paramName}`);
+              continue;
             }
           }
         }
+
         // Skip lines until we know the parameter indent
         if (paramBaseIndent === null) continue;
       }
@@ -280,27 +314,57 @@ export class SkillLoaderService {
       // Check if this is a new parameter (at the base indent level)
       if (indent === paramBaseIndent) {
         // Save previous parameter if exists
-        if (currentParam) {
+        if (currentParam && currentParam.name) {
           this.logger.log(`[parseYamlParameters] Saving param: ${currentParam.name}`);
           parameters.push(currentParam);
         }
 
         // Start new parameter
+        // Check for list format: "- name: xxx" or "- name:"
+        const listMatch = trimmed.match(/^-\s*name:\s*(.*)$/);
+        if (listMatch) {
+          const paramName = listMatch[1].trim();
+          currentParam = {
+            name: paramName,
+            type: 'string',
+            label: this.getParameterLabel(paramName),
+            required: false,
+            description: '',
+            placeholder: '',
+          };
+          this.logger.log(`[parseYamlParameters] Found parameter (list format): ${paramName}`);
+          continue;
+        }
+
+        // If we're at base indent but this is not a valid parameter definition,
+        // clear currentParam to prevent saving it again
+        if (currentParam && currentParam.name) {
+          this.logger.log(`[parseYamlParameters] Invalid parameter definition at indent ${indent}, clearing currentParam to prevent duplicate save`);
+          currentParam = null;
+        }
+
+        // Check for non-list format: "name: xxx"
         const match = trimmed.match(/^(\w+):\s*(.*)$/);
         if (match) {
           const paramName = match[1];
           const value = match[2].trim();
 
-          this.logger.log(`[parseYamlParameters] Found parameter: ${paramName} with value: ${value}`);
-
-          currentParam = {
-            name: paramName,
-            type: 'string',
-            label: this.getParameterLabel(paramName), // Default label (will be overridden if 'label' field is present)
-            required: false,
-            description: value || '',
-            placeholder: '',
-          };
+          if (paramName === 'name' && !currentParam) {
+            // Starting a new parameter in non-list format
+            this.logger.log(`[parseYamlParameters] Found parameter (non-list format): ${value}`);
+            currentParam = {
+              name: value,
+              type: 'string',
+              label: this.getParameterLabel(value),
+              required: false,
+              description: '',
+              placeholder: '',
+            };
+          } else if (currentParam) {
+            // This is actually a property of the previous parameter
+            this.logger.log(`[parseYamlParameters] Property ${currentParam.name}.${paramName} = ${value}`);
+            this.updateParamProperty(currentParam, paramName, value);
+          }
         }
       } else if (currentParam && indent > paramBaseIndent) {
         // Parse nested property
@@ -310,52 +374,13 @@ export class SkillLoaderService {
           const value = keyMatch[2].trim();
 
           this.logger.log(`[parseYamlParameters] Property ${currentParam.name}.${key} = ${value}`);
-
-          switch (key) {
-            case 'type':
-              currentParam.type = value;
-              break;
-            case 'label':
-              // User-defined Chinese label (takes priority)
-              currentParam.label = value;
-              break;
-            case 'description':
-              currentParam.description = value;
-              break;
-            case 'required':
-              currentParam.required = value === 'true';
-              break;
-            case 'placeholder':
-              currentParam.placeholder = value;
-              break;
-            case 'options':
-              // Handle array-like options: ["a", "b", "c"]
-              if (value.startsWith('[')) {
-                try {
-                  currentParam.options = JSON.parse(value.replace(/'/g, '"'));
-                } catch {
-                  currentParam.options = value.split(/,\s*/).map((v: string) => v.trim().replace(/[\[\]"']/g, ''));
-                }
-              } else if (value.includes(',')) {
-                currentParam.options = value.split(',').map((v: string) => v.trim());
-              } else {
-                currentParam.options = [value];
-              }
-              break;
-            case 'default':
-              try {
-                currentParam.default = JSON.parse(value);
-              } catch {
-                currentParam.default = value;
-              }
-              break;
-          }
+          this.updateParamProperty(currentParam, key, value);
         }
       }
     }
 
     // Don't forget the last parameter
-    if (currentParam) {
+    if (currentParam && currentParam.name) {
       this.logger.log(`[parseYamlParameters] Saving final param: ${currentParam.name}`);
       parameters.push(currentParam);
     }
@@ -363,6 +388,46 @@ export class SkillLoaderService {
     this.logger.log(`[parseYamlParameters] Total parameters parsed: ${parameters.length}`);
 
     return parameters;
+  }
+
+  private updateParamProperty(param: any, key: string, value: string): void {
+    switch (key) {
+      case 'type':
+        param.type = value;
+        break;
+      case 'label':
+        param.label = value;
+        break;
+      case 'description':
+        param.description = value;
+        break;
+      case 'required':
+        param.required = value === 'true';
+        break;
+      case 'placeholder':
+        param.placeholder = value;
+        break;
+      case 'options':
+        if (value.startsWith('[')) {
+          try {
+            param.options = JSON.parse(value.replace(/'/g, '"'));
+          } catch {
+            param.options = value.split(/,\s*/).map((v: string) => v.trim().replace(/[\[\]"']/g, ''));
+          }
+        } else if (value.includes(',')) {
+          param.options = value.split(',').map((v: string) => v.trim());
+        } else {
+          param.options = [value];
+        }
+        break;
+      case 'default':
+        try {
+          param.default = JSON.parse(value);
+        } catch {
+          param.default = value;
+        }
+        break;
+    }
   }
 
   private getParameterLabel(paramName: string): string {
@@ -471,7 +536,7 @@ export class SkillLoaderService {
       }
 
       // Stop if we hit the end of frontmatter (should not happen, but safety check)
-      if (trimmed === '---') {
+      if (trimmed === '---' || trimmed.startsWith('---')) {
         break;
       }
 
@@ -548,15 +613,14 @@ export class SkillLoaderService {
         data.supports_multi_turn !== undefined ? `supports_multi_turn: ${data.supports_multi_turn}` : null,
         data.parameters ? `parameters: ${JSON.stringify(data.parameters)}` : null,
         '---',
-        '',
       ].filter(Boolean).join('\n');
 
       // 构建 markdown 内容
       const markdownContent = `# ${data.name}\n\n${data.system_prompt}`;
 
-      // 写入文件
+      // 写入文件 (确保 frontmatter 和 markdown 之间有换行)
       const skillMdPath = path.join(fullPath, 'SKILL.md');
-      fs.writeFileSync(skillMdPath, frontmatter + markdownContent, 'utf-8');
+      fs.writeFileSync(skillMdPath, frontmatter + '\n' + markdownContent, 'utf-8');
 
       this.logger.log(`Skill saved to ${skillMdPath}`);
       return true;

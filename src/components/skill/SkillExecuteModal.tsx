@@ -395,19 +395,15 @@ export function SkillExecuteModal({
         );
 
       case 'select':
+        // 将 select 类型改为输入框，允许用户自由输入
         return (
-          <select
+          <input
+            type="text"
             value={String(value || '')}
             onChange={(e) => handleParameterChange(param.name, e.target.value)}
+            placeholder={param.placeholder || (param.options?.length ? `可选: ${param.options.map(o => typeof o === 'string' ? o : o.label).join(', ')}` : '')}
             className={baseClassName}
-          >
-            <option value="">请选择...</option>
-            {param.options?.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+          />
         );
 
       case 'textarea':
@@ -448,20 +444,20 @@ export function SkillExecuteModal({
   if (!isOpen || !skill) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="w-full min-w-[900px] min-h-[600px] max-w-6xl max-h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 lg:p-4 bg-black/50">
+      <div className="w-full h-full lg:h-auto lg:min-w-[900px] lg:min-h-[600px] lg:max-w-6xl lg:max-h-[90vh] bg-white lg:rounded-xl shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">{skill.name}</h2>
+        <div className="flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4 border-b border-gray-100 shrink-0">
+          <div className="min-w-0 flex-1 mr-4">
+            <h2 className="text-base lg:text-lg font-semibold text-gray-900 truncate">{skill.name}</h2>
             {skill.description && (
-              <p className="text-sm text-gray-500 mt-0.5">{skill.description}</p>
+              <p className="text-xs lg:text-sm text-gray-500 mt-0.5 line-clamp-2">{skill.description}</p>
             )}
           </div>
           <button
             onClick={onClose}
             disabled={isExecuting}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 shrink-0"
           >
             ✕
           </button>

@@ -1,93 +1,35 @@
 ---
-name: presale-executive-storyline
+slug: presale-executive-storyline
+name: 高层拜访故事线
 description: WPS 365 高层拜访故事线规划技能。当用户需要生成针对 CXO 级别高层的拜访故事线思路、将技术痛点升华为商业指标时使用。基于战略解码结果，生成 SCQA/QSCA 故事线框架，提供北极星方案和关键论据。
-tools: WebSearch, mcp__web_reader__webReader, Read, Skill
+category: presale-executive-storyline
 parameters:
-  target:
+  - name: customer_name
     type: string
-    description: 客户名称
+    label: 客户公司名称
     required: true
-  role:
-    type: string
-    description: 高层角色（CEO/CIO/业务负责人等）
+    placeholder: 客户公司名称
+  - name: target_role
+    type: select
+    label: 目标角色
     required: true
-  story_model:
-    type: string
-    description: 故事线模型（SCQA/QSCA/auto，默认auto）
+    placeholder: 选择目标高层角色
+    options:
+      - label: CEO/总经理
+        value: ceo
+      - label: CIO/CTO
+        value: cio
+      - label: CFO
+        value: cfo
+      - label: 其他高管
+        value: other
+  - name: focus_areas
+    type: textarea
+    label: 关注领域
     required: false
-  focus_areas:
-    type: array
-    description: 关注点（["影响力", "业务", "安全", "提效"]，自动推断）
-    required: false
-  mode:
-    type: string
-    description: 运行模式（detailed/quick，默认detailed）
-    required: false
-  analysis_result:
-    type: object
-    description: 战略解码分析结果（可选，如已有）
-    required: false
-    properties:
-      strategic_keywords:
-        type: array
-      pain_points:
-        type: array
-      wps_solutions:
-        type: array
-  industry:
-    type: string
-    description: 行业类型（快速模式使用）
-    required: false
-  known_pain_points:
-    type: array
-    description: 已知痛点（快速模式使用）
-    required: false
+    placeholder: 如：业务增长、数字化转型、降本增效等
 ---
-
-# WPS 365 高层拜访故事线规划技能
-
-生成针对 CXO 级别高层的拜访故事线思路，将技术痛点升华为商业指标，基于战略解码结果，生成结构化的 SCQA/QSCA 故事线框架。
-
-## 核心价值
-
-- **技术痛点升华为商业指标**：将"系统分散"转化为"效率提升30%，打造行业标杆"
-- **北极星方案清晰**：一句话概括核心价值，快速抓住高层注意力
-- **SCQA 结构完整**：背景、冲突、问题、方案，逻辑清晰递进
-- **高层关注点匹配**：针对 CEO/CIO 的不同关注点定制
-
-## 触发条件
-
-当用户遇到以下任一场景时，启动本技能：
-
-1. **需要生成高层拜访故事线**："帮我生成 CEO 拜访故事线"
-2. **基于战略解码结果**："基于上面的分析，生成 CIO 拜访故事线"
-3. **快速生成行业模板**："快速生成金融行业 CEO 故事线"
-4. **不同角色定制**："生成面向业务负责人的故事线"
-
-**示例**：
-- "帮我分析北京建工，并生成 CEO 拜访故事线"
-- "基于战略解码结果，生成 CIO 拜访思路"
-- "快速生成金融行业 CEO 故事线"
-
-## 高层四大关注点
-
-| 关注点 | 核心诉求 | WPS 365 对接话术 |
-|--------|----------|------------------|
-| **影响力** | 个人政绩、打造标杆、行业领先 | "打造成行业数字化标杆" |
-| **业务增长** | 核心指标、资产增长、业务创新 | "效率提升→业务响应快→收入增长" |
-| **安全** | 政策要求、数据安全、合规 | "等保三级、涉密认证、数据不出境" |
-| **提效** | 世界500强实践、同行对比 | "某同行效率提升50%" |
-
-## 使用流程
-
-### ⚠️ 重要：年份使用规则
-
-**当前年份规则**：
-- 当前系统年份：**2026年**
-- 搜索年报时优先搜索**2025年年报**
-- 报告中所有日期标注使用当前年份
-
----
+# 高层拜访故事线
 
 ### 模式1：自动调用战略解码（推荐）
 

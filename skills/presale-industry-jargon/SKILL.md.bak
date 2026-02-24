@@ -3,29 +3,6 @@ slug: presale-industry-jargon
 name: 行业黑话速成指南
 description: WPS 365 行业黑话速成技能。当用户需要快速掌握行业术语、建立信任、避免"露怯"时使用。提供行业四级分类体系（行业/子行业/场景/角色���，黑话三维表结构（黑话/一句话解释/售前怎么用/风险提示），快速掌握行业术语。
 category: presale-industry-jargon
-parameters:
-  - name: industry
-    type: select
-    label: 行业名称
-    required: true
-    placeholder: 选择要学习的行业
-    options:
-      - label: 银行业
-        value: banking
-      - label: 保险业
-        value: insurance
-      - label: 证券业
-        value: securities
-      - label: 能源行业
-        value: energy
-      - label: 政府与国企
-        value: government
-      - label: 制造业
-        value: manufacturing
-      - label: 医疗行业
-        value: healthcare
-      - label: 教育行业
-        value: education
 ---
 # 行业黑话速成指南
 

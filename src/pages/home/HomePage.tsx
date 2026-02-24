@@ -7,7 +7,7 @@ import {
   useLtcConfigStore,
   useSkillFilterStore,
 } from '../../stores';
-import type { Customer, Skill, SkillInteraction, LtcNode } from '../../types';
+import type { Customer, Skill, SkillInteraction, LtcNode, IronTriangleRole, TeamRoleSkillConfig } from '../../types';
 
 import { CustomerSearchSelect, RoleFilterTab } from '../../components/customer';
 import { LtcProcessTimeline } from '../../components/ltc/LtcProcessTimeline';
@@ -24,7 +24,7 @@ import {
   Target,
 } from 'lucide-react';
 
-export default function HomePage() {
+export function DesktopHomePage() {
   const { team } = useAuth();
   const {
     currentCustomer,
@@ -32,11 +32,12 @@ export default function HomePage() {
     setCustomerProfile,
   } = useCurrentCustomerStore();
   const { nodes, bindings, setNodes, setBindings } = useLtcConfigStore();
-  const { filterType, setFilterType, roleFilter, setRoleFilter, isFavoriteSkill, setTeamRoleSkillConfigs } = useSkillFilterStore();
+  const { filterType, roleFilter, isFavoriteSkill, setFilterType, setRoleFilter } = useSkillFilterStore();
 
   // Local state
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [interactions, setInteractions] = useState<SkillInteraction[]>([]);
+  const [roleSkillConfigs, setRoleSkillConfigs] = useState<Partial<Record<IronTriangleRole, string[]>>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hasInitialized = useRef(false);
@@ -56,7 +57,7 @@ export default function HomePage() {
 
       // Apply role filter: if a specific role is selected, only show that role's default skills
       if (roleFilter !== 'ALL') {
-        const roleSkillIds = useSkillFilterStore.getState().getRoleDefaultSkills(roleFilter);
+        const roleSkillIds = roleSkillConfigs[roleFilter as IronTriangleRole] || [];
         skills = skills.filter((skill) => roleSkillIds.includes(skill.id));
       }
       // Apply favorite filter: if FAVORITE, only show favorite skills
@@ -140,13 +141,13 @@ export default function HomePage() {
         });
 
         // Store role skill configs for filtering
-        const configsMap: Partial<Record<'AR' | 'SR' | 'FR', string[]>> = {};
-        roleConfigsData.forEach((c: any) => {
+        const configsMap: Partial<Record<IronTriangleRole, string[]>> = {};
+        roleConfigsData.forEach((c: TeamRoleSkillConfig) => {
           if (c.role && c.default_skill_ids) {
-            configsMap[c.role as 'AR' | 'SR' | 'FR'] = c.default_skill_ids;
+            configsMap[c.role] = c.default_skill_ids;
           }
         });
-        setTeamRoleSkillConfigs(configsMap);
+        setRoleSkillConfigs(configsMap);
 
         hasInitialized.current = true;
       } catch (err) {
@@ -157,7 +158,7 @@ export default function HomePage() {
     };
 
     loadData();
-  }, [team?.id, setNodes, setBindings, setTeamRoleSkillConfigs]);
+  }, [team?.id, setNodes, setBindings]);
 
   // Filter interactions when customer changes or after initial load completes
   useEffect(() => {
@@ -188,6 +189,7 @@ export default function HomePage() {
 
   // Handle customer selection
   const handleCustomerSelect = useCallback(async (customer: Customer | null) => {
+    console.log('[HomePage] handleCustomerSelect called with:', customer);
     setCurrentCustomer(customer);
 
     if (customer && team?.id) {
@@ -274,50 +276,54 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Top navigation bar */}
       <div className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-[1800px] mx-auto px-6 py-4">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            {/* Left: Customer selector + Role filter */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {/* First row: Customer selector */}
+            <div className="flex items-center gap-2">
               <CustomerSearchSelect
                 customers={customers}
                 onSelect={handleCustomerSelect}
                 disabled={isLoading}
-              />
-              <RoleFilterTab
-                activeRole={roleFilter}
-                onRoleChange={setRoleFilter}
-                disabled={isLoading}
+                value={currentCustomer}
               />
             </div>
 
-            {/* Right: Actions */}
-            <div className="flex items-center gap-3">
-              {/* Skill filter toggle */}
-              <button
-                onClick={() => setFilterType(filterType === 'FAVORITE' ? 'ALL' : 'FAVORITE')}
-                className={`
-                  relative inline-flex items-center justify-center w-11 h-11 text-sm font-medium rounded-xl transition-all duration-200
-                  ${filterType === 'FAVORITE'
-                    ? 'bg-[#1677FF] text-white shadow-lg shadow-[#1677FF]/30'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-[#1677FF]/30 hover:text-[#1677FF] hover:shadow-md'
-                  }
-                `}
-                title={filterType === 'FAVORITE' ? '显示全部技能' : '显示我的常用技能'}
-              >
-                <Star className={`w-5 h-5 ${filterType === 'FAVORITE' ? 'fill-current' : ''}`} />
-                {filterType === 'FAVORITE' && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-                )}
-              </button>
+            {/* Second row: Role filter + Skill filter + Config button */}
+            <div className="flex items-center justify-between gap-2 overflow-x-auto">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <RoleFilterTab
+                  activeRole={roleFilter}
+                  onRoleChange={setRoleFilter}
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setFilterType(filterType === 'FAVORITE' ? 'ALL' : 'FAVORITE')}
+                  className={`
+                    relative inline-flex items-center justify-center w-11 h-11 text-sm font-medium rounded-xl transition-all duration-200
+                    ${filterType === 'FAVORITE'
+                      ? 'bg-[#1677FF] text-white shadow-lg shadow-[#1677FF]/30'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:border-[#1677FF]/30 hover:text-[#1677FF] hover:shadow-md'
+                    }
+                  `}
+                  title={filterType === 'FAVORITE' ? '显示全部技能' : '显示我的常用技能'}
+                >
+                  <Star className={`w-5 h-5 ${filterType === 'FAVORITE' ? 'fill-current' : ''}`} />
+                  {filterType === 'FAVORITE' && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                  )}
+                </button>
 
-              {/* LTC Config button */}
-              <Link
-                to="/ltc-config"
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-[#1677FF]/30 hover:text-[#1677FF] hover:shadow-md transition-all duration-200"
-              >
-                <Workflow className="w-4 h-4" />
-                配置流程
-              </Link>
+                {/* LTC Config button - icon only on mobile */}
+                <Link
+                  to="/ltc-config"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-[#1677FF]/30 hover:text-[#1677FF] hover:shadow-md transition-all duration-200"
+                >
+                  <Workflow className="w-4 h-4 sm:hidden" />
+                  <span className="hidden sm:inline">配置流程</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -434,4 +440,9 @@ export default function HomePage() {
       />
     </div>
   );
+}
+
+// Default export for backward compatibility
+export default function HomePage() {
+  return <DesktopHomePage />;
 }

@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { SkillFilterType, IronTriangleRole } from '../types';
 
 interface SkillFilterState {
@@ -26,8 +25,7 @@ interface SkillFilterState {
 }
 
 export const useSkillFilterStore = create<SkillFilterState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       // Initial state
       filterType: 'ALL',
       roleFilter: 'ALL',
@@ -79,17 +77,7 @@ export const useSkillFilterStore = create<SkillFilterState>()(
       getRoleDefaultSkills: (role) => {
         return get().teamRoleSkillConfigs[role] || [];
       },
-    }),
-    {
-      name: 'skill-filter-storage',
-      partialize: (state) => ({
-        filterType: state.filterType,
-        roleFilter: state.roleFilter,
-        favoriteSkillIds: state.favoriteSkillIds,
-        // Don't persist teamRoleSkillConfigs as they will be loaded from API
-      }),
-    }
-  )
+    })
 );
 
 // Iron Triangle role labels

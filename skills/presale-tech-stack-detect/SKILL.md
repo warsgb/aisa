@@ -1,21 +1,20 @@
 ---
-name: presale-tech-stack-detect
+slug: presale-tech-stack-detect
+name: 客户技术栈侦探
 description: WPS 365 技术栈侦探技能。当用户提供客户 JD（职位描述）、招聘信息、技术线索时使用。从 JD 反推客户技术架构，识别技术债务信号，分析 WPS 365 部署兼容性，生成技术对接话术。
-tools: WebSearch, mcp__web_reader__webReader, Read
+category: presale-tech-stack-detect
 parameters:
-  target:
-    type: string
-    description: 研究目标，可以是公司名称、JD 文件、招聘链接等
+  - name: jd_text
+    type: textarea
+    label: JD 文本内容
     required: true
-  jd_text:
+    placeholder: 粘贴职位描述（JD）文本内容
+  - name: company_name
     type: string
-    description: JD 文本内容（如果用户提供）
+    label: 公司名称
     required: false
-  focus_areas:
-    type: array
-    description: 关注领域，如 ["微服务", "云原生", "信创"]
-    required: false
----
+    placeholder: 客户公司名称（可选）
+---# 客户技术栈侦探
 
 # WPS 365 技术栈侦探技能
 

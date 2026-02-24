@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -27,6 +27,8 @@ interface ImportSkillData {
 
 @Injectable()
 export class SkillsService {
+  private readonly logger = new Logger(SkillsService.name);
+
   constructor(
     @InjectRepository(Skill)
     private skillRepository: Repository<Skill>,
@@ -117,19 +119,26 @@ export class SkillsService {
   }
 
   // 删除技能（同时删除文件）
-  async deleteSkill(id: string): Promise<void> {
+  async deleteSkill(id: string): Promise<{ message: string }> {
     const skill = await this.skillRepository.findOne({ where: { id } });
     if (!skill) {
       throw new NotFoundException('技能不存在');
     }
 
-    // 如果有文件路径，删除文件
+    // 如果有文件路径，尝试删除文件（即使文件不存在也继续）
     if (skill.file_path) {
-      await this.skillLoaderService.deleteSkillFile(skill.file_path);
+      try {
+        await this.skillLoaderService.deleteSkillFile(skill.file_path);
+      } catch (error) {
+        // 即使文件删除失败，也继续删除数据库记录
+        this.logger.warn(`Failed to delete skill file ${skill.file_path}, but continuing with database deletion`);
+      }
     }
 
     // 删除数据库记录
     await this.skillRepository.delete(id);
+
+    return { message: '删除成功' };
   }
 
   // 启用/禁用技能

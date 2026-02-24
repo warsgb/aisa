@@ -1,7 +1,5 @@
 ---
-slug: viral-title-generator
-category: content-creation
-name: 爆款标题生成器
+name: viral-title-generator
 description: 生成吸引眼球的爆款文案标题。当用户需要为文章、视频、社交媒体帖子、广告文案等创建有吸引力、高点击率的标题时使用。支持多种风格：悬念式、数字式、提问式��情感共鸣式、权威背书式等。
 parameters:
   - name: content_theme

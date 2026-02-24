@@ -84,8 +84,8 @@ export function CustomerSearchSelect({ customers, onSelect, disabled, value }: C
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`
-          w-full flex items-center justify-between px-4 py-3
-          bg-white border-2 rounded-2xl text-left
+          w-full flex items-center justify-between px-4 py-3.5 sm:py-3
+          bg-white border-2 rounded-2xl text-left min-h-[48px]
           transition-all duration-200
           ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'hover:border-primary/30 cursor-pointer'}
           ${isOpen ? 'border-primary ring-2 ring-primary/20 shadow-sm' : 'border-gray-200 hover:border-gray-300'}
@@ -124,7 +124,7 @@ export function CustomerSearchSelect({ customers, onSelect, disabled, value }: C
       {/* Dropdown */}
       {isOpen && dropdownPosition && createPortal(
         <div
-          className="fixed z-[100] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+          className="fixed z-[100] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-[60vh]"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
@@ -132,16 +132,16 @@ export function CustomerSearchSelect({ customers, onSelect, disabled, value }: C
           }}
         >
           {/* Search input */}
-          <div className="p-3 border-b border-gray-100">
+          <div className="p-3 sm:p-3 border-b border-gray-100 sticky top-0 bg-white z-10">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-4 sm:h-4 text-gray-400" />
               <input
                 ref={inputRef}
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="搜索客户名称或行业..."
-                className="w-full pl-10 pr-3 py-2.5 text-sm bg-background border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full pl-10 pr-3 py-3 sm:py-2.5 text-sm bg-background border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
@@ -161,8 +161,8 @@ export function CustomerSearchSelect({ customers, onSelect, disabled, value }: C
                       type="button"
                       onClick={() => handleSelect(customer)}
                       className={`
-                        w-full px-4 py-3 text-left flex items-center gap-3
-                        hover:bg-background transition-colors duration-150
+                        w-full px-4 py-3.5 sm:py-3 text-left flex items-center gap-3 min-h-[52px]
+                        hover:bg-background transition-colors duration-150 active:scale-[0.98]
                         ${value?.id === customer.id ? 'bg-primary/5 text-primary' : 'text-gray-700'}
                       `}
                     >

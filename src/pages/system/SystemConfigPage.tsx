@@ -23,6 +23,8 @@ export default function SystemConfigPage() {
 
   // Role configs state
   const [roleConfigs, setRoleConfigs] = useState<SystemRoleSkillConfig[]>([]);
+  const [pendingRoleConfigs, setPendingRoleConfigs] = useState<Record<IronTriangleRole, string[]> | null>(null);
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   // UI state
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +44,9 @@ export default function SystemConfigPage() {
   // Load data
   useEffect(() => {
     loadData();
+    // Reset pending changes when switching tabs
+    setPendingRoleConfigs(null);
+    setHasPendingChanges(false);
   }, [activeTab]);
 
   const loadData = async () => {
@@ -150,6 +155,46 @@ export default function SystemConfigPage() {
   };
 
   // ========== Role Config Management ==========
+
+  // Update pending config (local state only, no save)
+  const handlePendingRoleConfigUpdate = (role: IronTriangleRole, skillIds: string[]) => {
+    setPendingRoleConfigs(prev => ({
+      ...prev,
+      [role]: skillIds,
+    }));
+    setHasPendingChanges(true);
+  };
+
+  // Save all pending configs at once
+  const handleSaveRoleConfigs = async () => {
+    if (!pendingRoleConfigs || !hasPendingChanges) return;
+
+    setIsSaving(true);
+    try {
+      // Save all pending configs
+      await Promise.all(
+        Object.entries(pendingRoleConfigs).map(([role, skillIds]) =>
+          apiService.updateSystemRoleSkillConfig(role as IronTriangleRole, skillIds)
+        )
+      );
+
+      // Clear pending state and reload data
+      setPendingRoleConfigs(null);
+      setHasPendingChanges(false);
+      loadData();
+    } catch (error) {
+      console.error('更新角色配置失败:', error);
+      alert('更新角色配置失败');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Discard pending changes
+  const handleDiscardRoleConfigs = () => {
+    setPendingRoleConfigs(null);
+    setHasPendingChanges(false);
+  };
 
   const handleUpdateRoleConfig = async (role: IronTriangleRole, skillIds: string[]) => {
     setIsSaving(true);
@@ -321,9 +366,13 @@ export default function SystemConfigPage() {
           ) : (
             <RoleConfigsTab
               configs={roleConfigs}
+              pendingConfigs={pendingRoleConfigs}
               skills={allSkills}
-              onUpdate={handleUpdateRoleConfig}
+              onUpdate={handlePendingRoleConfigUpdate}
+              onSave={handleSaveRoleConfigs}
+              onDiscard={handleDiscardRoleConfigs}
               isSaving={isSaving}
+              hasPendingChanges={hasPendingChanges}
             />
           )}
         </>
@@ -457,12 +506,25 @@ function LtcNodesTab({ nodes, skills, onEdit, onDelete, onMove, onAdd }: LtcNode
 
 interface RoleConfigsTabProps {
   configs: SystemRoleSkillConfig[];
+  pendingConfigs: Record<IronTriangleRole, string[]> | null;
   skills: Skill[];
   onUpdate: (role: IronTriangleRole, skillIds: string[]) => void;
+  onSave: () => void;
+  onDiscard: () => void;
   isSaving: boolean;
+  hasPendingChanges: boolean;
 }
 
-function RoleConfigsTab({ configs, skills, onUpdate, isSaving }: RoleConfigsTabProps) {
+function RoleConfigsTab({
+  configs,
+  pendingConfigs,
+  skills,
+  onUpdate,
+  onSave,
+  onDiscard,
+  isSaving,
+  hasPendingChanges,
+}: RoleConfigsTabProps) {
   const roleNames: Record<IronTriangleRole, string> = {
     AR: '客户经理 (AR)',
     SR: '解决方案专家 (SR)',
@@ -478,18 +540,53 @@ function RoleConfigsTab({ configs, skills, onUpdate, isSaving }: RoleConfigsTabP
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">角色技能默认配置</h2>
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">角色技能默认配置</h2>
+          {hasPendingChanges && (
+            <p className="text-sm text-amber-600 mt-1">⚠️ 有未保存的修改</p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {hasPendingChanges && (
+            <>
+              <button
+                onClick={onDiscard}
+                disabled={isSaving}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                放弃修改
+              </button>
+              <button
+                onClick={onSave}
+                disabled={isSaving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSaving ? '保存中...' : '保存修改'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
         {(['AR', 'SR', 'FR'] as IronTriangleRole[]).map(role => {
           const config = configs.find(c => c.role === role);
-          const selectedSkills = config?.default_skill_ids || [];
+          const baseSkills = config?.default_skill_ids || [];
+          // Use pending config if available, otherwise use base config
+          const selectedSkills = pendingConfigs?.[role] ?? baseSkills;
+          const hasPendingForRole = pendingConfigs?.[role] !== undefined;
 
           return (
-            <div key={role} className="bg-white rounded-lg shadow p-6">
+            <div key={role} className={`bg-white rounded-lg shadow p-6 ${hasPendingForRole ? 'ring-2 ring-amber-400' : ''}`}>
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">{roleNames[role]}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900">{roleNames[role]}</h3>
+                  {hasPendingForRole && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                      已修改
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-600 mt-1">{roleDescriptions[role]}</p>
               </div>
 
