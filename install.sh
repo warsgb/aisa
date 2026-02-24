@@ -293,42 +293,34 @@ configure_database() {
     # 创建数据库和用户
     log_info "创建数据库和用户..."
 
-    # 检测 PostgreSQL 的 postgres 用户目录
-    if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
-        PG_HBA="/etc/postgresql/*/main/pg_hba.conf"
+    # 检测 PostgreSQL 连接方式
+    local PG_CMD=""
+    if [ "$OS" = "darwin" ]; then
+        # macOS: 使用当前用户（通常是 Homebrew 安装）
+        PG_CMD="psql"
     else
-        PG_HBA="/var/lib/pgsql/data/pg_hba.conf"
+        # Linux: 使用 postgres 用户
+        PG_CMD="sudo -u postgres psql"
     fi
 
-    # 使用 sudo -u postgres 执行 SQL
-    sudo -u postgres psql -v ON_ERROR_STOP=1 <<EOF
--- 创建用户（如果不存在）
-DO \$\$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME') THEN
-        PERFORM dblink_exec('dbname=postgres', 'CREATE DATABASE $DB_NAME');
-    END IF;
-END
-\$\$;
+    # 检查数据库连接
+    if ! $PG_CMD -c "SELECT 1;" &> /dev/null; then
+        log_error "无法连接到 PostgreSQL"
+        log_info "请确保 PostgreSQL 服务已启动"
+        exit 1
+    fi
 
--- 创建用户
-DO \$\$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_user WHERE usename = '$DB_USER') THEN
-        CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';
-    END IF;
-END
-\$\$;
+    # 先创建用户（如果不存在）
+    $PG_CMD -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_user WHERE usename = '$DB_USER') THEN CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD'; END IF; END \$\$;"
 
--- 授予权限
-GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;
-ALTER DATABASE $DB_NAME OWNER TO $DB_USER;
+    # 创建数据库（如果不存在）
+    $PG_CMD -v ON_ERROR_STOP=1 -c "SELECT 'CREATE DATABASE $DB_NAME OWNER $DB_USER' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME')\\gexec"
 
--- 连接到数据库并授予 schema 权限
-\c $DB_NAME
-GRANT ALL ON SCHEMA public TO $DB_USER;
-ALTER SCHEMA public OWNER TO $DB_USER;
-EOF
+    # 授予权限
+    $PG_CMD -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+
+    # 连接到数据库并授予 schema 权限
+    $PG_CMD -v ON_ERROR_STOP=1 -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO $DB_USER; ALTER SCHEMA public OWNER TO $DB_USER;"
 
     log_success "数据库配置完成"
 }
@@ -506,7 +498,16 @@ configure_pm2() {
     # 启动后端
     log_info "配置后端进程..."
     cd "$AISA_DIR/backend"
-    pm2 start dist/src/main.js --name aisa-backend -- --port $BACKEND_PORT
+
+    # 检查构建产物位置
+    if [ -f "dist/main.js" ]; then
+        pm2 start dist/main.js --name aisa-backend
+    elif [ -f "dist/src/main.js" ]; then
+        pm2 start dist/src/main.js --name aisa-backend
+    else
+        log_error "找不到后端入口文件"
+        exit 1
+    fi
 
     # 保存 PM2 配置
     pm2 save
