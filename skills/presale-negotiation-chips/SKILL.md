@@ -47,20 +47,6 @@ parameters:
         value: wps365
       - label: 其他
         value: other
-  - name: chip_types
-    type: array
-    label: 筹码类型偏好
-    required: false
-    placeholder: 偏好的筹码类型（可多选）
-    options:
-      - label: 品牌类
-        value: brand
-      - label: 服务类
-        value: service
-      - label: 账期类
-        value: payment_terms
-      - label: 产品组合
-        value: product_bundle
   - name: budget_constraint
     type: select
     label: 预算约束
@@ -360,7 +346,6 @@ customer_motivation="预算锁死，但急需标杆项目邀功"
 - **价格差距**（如：客户要求降20%，底线只能降10%）
 - **客户核心动机**（可选，如：预算锁死但急需标杆邀功）
 - **已购产品**（可选，如：["WPS 专业版", "金山云"]）
-- **筹码类型偏好**（可选，如：["品牌", "服务", "账期", "产品组合"]）
 - **预算约束**（可选，如：年度预算已锁死、需要分期付款）
 
-我将为您生成专业的商务谈判筹码方案！
+我将为您生成涵盖所有筹码类型（品牌/服务/账期/产品组合）的专业谈判筹码方案！
