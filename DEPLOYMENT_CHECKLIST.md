@@ -1,214 +1,190 @@
-# Deployment Checklist - System-Level LTC Configuration
+# AISA 部署前检查清单
 
-## Pre-Deployment Verification ✅
-
-- [x] Backend TypeScript compilation passes
-- [x] Frontend TypeScript compilation passes
-- [x] All entities created and extended properly
-- [x] All API routes implemented
-- [x] All DTOs created with proper validation
-- [x] Frontend components created
-- [x] Type definitions updated
-- [x] API service methods added
-- [x] Routes configured with proper access control
-
-## Deployment Steps
-
-### 1. Database Migration
-```bash
-cd /Users/leo/home/aisa
-./backend/run-migration.sh
-```
-
-**Expected Output:**
-```
-Running database migration...
-Host: localhost:5432
-Database: aisa
-
-CREATE TABLE
-CREATE TABLE
-ALTER TABLE
-ALTER TABLE
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-
-✓ Database migration completed successfully!
-```
-
-### 2. Initialize System Data
-```bash
-node backend/init-system-config.js
-```
-
-**Expected Output:**
-```
-✓ Connected to database
-
-Creating system LTC nodes...
-  ✓ Created node: 线索
-  ✓ Created node: 商机
-  ✓ Created node: 方案
-  ✓ Created node: POC
-  ✓ Created node: 商务谈判
-  ✓ Created node: 成交签约
-  ✓ Created node: 交付验收
-  ✓ Created node: 运营&增购
-✓ Created 8 system LTC nodes
-
-Creating system role skill configs...
-  ✓ Created config for role: AR
-  ✓ Created config for role: SR
-  ✓ Created config for role: FR
-✓ Created 3 system role skill configs
-
-✓ System configuration initialization completed successfully!
-```
-
-### 3. Restart Backend Server
-```bash
-cd backend
-# Stop existing server if running
-# Then start:
-npm start
-# OR for development:
-npm run start:dev
-```
-
-### 4. Verify Backend Health
-```bash
-curl http://localhost:3000/api/system/ltc-nodes \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
-```
-
-Should return the 8 default LTC nodes.
-
-## Post-Deployment Testing
-
-### Test 1: System Admin Access
-1. Login as a SYSTEM_ADMIN user
-2. Navigate to `/system-config`
-3. Verify page loads without errors
-4. Verify both tabs (LTC节点模板, 角色技能配置) are accessible
-
-### Test 2: LTC Node Management
-1. Click "添加节点" button
-2. Create a new node with name and description
-3. Select some skills as default bindings
-4. Save and verify node appears in list
-5. Edit the node and verify update works
-6. Delete the node and verify removal works
-7. Try reordering nodes (move up/down)
-
-### Test 3: Role Config Management
-1. Switch to "角色技能配置" tab
-2. Select skills for AR role
-3. Save and verify selection persists
-4. Do the same for SR and FR roles
-5. Verify "已配置" badge appears
-
-### Test 4: Sync Functionality
-1. Configure at least one system node with skill bindings
-2. Configure at least one role config
-3. Click "同步到所有团队" button
-4. Verify sync results display
-5. Check number of successful/skipped/failed teams
-
-### Test 5: Team-Side Verification
-1. Login as a regular team user
-2. Navigate to `/ltc-config`
-3. Verify system nodes appear with "系统" badge
-4. Edit a system node
-5. Verify it now shows "自定义" badge
-6. Click "重置为系统默认"
-7. Verify SYSTEM nodes are restored, CUSTOM nodes preserved
-
-### Test 6: Role Config Reset
-1. Navigate to Settings → Skills Management
-2. Find Role Skill Config panel
-3. Verify configs show source badges
-4. Edit a role config (add/remove skills)
-5. Verify it shows "自定义" badge
-6. Click "↺ 重置" button for one role
-7. Verify it resets to system default
-8. Click "重置为系统默认" button (top right)
-9. Verify all roles reset to system defaults
-
-## Rollback Plan (If Needed)
-
-### Database Rollback
-```sql
--- Remove new columns
-ALTER TABLE team_role_skill_configs DROP COLUMN IF EXISTS source;
-ALTER TABLE ltc_nodes DROP COLUMN IF EXISTS system_node_id;
-ALTER TABLE ltc_nodes DROP COLUMN IF EXISTS source;
-
--- Drop new tables
-DROP TABLE IF EXISTS system_role_skill_configs;
-DROP TABLE IF EXISTS system_ltc_nodes;
-
--- Drop indexes
-DROP INDEX IF EXISTS idx_team_role_skill_configs_source;
-DROP INDEX IF EXISTS idx_ltc_nodes_system_node_id;
-DROP INDEX IF EXISTS idx_ltc_nodes_source;
-DROP INDEX IF EXISTS idx_system_ltc_nodes_order;
-```
-
-### Code Rollback
-```bash
-git checkout HEAD~1  # Revert to previous commit
-```
-
-## Monitoring & Debugging
-
-### Check System Tables
-```sql
--- Verify system nodes exist
-SELECT * FROM system_ltc_nodes ORDER BY "order";
-
--- Verify role configs exist
-SELECT * FROM system_role_skill_configs;
-
--- Check team nodes source tracking
-SELECT id, name, source, system_node_id FROM ltc_nodes;
-```
-
-### Common Issues & Solutions
-
-**Issue 1:** "Access Denied" on /system-config
-- **Solution:** Verify user has `role = 'SYSTEM_ADMIN'` in users table
-
-**Issue 2:** Sync shows 0 teams processed
-- **Solution:** Verify teams table has records, check system admin API token
-
-**Issue 3:** Team nodes not showing after sync
-- **Solution:** Check that user is member of the team, verify team_id matches
-
-**Issue 4:** "系统" badge not appearing
-- **Solution:** Run migration again to add source column, verify data
-
-## Performance Considerations
-
-- Database indexes added on `source` and `system_node_id` fields
-- Sync operation is batched per team
-- Frontend uses React hooks for efficient rendering
-- Consider running sync during low-traffic periods for large deployments
-
-## Success Criteria
-
-✅ System admins can access and use `/system-config`
-✅ System templates sync to all teams
-✅ Team customizations are preserved during sync
-✅ Reset functionality works correctly
-✅ Source badges display accurately
-✅ All API endpoints respond correctly
-✅ No TypeScript compilation errors
-✅ No runtime errors in browser console
+在执行部署之前, 请逐项检查并确认以下内容:
 
 ---
 
-**Status:** Ready for deployment
-**Last Updated:** 2026-02-22
-**Version:** 1.0.0
+## 📋 服务器准备
+
+### 系统要求
+- [ ] 操作系统: Linux (Ubuntu 20.04+/CentOS 8+) 或 macOS
+- [ ] 可用内存: 至少 2GB RAM
+- [ ] 可用磁盘: 至少 10GB
+- [ ] 有 sudo 或 root 权限
+
+### 软件依赖
+- [ ] Node.js 18+ 已安装 (`node --version`)
+- [ ] npm 已安装 (`npm --version`)
+- [ ] Git 已安装 (`git --version`)
+- [ ] PostgreSQL 14+ 已安装 (`psql --version`)
+
+---
+
+## 🔑 准备配置信息
+
+### 必需的密钥和密码
+- [ ] **智谱AI API Key** - 从 https://open.bigmodel.cn/ 获取
+- [ ] **数据库密码** - 为 aisa_user 设置的强密码
+- [ ] **JWT 密钥** - 使用 `./scripts/generate-secrets.sh` 生成
+
+### 服务器信息
+- [ ] 服务器 IP 地址或域名
+- [ ] SSH 登录信息 (如果远程部署)
+
+---
+
+## 📝 配置文件检查
+
+### 前端配置 (.env.local)
+- [ ] `VITE_API_URL` 已设置为正确的后端地址
+- [ ] `VITE_WS_URL` 已设置为正确的 WebSocket 地址
+
+### 后端配置 (backend/.env)
+- [ ] `NODE_ENV` 已设置 (development 或 production)
+- [ ] `DB_HOST` 已设置 (通常为 localhost)
+- [ ] `DB_PORT` 已设置 (默认 5432)
+- [ ] `DB_USERNAME` 已设置 (默认 aisa_user)
+- [ ] `DB_PASSWORD` 已设置 (强密码)
+- [ ] `DB_DATABASE` 已设置 (默认 aisa_db)
+- [ ] `JWT_SECRET` 已设置 (使用生成的密钥)
+- [ ] `JWT_REFRESH_SECRET` 已设置 (使用生成的密钥)
+- [ ] `ZHIPU_API_KEY` 已设置 (从智谱AI获取)
+- [ ] `CORS_ORIGIN` 已设置 (前端地址)
+
+---
+
+## 🗄️ 数据库准备
+
+### PostgreSQL 配置
+- [ ] PostgreSQL 服务已启动
+- [ ] 数据库 `aisa_db` 已创建
+- [ ] 用户 `aisa_user` 已创建
+- [ ] 用户已授权访问数据库
+- [ ] 可以成功连接数据库
+  ```bash
+  psql -h localhost -U aisa_user -d aisa_db
+  ```
+
+---
+
+## 🌐 网络配置
+
+### 防火墙设置
+- [ ] 端口 3001 已开放 (后端 API)
+- [ ] 端口 5173 已开放 (前端, 如需外部访问)
+- [ ] 端口 22 已开放 (SSH)
+- [ ] 如使用远程数据库, 端口 5432 已开放
+
+### DNS/域名 (可选)
+- [ ] 域名已解析到服务器 IP
+- [ ] 如使用 Nginx, 配置文件已准备
+
+---
+
+## 📦 部署步骤确认
+
+### 代码部署
+- [ ] 代码已克隆到服务器 (/opt/aisa 或其他目录)
+- [ ] 当前分支正确 (master 或其他)
+- [ ] 最新代码已拉取 (`git pull`)
+
+### 依赖安装
+- [ ] 前端依赖已安装 (`npm install`)
+- [ ] 后端依赖已安装 (`cd backend && npm install`)
+
+### 构建项目
+- [ ] 后端已构建 (`cd backend && npm run build`)
+- [ ] dist 目录存在且包含编译后的文件
+
+### 目录权限
+- [ ] uploads 目录存在且有正确权限
+- [ ] logs 目录存在且有正确权限
+
+---
+
+## 🚀 部署执行
+
+### 启动服务
+选择以下方式之一:
+
+**方式一: 自动部署脚本**
+```bash
+./deploy.sh
+```
+
+**方式二: 手动启动**
+```bash
+./start-all.sh
+```
+
+**方式三: 使用 PM2**
+```bash
+pm2 start backend/dist/main.js --name aisa-backend
+pm2 save
+```
+
+---
+
+## ✅ 部署后验证
+
+### 服务状态
+- [ ] 后端服务正在运行
+  ```bash
+  curl http://localhost:3001/health
+  ```
+- [ ] 前端服务正在运行 (如启动)
+  ```bash
+  curl http://localhost:5173
+  ```
+- [ ] PM2 进程正常 (如使用 PM2)
+  ```bash
+  pm2 status
+  ```
+
+### 功能测试
+- [ ] 可以访问前端界面
+- [ ] 可以注册新用户
+- [ ] 可以登录系统
+- [ ] 技能列表正常显示
+- [ ] 技能执行正常 (流式输出)
+- [ ] 文件上传功能正常
+
+---
+
+## 🔒 安全检查
+
+### 安全配置
+- [ ] 所有默认密码已更改
+- [ ] JWT 密钥已使用强随机值
+- [ ] API Key 已正确配置
+- [ ] 数据库只监听本地 (除非需要远程访问)
+- [ ] 防火墙已正确配置
+- [ ] 生产环境已配置 HTTPS (使用 Nginx + Let's Encrypt)
+
+---
+
+## 📞 获取帮助
+
+如遇到问题:
+
+1. 查看日志: `tail -f backend/logs/backend.log`
+2. 检查配置: 确认 .env 文件配置正确
+3. 查看文档: `README.md`, `DEPLOYMENT_GUIDE.md`
+4. GitHub Issues: https://github.com/warsgb/aisa/issues
+
+---
+
+## 🔄 更新部署检查清单
+
+当更新部署新版本时:
+
+- [ ] 备份当前版本和数据库
+- [ ] 拉取最新代码 (`git pull`)
+- [ ] 检查是否有新的依赖需要安装
+- [ ] 重新构建后端 (`npm run build`)
+- [ ] 重启服务
+- [ ] 验证功能正常
+
+---
+
+**准备就绪? 开始部署: `./deploy.sh` 🚀**

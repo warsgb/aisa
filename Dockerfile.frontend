@@ -1,0 +1,25 @@
+# AISA Frontend Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+# 复制 package 文件
+COPY package*.json ./
+
+# 安装所有依赖 (包括 devDependencies, 因为需要构建)
+RUN npm install
+
+# 复制源代码
+COPY . .
+
+# 构建 Vite 应用
+RUN npm run build
+
+# 安装 serve 来提供静态文件
+RUN npm install -g serve
+
+# 暴露端口
+EXPOSE 5173
+
+# 启动应用 (开发模式)
+CMD ["npm", "run", "dev"]
