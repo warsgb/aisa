@@ -2,17 +2,69 @@
 
 ## 概述
 
-完整的前后端管理脚本，放在 `/home/presales/aisa` 目录下（项目根目录）。
+完整的前后端管理脚本，放在项目根目录。
 
-## 脚本列表
+## 一键安装（新服务器）
+
+### install.sh - 全新服务器一键安装
+
+**路径**: `/install.sh`
+
+用于在全新的 Linux 服务器上自动部署 AISA 项目，从零开始完成所有配置。
+
+**使用方法**:
+```bash
+# 方式一：使用 curl
+curl -sSL https://raw.githubusercontent.com/warsgb/aisa/master/install.sh | bash
+
+# 方式二：使用 wget
+wget -qO- https://raw.githubusercontent.com/warsgb/aisa/master/install.sh | bash
+
+# 方式三：下载后执行
+wget https://raw.githubusercontent.com/warsgb/aisa/master/install.sh
+chmod +x install.sh
+sudo ./install.sh
+```
+
+**功能包括**:
+- 检测系统类型（Ubuntu/CentOS）
+- 安装系统依赖（Node.js 20.x, PostgreSQL, Git）
+- 克隆代码仓库
+- 生成安全密钥（JWT）
+- 配置数据库（用户和数据库）
+- 安装项目依赖
+- 构建后端
+- 配置 PM2 进程管理
+- 启动服务
+
+**环境变量**:
+```bash
+export AISA_REPO=https://github.com/warsgb/aisa.git  # 仓库地址
+export AISA_BRANCH=master                              # 分支名称
+export AISA_DIR=/opt/aisa                             # 安装目录
+export DB_PASSWORD=your_password                      # 数据库密码
+export ZHIPU_API_KEY=your_key                         # 智谱API Key
+export SERVER_IP=192.168.1.100                        # 服务器IP
+export SKIP_PM2=true                                  # 跳过PM2
+```
+
+详细文档请参考: [INSTALL.md](./INSTALL.md)
+
+---
+
+## 项目管理脚本
+
+### 脚本列表
 
 | 脚本 | 路径 | 说明 |
 |--------|------|------|
-| **start-all.sh** | `/home/presales/aisa/start-all.sh` | 启动前后端所有服务 |
-| **stop-all.sh** | `/home/presales/aisa/stop-all.sh` | 停止前后端所有服务 |
-| **status.sh** | `/home/presales/aisa/status.sh` | 查看服务运行状态 |
-| **start-backend.sh** | `/home/presales/aisa/backend/start-backend.sh` | 后端启动脚本（自动日志） |
-| **stop-backend.sh** | `/home/presales/aisa/backend/stop-backend.sh` | 后端停止脚本（彻底清理） |
+| **install.sh** | 项目根目录 | 全新服务器一键安装 |
+| **start-all.sh** | 项目根目录 | 启动前后端所有服务 |
+| **stop-all.sh** | 项目根目录 | 停止前后端所有服务 |
+| **status.sh** | 项目根目录 | 查看服务运行状态 |
+| **deploy.sh** | 项目根目录 | 项目部署脚本（已配置环境） |
+| **start-backend.sh** | `backend/` | 后端启动脚本（自动日志） |
+| **stop-backend.sh** | `backend/` | 后端停止脚本（彻底清理） |
 
 ## 快速开始
 

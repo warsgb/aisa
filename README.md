@@ -4,6 +4,7 @@ AISA (AI Sales Assistant) 是一个基于 **React + NestJS + PostgreSQL** 的全
 
 ## 📋 目录
 
+- [一键安装](#一键安装)
 - [技术栈](#技术栈)
 - [功能特性](#功能特性)
 - [环境要求](#环境要求)
@@ -49,6 +50,35 @@ AISA (AI Sales Assistant) 是一个基于 **React + NestJS + PostgreSQL** 的全
 - 📄 **文档管理** - 支持文档版本控制
 - 📎 **参考资料** - 上传和管理参考资料
 - 🔄 **实时流式响应** - AI 技能实时流式输出
+
+## 🚀 一键安装
+
+**全新服务器部署**：在全新的 Linux 服务器上，可以使用一键安装脚本自动完成所有配置：
+
+```bash
+curl -sSL https://raw.githubusercontent.com/warsgb/aisa/master/install.sh | bash
+```
+
+或使用 wget：
+
+```bash
+wget -qO- https://raw.githubusercontent.com/warsgb/aisa/master/install.sh | bash
+```
+
+一键安装脚本会自动：
+- 检测操作系统类型（Ubuntu/CentOS）
+- 安装系统依赖（Node.js 20.x, PostgreSQL, Git）
+- 克隆代码仓库
+- 生成安全密钥（JWT）
+- 配置数据库（用户和数据库）
+- 安装项目依赖
+- 构建后端
+- 配置 PM2 进程管理
+- 启动服务
+
+详细文档：[INSTALL.md](./INSTALL.md)
+
+---
 
 ## 📦 环境要求
 
