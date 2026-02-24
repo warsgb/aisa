@@ -8,13 +8,26 @@ parameters:
     type: string
     label: 公司名称
     required: true
-    placeholder: 公司名称或年报文件
+    placeholder: 公司名称
+    description: 自动填充当前选择的客户名称
   - name: year
     type: number
     label: 年份
     required: false
-    placeholder: 年报年份（默认为最新年份）
+    placeholder: 年报年份（默认为2025）
     default: 2025
+  - name: annual_report_content
+    type: textarea
+    label: 年报内容（可选）
+    required: false
+    placeholder: 直接粘贴年报内容、战略规划文档内容...
+    description: 如果有年报或战略规划文档内容，可以直接粘贴在此，系统将直接分析内容
+  - name: annual_report_link
+    type: string
+    label: 年报链接（可选）
+    required: false
+    placeholder: 年报或战略文档的网页链接
+    description: 年报或战略文档的网页链接，系统将自动抓取并分析
 ---# 财报年报战略解码技能
 
 # WPS 365 财报年报战略解码技能
@@ -49,8 +62,8 @@ parameters:
 
 #### 优先级1：用户上传文件（最优先）
 
-如果用户上传了年报文件或战略文档：
-- 使用 Read 工具读取文件内容
+如果用户提供了年报内容或年报链接或年报文件：
+- 文分析和理解里面的内容
 - 提取关键信息：战略方向、业务挑战、IT投入、数字化进展
 
 #### 优先级2：权威数据源（金融/国企客户）

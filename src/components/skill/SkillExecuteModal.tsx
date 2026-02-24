@@ -83,8 +83,15 @@ export function SkillExecuteModal({
     if (skill?.parameters) {
       const initialParams: Record<string, ParameterValue> = {};
       skill.parameters.forEach((param) => {
+        let defaultValue = param.default ?? (param.type === 'boolean' ? false : param.type === 'array' ? [] : '');
+
+        // Auto-fill company_name or customer_name with current customer name
+        if ((param.name === 'company_name' || param.name === 'customer_name') && currentCustomer?.name) {
+          defaultValue = currentCustomer.name;
+        }
+
         initialParams[param.name] = {
-          value: param.default ?? (param.type === 'boolean' ? false : param.type === 'array' ? [] : ''),
+          value: defaultValue,
         };
       });
       setParameters(initialParams);

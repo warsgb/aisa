@@ -4,11 +4,30 @@ name: 金融与国企客户深度研究
 description: WPS 365 金融行业与国企客户研究技能。当用户提供金融机构名称（如"招商银行"、"平安保险"）、国企名称（如"国家电网"、"中石油"、"中国移动"）、部门、岗位时使用。自动识别客户类型（金融/国企），生成6张结构化分析表格（基础客户情况、BU业务情况、部门业务逻辑、决策链条、招投标信息、子公司信息），完整的研究报告，并匹配 WPS 365 解决方案。支持从巨潮网、国资委官网、公司官网、行业协会等多个数据源获取信息。
 category: financial-customer-research
 parameters:
-  - name: target
+  - name: customer_name
+    type: string
+    label: 公司名称
+    required: true
+    placeholder: 公司名称
+    description: 自动填充当前选择的客户名称
+  - name: department
+    type: string
+    label: 面向部门
+    required: false
+    placeholder: 如：零售金融部、寿险事业部、信息化部
+    description: 研究的具体部门（可选）
+  - name: position
+    type: string
+    label: 人员岗位
+    required: false
+    placeholder: 如：CIO、IT总监、数字化转型负责人
+    description: 目标岗位/角色（可选）
+  - name: research_goal
     type: string
     label: 研究目标
-    required: true
-    placeholder: 公司名称、部门或岗位（如：招商银行零售金融部、中国平安寿险事业部、银行业CIO）
+    required: false
+    placeholder: 如：了解数字化转型现状、挖掘协同办公需求、分析采购决策流程
+    description: 具体的研究目标或关注点（可选）
 ---
 # 金融与国企客户深度研究
 
@@ -75,16 +94,34 @@ parameters:
 
 ### 第一步：明确研究目标
 
-确认用户输入的信息类型：
+根据用户输入的参数确认研究范围和重点：
 
-1. **完整信息**：公司 + 部门 + 岗位
-   - 示例："招商银行零售金融部IT总监"
+**必填参数**：
+- **customer_name**：公司名称（自动填充当前客户）
+  - 示例："北京能源集团"、"招商银行"、"国家电网"
+  - 作为搜索年报、公告的核心关键词
 
-2. **部分信息**：仅公司或仅部门
-   - 示例："招商银行" 或 "零售金融部"
+**可选参数**：
+- **department**：面向部门（可选）
+  - 示例："零售金融部"、"寿险事业部"、"信息化部"
+  - 用于聚焦研究特定部门的业务和需求
+  - 搜索时会加上部门关键词
 
-3. **行业研究**：仅行业类型
-   - 示例："银行业数字化转型"
+- **position**：人员岗位（可选）
+  - 示例："CIO"、"IT总监"、"数字化转型负责人"
+  - 用于针对特定岗位角色生成话术和方案
+  - 影响最终报告的话术风格和内容重点
+
+- **research_goal**：研究目标（可选）
+  - 示例："了解数字化转型现状"、"挖掘协同办公需求"、"分析采购决策流程"
+  - 明确研究的具体目标或关注点
+  - 用于指导信息筛选和报告重点
+
+**组合示例**：
+- 完整研究：公司 + 部门 + 岗位 + 目标 → "北京能源集团 + 信息化部 + CIO + 了解协同办公需求"
+- 部门研究：公司 + 部门 + 目标 → "招商银行 + 零售金融部 + 分析业务流程痛点"
+- 岗位研究：公司 + 岗位 + 目标 → "国家电网 + 数字化转型负责人 + 了解AI应用现状"
+- 公司研究：仅公司 → "中国平安"（全面研究，自动覆盖常见目标）
 
 ### 第二步：数据获取（按优先级）
 
@@ -98,7 +135,7 @@ parameters:
 #### 优先级 2：权威公告来源（根据客户类型选择）
 
 ##### 2A. 金融行业客户：巨潮网公告（权威来源）
-- URL 格式：`http://www.cninfo.com.cn/new/search/keyword?searchkey=公司全称`
+- URL 格式：`http://www.cninfo.com.cn/new/search/keyword?searchkey={customer_name}`
 - 重点获取：
   - 年度报告（了解业务规模、战略方向）
   - 半年度报告（了解最新业务进展）
@@ -106,7 +143,7 @@ parameters:
 - 使用 WebReader 工具配置：
   ```json
   {
-    "url": "http://www.cninfo.com.cn/new/search/keyword?searchkey=招商银行",
+    "url": "http://www.cninfo.com.cn/new/search/keyword?searchkey={customer_name}",
     "return_format": "markdown",
     "retain_images": false,
     "timeout": 30,
@@ -198,7 +235,9 @@ parameters:
 - 搜索组合4：`公司名称 + 国企改革 + 数字化`
 - 搜索组合5：`公司名称 + 信息化 + 建设`
 - 搜索组合6：`公司名称 + 办公开 + 招标`
-- 搜索组合7：`国资委 + 公司名称 + 改革`
+- 搜索组合7：`国资委 + {customer_name} + 改革`
+- 如果提供了 {department}：添加 `+ {department}` 相关搜索
+- 如果提供了 {research_goal}：根据目标添加相关关键词（如"招投标"、"采购"、"数字化转型"等）
 - 优先查看：最近18个月的结果（国企决策周期较长）
 
 #### 优先级 6：实时信息查询（可选触发）
@@ -207,17 +246,17 @@ parameters:
 
 **触发条件**（满足任一即触发）：
 1. 用户明确要求："帮我查一下XX银行的招投标信息"
-2. 企业性质为大型集团：IT投入>1亿/年，值得深入挖掘
-3. 研究目标是大型国企或央企：自动查询招投标信息
+2. {research_goal} 包含"招投标"、"采购"、"招标"等关键词
+3. 企业性质为大型集团：IT投入>1亿/年，值得深入挖掘
 
 **数据获取方法**（按优先级，全面搜索）：
 
 1. **中国政府采购网**（免费，主要数据源）
-   - URL格式：`http://www.ccgp.gov.cn/search?keywords=公司名称`
+   - URL格式：`http://www.ccgp.gov.cn/search?keywords={customer_name}`
    - WebReader配置示例：
    ```json
    {
-     "url": "http://www.ccgp.gov.cn/search?keywords=招商银行",
+     "url": "http://www.ccgp.gov.cn/search?keywords={customer_name}",
      "return_format": "markdown",
      "retain_images": false,
      "timeout": 30,
@@ -232,25 +271,28 @@ parameters:
    - 深圳：http://www.zfcg.sz.gov.cn
    - 广东：http://www.gdgpo.czt.gd.gov.cn
    - 天津：http://www.ccgp-tianjin.gov.cn
-   - 搜索关键词：`公司名称`、`协同办公`、`办公系统`、`OA系统`
+   - 搜索关键词：`{customer_name}`、`协同办公`、`办公系统`、`OA系统`
+   - 如果提供了 {department}：添加 `+ {department}` 搜索
 
 3. **公共资源交易平台**（免费，重要数据源）
    - 全国公共资源交易平台：http://www.ggzy.gov.cn
-   - 搜索关键词：`公司名称 + 招标`、`公司名称 + 采购`
+   - 搜索关键词：`{customer_name} + 招标`、`{customer_name} + 采购`
    - 关注：IT系统采购、软件采购、服务采购
 
 4. **WebSearch 多维度搜索**（免费，覆盖面广）
-   - 搜索组合1：`公司名称 + 招投标 + [当前年份]`
-   - 搜索组合2：`公司名称 + 协同办公 + 招标`
-   - 搜索组合3：`公司名称 + OA系统 + 采购`
-   - 搜索组合4：`公司名称 + 办公软件 + 中标`
-   - 搜索组合5：`公司名称 + IT项目 + 招标公告`
+   - 搜索组合1：`{customer_name} + 招投标 + [当前年份]`
+   - 搜索组合2：`{customer_name} + 协同办公 + 招标`
+   - 搜索组合3：`{customer_name} + OA系统 + 采购`
+   - 搜索组合4：`{customer_name} + 办公软件 + 中标`
+   - 搜索组合5：`{customer_name} + IT项目 + 招标公告`
+   - 如果提供了 {department}：添加 `+ {department}` 相关搜索
    - 优先查看：最近12个月的结果
 
 5. **行业招标信息平台**（免费，补充数据源）
    - 中国招标网：http://www.bidcenter.com.cn
    - 中国采购与招标网：http://www.chinabidding.cn
-   - 搜索关键词：`公司名称`、`办公系统`、`协同软件`
+   - 搜索关键词：`{customer_name}`、`办公系统`、`协同软件`
+   - 如果提供了 {department}：添加 `+ {department}` 搜索
 
 6. **天眼查/企查查招投标**（付费，可选）
    - 仅用于重大项目验证和历史项目回溯
@@ -265,9 +307,9 @@ parameters:
 
 **触发条件**（满足任一即触发）：
 1. 用户明确要求："帮我查一下XX公司的子公司"
-2. 企业性质为集团（从基础信息判断）
-3. 公司规模>1000亿：大型集团，必有子公司
-4. 研究目标是大型国企或央企：自动查询子公司信息
+2. {research_goal} 包含"子公司"、"集团"、"组织架构"等关键词
+3. 企业性质为集团（从基础信息判断）
+4. 公司规模>1000亿：大型集团，必有子公司
 
 **数据获取方法**（按优先级）：
 1. **公司官网**（免费，主要数据源）
@@ -277,7 +319,7 @@ parameters:
    - WebReader配置示例：
    ```json
    {
-     "url": "https://www.cmbchina.com/IR/",
+     "url": "{customer_name}官网投资者关系页面",
      "return_format": "markdown",
      "retain_images": false,
      "timeout": 30,
@@ -286,8 +328,9 @@ parameters:
    ```
 
 2. **WebSearch**（免费，辅助数据源）
-   - 搜索关键词：`公司名称 + 子公司`、`公司名称 + 控股子公司`
-   - 搜索最新动态：`公司名称 + 最新新闻`
+   - 搜索关键词：`{customer_name} + 子公司`、`{customer_name} + 控股子公司`
+   - 如果提供了 {department}：搜索 `{customer_name} + {department} + 子公司`
+   - 搜索最新动态：`{customer_name} + 最新新闻`
    - 优先看最近3个月结果
 
 3. **巨潮网年报**（免费，备用数据源）
@@ -464,13 +507,18 @@ parameters:
 
 按照以下结构输出完整的研究报告：
 
+**报告标题格式**：
+- 标题：`# {customer_name} {department} 客户研究报告`
+- 如果提供了 {department}：包含部门名称
+- 如果提供了 {position}：在"目标角色"处标注
+
 ```markdown
-# [公司名称] [部门] 客户研究报告
+# {customer_name} {department} 客户研究报告
 
 **报告类型**：全面分析（含实时信息）
-**研究目标**：[公司名称/部门]
-**目标角色**：CIO/首席科技创新官
-**生成日期**：[日期]
+**研究目标**：{research_goal 或 "全面了解客户情况与机会"}
+**目标角色**：{position 或 "CIO/首席科技创新官"}
+**生成日期**：[当前日期]
 **数据时效性**：🟢 最新（7天内获取）
 
 ---
@@ -487,7 +535,7 @@ parameters:
 - [填写] 子公司数量（XX家100%控股）
 
 **紧迫性**：
-- 🔥 [填写] 2025年正在进行的项目（信创、数字化转型等）
+- 🔥 [填写] 正在进行的项目（信创、数字化转型等）
 - [填写] 机会窗口（X个月）
 
 **机会评级**：⭐⭐⭐⭐⭐（五星级/四星级/三星级）
@@ -874,9 +922,17 @@ parameters:
 
 现在我已经准备好为您提供金融行业客户研究服务了！
 
-请提供您要研究的**公司名称、部门或岗位**，例如：
-- "招商银行零售金融部"
-- "中国平安寿险事业部"
-- "银行业CIO"
+**使用方式**：
+
+1. **自动填充**：系统会自动使用当前选择的公司作为 {customer_name}
+2. **可选输入**：您可以选择性填写 {department}、{position}、{research_goal}
+3. **一键生成**：点击执行即可获得专业报告
+
+**示例组合**：
+- 仅公司：全面研究公司整体情况
+- 公司 + 部门：聚焦特定部门业务和需求
+- 公司 + 岗位：针对特定角色生成话术
+- 公司 + 研究目标：定向研究特定问题
+- 完整填写：获得���精准的研究报告
 
 我将为您生成专业的客户研究报告 🎯
