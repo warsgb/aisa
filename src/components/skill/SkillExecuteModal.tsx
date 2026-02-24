@@ -124,45 +124,6 @@ export function SkillExecuteModal({
     }
   }, [streamOutput]);
 
-  // WebSocket event handlers
-  useEffect(() => {
-    if (!isExecuting) return;
-
-    const handleStart = (data: { interactionId: string }) => {
-      setCurrentInteractionId(data.interactionId);
-      setExecutionStage('receiving');
-    };
-
-    const handleChunk = (data: { chunk: string }) => {
-      setStreamOutput((prev) => prev + data.chunk);
-    };
-
-    const handleComplete = (data: { interactionId: string; documentId?: string; content: string }) => {
-      setIsExecuting(false);
-      setExecutionStage('completed');
-      setStreamOutput(data.content);
-      onComplete?.(data.interactionId);
-    };
-
-    const handleError = (data: { message: string }) => {
-      setIsExecuting(false);
-      setExecutionStage('idle');
-      setError(data.message);
-    };
-
-    webSocketService.on('skill:started', handleStart);
-    webSocketService.on('skill:chunk', handleChunk);
-    webSocketService.on('skill:completed', handleComplete);
-    webSocketService.on('skill:error', handleError);
-
-    return () => {
-      webSocketService.off('skill:started', handleStart);
-      webSocketService.off('skill:chunk', handleChunk);
-      webSocketService.off('skill:completed', handleComplete);
-      webSocketService.off('skill:error', handleError);
-    };
-  }, [isExecuting, onComplete]);
-
   const validateParameters = (): boolean => {
     if (!skill?.parameters) return true;
 
@@ -194,6 +155,9 @@ export function SkillExecuteModal({
 
   const handleExecute = useCallback(async () => {
     if (!skill || !team?.id) return;
+
+    console.log('🔍 [SkillExecuteModal] handleExecute called');
+    console.log('🔍 [SkillExecuteModal] WebSocket connected:', webSocketService.connected);
 
     if (!validateParameters()) return;
 
@@ -227,13 +191,16 @@ export function SkillExecuteModal({
       },
       {
         onStart: (data) => {
+          console.log('🟢 [SkillExecuteModal] onStart called', data);
           setCurrentInteractionId(data.interactionId);
           setExecutionStage('receiving');
         },
         onChunk: (data) => {
+          console.log('📦 [SkillExecuteModal] onChunk called', data.chunk?.substring(0, 50) + '...');
           setStreamOutput((prev) => prev + data.chunk);
         },
         onComplete: (data) => {
+          console.log('✅ [SkillExecuteModal] onComplete called', data);
           setIsExecuting(false);
           setExecutionStage('completed');
           setStreamOutput(data.content);
@@ -741,7 +708,7 @@ export function SkillExecuteModal({
                   ))}
 
                   {/* Show current stream output */}
-                  {streamOutput && conversationHistory.length === 0 && (
+                  {streamOutput && !isExecuting && conversationHistory.length === 0 && (
                     <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                       <MDEditor.Markdown
                         source={streamOutput}
@@ -750,8 +717,20 @@ export function SkillExecuteModal({
                     </div>
                   )}
 
-                  {/* Show loading indicator for new response */}
-                  {isExecuting && conversationHistory.length > 0 && (
+                  {/* Show streaming output during execution */}
+                  {isExecuting && streamOutput && (
+                    <div className="flex justify-start">
+                      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm max-w-[85%]">
+                        <MDEditor.Markdown
+                          source={streamOutput}
+                          className="prose prose-sm max-w-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show loading indicator when no output yet */}
+                  {isExecuting && !streamOutput && (
                     <div className="flex justify-start">
                       <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
                         <div className="flex items-center gap-2 text-gray-500">

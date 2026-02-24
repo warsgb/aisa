@@ -94,6 +94,10 @@ export class StreamingGateway implements OnGatewayConnection, OnGatewayDisconnec
       return;
     }
 
+    console.log('🎯 [Streaming Gateway] Received skill:execute request');
+    console.log('📝 [Streaming Gateway] Client ID:', client.id);
+    console.log('📋 [Streaming Gateway] Data:', JSON.stringify(data, null, 2));
+
     try {
       // Execute skill and stream results
       await this.skillExecutorService.executeSkill({
@@ -107,15 +111,19 @@ export class StreamingGateway implements OnGatewayConnection, OnGatewayDisconnec
         endConversation: data.endConversation,
         referenceDocumentId: data.referenceDocumentId,
         onChunk: (chunk: string) => {
+          console.log('📦 [Streaming Gateway] Sending chunk:', chunk.substring(0, 50) + '...');
           client.emit('response:chunk', { chunk });
         },
         onStart: (interactionId: string) => {
+          console.log('🚀 [Streaming Gateway] Sending start event:', interactionId);
           client.emit('response:start', { interactionId });
         },
         onComplete: (result: any) => {
+          console.log('✅ [Streaming Gateway] Sending complete event');
           client.emit('response:complete', result);
         },
         onError: (error: Error) => {
+          console.log('❌ [Streaming Gateway] Sending error event:', error.message);
           client.emit('response:error', { message: error.message });
         },
       });
