@@ -513,6 +513,16 @@ build_project() {
 
     cd "$AISA_DIR"
 
+    # 构建前端
+    log_info "构建前端..."
+    cd "$AISA_DIR"
+    npm run build --silent
+
+    if [ ! -d "dist" ]; then
+        log_error "前端构建失败: dist 目录不存在"
+        exit 1
+    fi
+
     # 构建后端
     log_info "构建后端..."
     cd "$AISA_DIR/backend"
@@ -532,6 +542,89 @@ build_project() {
     cd "$AISA_DIR"
 
     log_success "项目构建完成"
+}
+
+# ============================================
+# 验证构建完整性
+# ============================================
+verify_build() {
+    log_step "9.5 验证构建完整性"
+
+    cd "$AISA_DIR"
+
+    # 检查关键文件是否存在且大小合理
+    local missing_files=0
+
+    # 检查前端构建目录
+    if [ ! -d "dist/assets" ]; then
+        log_error "前端构建目录不存在: dist/assets"
+        missing_files=$((missing_files + 1))
+    else
+        # 查找前端主文件
+        local index_js=$(ls dist/assets/index-*.js 2>/dev/null | head -1)
+        if [ -z "$index_js" ]; then
+            log_error "前端主文件缺失: dist/assets/index-*.js"
+            missing_files=$((missing_files + 1))
+        else
+            local js_size=$(stat -f%z "$index_js" 2>/dev/null || stat -c%s "$index_js" 2>/dev/null || echo "0")
+            if [ "$js_size" -lt 10000 ]; then
+                log_error "前端文件大小异常: $js_size 字节（可能损坏）"
+                missing_files=$((missing_files + 1))
+            else
+                log_info "前端文件大小: $js_size 字节"
+            fi
+        fi
+
+        # 检查前端 chunk 文件
+        local chunk_count=$(ls dist/assets/*.js 2>/dev/null | wc -l | tr -d ' ')
+        log_info "前端 chunk 文件数量: $chunk_count"
+
+        if [ "$chunk_count" -lt 5 ]; then
+            log_warning "前端 chunk 文件数量异常少（可能构建不完整）"
+        fi
+    fi
+
+    # 检查后端构建产物
+    if [ ! -f "backend/dist/main.js" ]; then
+        # 尝试检查 dist/src/main.js
+        if [ ! -f "backend/dist/src/main.js" ]; then
+            log_error "后端入口文件缺失: backend/dist/main.js 或 backend/dist/src/main.js"
+            missing_files=$((missing_files + 1))
+        else
+            local backend_size=$(stat -f%z "backend/dist/src/main.js" 2>/dev/null || stat -c%s "backend/dist/src/main.js" 2>/dev/null || echo "0")
+            if [ "$backend_size" -lt 5000 ]; then
+                log_error "后端文件大小异常: $backend_size 字节（可能损坏）"
+                missing_files=$((missing_files + 1))
+            else
+                log_info "后端文件大小: $backend_size 字节"
+            fi
+        fi
+    else
+        local backend_size=$(stat -f%z "backend/dist/main.js" 2>/dev/null || stat -c%s "backend/dist/main.js" 2>/dev/null || echo "0")
+        if [ "$backend_size" -lt 5000 ]; then
+            log_error "后端文件大小异常: $backend_size 字节（可能损坏）"
+            missing_files=$((missing_files + 1))
+        else
+            log_info "后端文件大小: $backend_size 字节"
+        fi
+    fi
+
+    # 检查 index.html
+    if [ ! -f "dist/index.html" ]; then
+        log_error "前端入口文件缺失: dist/index.html"
+        missing_files=$((missing_files + 1))
+    fi
+
+    if [ "$missing_files" -gt 0 ]; then
+        log_error "构建验证失败，缺少 $missing_files 个关键文件"
+        log_info "请尝试重新构建："
+        echo "  cd $AISA_DIR"
+        echo "  rm -rf dist node_modules"
+        echo "  npm install && npm run build"
+        exit 1
+    fi
+
+    log_success "构建验证通过"
 }
 
 # ============================================
@@ -676,6 +769,7 @@ main() {
     create_config_files
     install_project_dependencies
     build_project
+    verify_build
     configure_pm2
     start_services
     show_access_info
