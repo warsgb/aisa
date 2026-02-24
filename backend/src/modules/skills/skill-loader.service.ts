@@ -26,8 +26,9 @@ interface SkillFrontmatter {
     label: string;
     required: boolean;
     default?: any;
-    options?: string[];
+    options?: Array<string | { label: string; value: string }>;
     placeholder?: string;
+    description?: string;
   }>;
   supports_multi_turn?: boolean;
   role?: IronTriangleRole;
@@ -235,7 +236,7 @@ export class SkillLoaderService {
     label: string;
     required: boolean;
     default?: any;
-    options?: string[];
+    options?: Array<{ label: string; value: string } | string>;
     placeholder?: string;
     description?: string;
   }> {
@@ -246,22 +247,88 @@ export class SkillLoaderService {
     this.logger.log(`[parseYamlParameters] First 200 chars:\n${parametersStr.substring(0, 200)}`);
 
     let currentParam: any = null;
-    let paramBaseIndent: number | null = null; // Indentation of parameter items (e.g., "- name:")
+    let paramBaseIndent: number | null = null;
+    // For parsing nested arrays like options
+    let currentArrayProperty: string | null = null;
+    let arrayItemIndent: number | null = null;
+    let currentArrayItem: any = null;
 
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const trimmed = line.trim();
       if (!trimmed) continue;
 
       const indent = line.search(/\S/);
-      this.logger.log(`[parseYamlParameters] Line indent=${indent}, trimmed="${trimmed.substring(0, 30)}"`);
+      this.logger.log(`[parseYamlParameters] Line indent=${indent}, trimmed="${trimmed.substring(0, 50)}"`);
+
+      // Check if we're parsing an array (like options)
+      if (currentArrayProperty && arrayItemIndent !== null) {
+        // Check if this is an array item (starts with "- ")
+        const arrayItemMatch = trimmed.match(/^-\s*(.+)$/);
+        if (arrayItemMatch && indent >= arrayItemIndent) {
+          // Save previous array item if exists
+          if (currentArrayItem) {
+            if (!currentParam.options) currentParam.options = [];
+            if (currentArrayItem.label && currentArrayItem.value) {
+              currentParam.options.push({ label: currentArrayItem.label, value: currentArrayItem.value });
+            } else if (currentArrayItem.value) {
+              currentParam.options.push(currentArrayItem.value);
+            }
+          }
+          // Start new array item
+          const itemContent = arrayItemMatch[1].trim();
+          // Check if item has inline key-value (e.g., "- label: xxx")
+          const inlineMatch = itemContent.match(/^(\w+):\s*(.+)$/);
+          if (inlineMatch) {
+            currentArrayItem = { [inlineMatch[1]]: inlineMatch[2].trim() };
+          } else {
+            currentArrayItem = { value: itemContent };
+          }
+          continue;
+        }
+        // Check if this is a property of current array item
+        if (currentArrayItem && indent > arrayItemIndent) {
+          const propMatch = trimmed.match(/^(\w+):\s*(.*)$/);
+          if (propMatch) {
+            currentArrayItem[propMatch[1]] = propMatch[2].trim();
+            continue;
+          }
+        }
+        // If we're back to lower indent, end array parsing
+        if (indent <= paramBaseIndent! && currentArrayItem) {
+          if (!currentParam.options) currentParam.options = [];
+          if (currentArrayItem.label && currentArrayItem.value) {
+            currentParam.options.push({ label: currentArrayItem.label, value: currentArrayItem.value });
+          } else if (currentArrayItem.value) {
+            currentParam.options.push(currentArrayItem.value);
+          }
+          currentArrayProperty = null;
+          arrayItemIndent = null;
+          currentArrayItem = null;
+        }
+      }
+
+      // Check for array property start (e.g., "options:")
+      if (currentParam && trimmed.match(/^(options):\s*$/)) {
+        currentArrayProperty = 'options';
+        currentParam.options = [];
+        // Look ahead to find array item indent
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (!nextLine) continue;
+          if (nextLine.startsWith('- ')) {
+            arrayItemIndent = lines[j].search(/\S/);
+            this.logger.log(`[parseYamlParameters] Detected array item indent for options: ${arrayItemIndent}`);
+            break;
+          }
+        }
+        continue;
+      }
 
       // Auto-detect the indentation level for parameter items
-      // Parameters in YAML list format start with "- name:"
       if (paramBaseIndent === null) {
-        // Check if this line looks like a YAML list item parameter
         const isListItemParam = trimmed.match(/^-\s*name:\s*(.+)$/);
         if (isListItemParam) {
-          // This is a parameter in YAML list format: "- name: xxx"
           paramBaseIndent = indent;
           this.logger.log(`[parseYamlParameters] Detected parameter base indent (list format): ${paramBaseIndent}`);
 
@@ -280,10 +347,8 @@ export class SkillLoaderService {
           continue;
         }
 
-        // Also check for non-list format (though it's less common now)
         const isNonListParam = trimmed.match(/^name:\s*(.+)$/);
         if (isNonListParam) {
-          // Look ahead to see if next line has more indentation
           const lineIndex = lines.indexOf(line);
           if (lineIndex < lines.length - 1) {
             const nextLine = lines[lineIndex + 1];

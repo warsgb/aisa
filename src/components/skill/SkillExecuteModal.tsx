@@ -90,6 +90,11 @@ export function SkillExecuteModal({
           defaultValue = currentCustomer.name;
         }
 
+        // Auto-fill industry with current customer industry
+        if (param.name === 'industry' && currentCustomer?.industry) {
+          defaultValue = currentCustomer.industry;
+        }
+
         initialParams[param.name] = {
           value: defaultValue,
         };
@@ -402,15 +407,24 @@ export function SkillExecuteModal({
         );
 
       case 'select':
-        // 将 select 类型改为输入框，允许用户自由输入
+        // 渲染为下拉选择框
         return (
-          <input
-            type="text"
-            value={String(value || '')}
+          <select
+            value={value || param.default || ''}
             onChange={(e) => handleParameterChange(param.name, e.target.value)}
-            placeholder={param.placeholder || (param.options?.length ? `可选: ${param.options.map(o => typeof o === 'string' ? o : o.label).join(', ')}` : '')}
             className={baseClassName}
-          />
+          >
+            <option value="">{param.placeholder || '请选择'}</option>
+            {param.options?.map((option) => {
+              const label = typeof option === 'string' ? option : option.label;
+              const optionValue = typeof option === 'string' ? option : option.value;
+              return (
+                <option key={optionValue} value={optionValue}>
+                  {label}
+                </option>
+              );
+            })}
+          </select>
         );
 
       case 'textarea':

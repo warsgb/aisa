@@ -100,14 +100,20 @@ export interface Skill {
   last_synced_at?: string | null;
 }
 
+export interface SkillParameterOption {
+  label: string;
+  value: string;
+}
+
 export interface SkillParameter {
   name: string;
   type: string;
   label: string;
   required: boolean;
   default?: any;
-  options?: string[];
+  options?: (string | SkillParameterOption)[];
   placeholder?: string;
+  description?: string;
 }
 
 // Interaction Types

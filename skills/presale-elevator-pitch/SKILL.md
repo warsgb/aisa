@@ -4,38 +4,24 @@ name: 电梯演讲
 description: WPS 365 "电梯演讲"生成器技能。当用户需要生成 30 秒销售话术、面对不同角色和行业的客户、需要快速打动对方时使用。基于金字塔原理，提供焦虑/贪婪/愿景三套钩子，生成口语化的电梯演讲。融合行业痛点分析，增强话术的场景代入感和说服力。
 category: presale-elevator-pitch
 parameters:
+  - name: customer_name
+    type: string
+    label: 客户名称
+    required: true
+    placeholder: 客户公司名称
+    description: 自动填充当前选择的客户名称
+  - name: industry
+    type: string
+    label: 客户行业
+    required: false
+    placeholder: 输入客户所属行业（如：金融-银行、制造业等）
+    description: 自动从客户基础信息填充，也可手动输入
   - name: target_role
-    type: select
+    type: string
     label: 目标角色
     required: true
-    placeholder: 选择目标客户角色
-    options:
-      - label: CEO/总经理
-        value: ceo
-      - label: CIO/CTO
-        value: cio
-      - label: 业务负责人
-        value: business_lead
-      - label: IT经理
-        value: it_manager
-  - name: industry
-    type: select
-    label: 客户行业
-    required: true
-    placeholder: 选择客户所属行业
-    options:
-      - label: 金融-银行
-        value: financial_banking
-      - label: 金融-保险
-        value: financial_insurance
-      - label: 国企/央企
-        value: soe
-      - label: 制造业
-        value: manufacturing
-      - label: 政府
-        value: government
-      - label: 其他
-        value: other
+    placeholder: 输入目标客户角色（如：CEO、CIO、业务负责人等）
+    description: 输入目标客户角色
   - name: hook_type
     type: select
     label: 钩子类型
@@ -58,7 +44,30 @@ parameters:
     placeholder: 是否融入行业痛点分析
     default: true
 ---
+
 # 电梯演讲
+
+## 使用方式
+
+本技能根据您选择的客户和目标角色，自动生成 30 秒电梯演讲话术。
+
+### 参数说明
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| **customer_name** | 文本 | 是 | 客户公司名称，自动填充当前选择的客户 |
+| **industry** | 文本 | 否 | 客户所属行业，自动从客户基础信息填充，也可手动输入 |
+| **target_role** | 文本 | 是 | 目标角色（如：CEO/总经理、CIO/CTO、业务负责人、IT经理）|
+| **hook_type** | 下拉选择 | 否 | 钩子类型（焦虑版/贪婪版/愿景版/全部），默认生成全部 |
+| **include_pain_point** | 复选框 | 否 | 是否融入行业痛点分析，默认开启 |
+
+### 使用示例
+
+1. **快速生成**：选择客户后，系统自动填充公司和行业，您只需选择目标角色即可生成
+2. **精准定制**：选择特定钩子和行业痛点，生成更精准的话术
+3. **批量生成**：选择"全部"钩子类型，一次性获得三套话术版本
+
+---
 
 #### 2. 贪婪版（Greed）
 
