@@ -21,6 +21,15 @@
 set -e
 
 # ============================================
+# 调试模式
+# ============================================
+DEBUG="${DEBUG:-false}"
+if [ "$DEBUG" = "true" ]; then
+    set -x
+    log_info "调试模式已启用"
+fi
+
+# ============================================
 # 配置变量
 # ============================================
 AISA_REPO="${AISA_REPO:-https://github.com/warsgb/aisa.git}"
@@ -352,15 +361,53 @@ generate_secrets() {
 get_user_input() {
     log_step "6. 获取配置信息"
 
+    # 检查是否在交互模式 (stdin 是否为终端)
+    if [ ! -t 0 ]; then
+        log_warning "检测到非交互模式（通过管道运行）"
+        log_info "请使用以下方式之一提供配置："
+        echo "  1. 设置环境变量: export ZHIPU_API_KEY=your_key"
+        echo "  2. 下载后直接运行: wget install.sh && chmod +x install.sh && sudo ./install.sh"
+        echo ""
+
+        # 验证必需的环境变量
+        if [ -z "$ZHIPU_API_KEY" ] || [ "$ZHIPU_API_KEY" = "your_zhipu_api_key_here" ]; then
+            log_error "ZHIPU_API_KEY 环境变量未设置"
+            log_info "请先设置: export ZHIPU_API_KEY=your_key"
+            exit 1
+        fi
+
+        # 使用环境变量
+        SERVER_IP="${SERVER_IP:-$(get_server_ip)}"
+
+        log_info "使用环境变量配置"
+        log_info "配置摘要:"
+        echo "  智谱AI API Key: ${ZHIPU_API_KEY:0:8}..."
+        echo "  服务器IP: $SERVER_IP"
+        echo "  数据库密码: $DB_PASSWORD"
+        echo ""
+        return
+    fi
+
+    # 交互模式：提示用户输入
+    log_info "检测到交互模式，将提示输入配置信息"
+
     # 获取智谱AI API Key
     echo ""
-    while true; do
-        read -p "请输入智谱AI API Key (从 https://open.bigmodel.cn/ 获取): " ZHIPU_API_KEY
-        if [ -n "$ZHIPU_API_KEY" ] && [ "$ZHIPU_API_KEY" != "your_zhipu_api_key_here" ]; then
-            break
+    if [ -n "$ZHIPU_API_KEY" ] && [ "$ZHIPU_API_KEY" != "your_zhipu_api_key_here" ]; then
+        log_info "使用预设的 ZHIPU_API_KEY: ${ZHIPU_API_KEY:0:8}..."
+        read -p "按回车使用预设值，或输入新的 API Key: " input_key
+        if [ -n "$input_key" ]; then
+            ZHIPU_API_KEY="$input_key"
         fi
-        log_error "API Key 不能为空"
-    done
+    else
+        while true; do
+            read -p "请输入智谱AI API Key (从 https://open.bigmodel.cn/ 获取): " ZHIPU_API_KEY
+            if [ -n "$ZHIPU_API_KEY" ] && [ "$ZHIPU_API_KEY" != "your_zhipu_api_key_here" ]; then
+                break
+            fi
+            log_error "API Key 不能为空"
+        done
+    fi
 
     # 确认服务器IP
     local detected_ip=$(get_server_ip)

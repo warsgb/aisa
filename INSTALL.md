@@ -14,19 +14,9 @@
 
 ## 快速安装
 
-### 方式一：使用 curl（推荐）
+### 方式一：交互式安装（推荐）
 
-```bash
-curl -sSL https://raw.githubusercontent.com/warsgb/aisa/master/install.sh | bash
-```
-
-### 方式二：使用 wget
-
-```bash
-wget -qO- https://raw.githubusercontent.com/warsgb/aisa/master/install.sh | bash
-```
-
-### 方式三：下载后执行
+下载脚本后直接运行，脚本会提示输入配置信息：
 
 ```bash
 # 下载脚本
@@ -38,6 +28,36 @@ chmod +x install.sh
 # 执行安装
 sudo ./install.sh
 ```
+
+### 方式二：非交互式安装（通过环境变量）
+
+通过管道运行时，需要预设所有配置：
+
+```bash
+# 预设所有配置
+export ZHIPU_API_KEY=your_zhipu_api_key
+export SERVER_IP=192.168.1.100
+export DB_PASSWORD=your_secure_password
+
+# 使用 curl 运行
+curl -sSL https://raw.githubusercontent.com/warsgb/aisa/master/install.sh | bash
+
+# 或使用 wget 运行
+wget -qO- https://raw.githubusercontent.com/warsgb/aisa/master/install.sh | bash
+```
+
+**注意**：通过管道运行时，必须设置 `ZHIPU_API_KEY` 环境变量，否则脚本会报错退出。
+
+### 方式三：调试模式
+
+如果安装过程中遇到问题，可以启用调试模式查看详细执行信息：
+
+```bash
+export DEBUG=true
+sudo ./install.sh
+```
+
+调试模式会打印每个执行的命令，方便定位问题。
 
 ## 安装过程
 
