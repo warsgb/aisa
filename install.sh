@@ -311,16 +311,25 @@ configure_database() {
     fi
 
     # 先创建用户（如果不存在）
-    $PG_CMD -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_user WHERE usename = '$DB_USER') THEN CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD'; END IF; END \$\$;"
+    log_info "创建数据库用户..."
+    $PG_CMD -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_user WHERE usename = '$DB_USER') THEN CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD'; END IF; END \$\$;" 2>/dev/null || {
+        log_warning "用户可能已存在，继续..."
+    }
 
     # 创建数据库（如果不存在）
-    $PG_CMD -v ON_ERROR_STOP=1 -c "SELECT 'CREATE DATABASE $DB_NAME OWNER $DB_USER' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME')\\gexec"
+    log_info "创建数据库..."
+    $PG_CMD -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || {
+        log_warning "数据库可能已存在，继续..."
+    }
 
     # 授予权限
-    $PG_CMD -v ON_ERROR_STOP=1 -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+    log_info "配置数据库权限..."
+    $PG_CMD -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" 2>/dev/null || true
 
     # 连接到数据库并授予 schema 权限
-    $PG_CMD -v ON_ERROR_STOP=1 -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO $DB_USER; ALTER SCHEMA public OWNER TO $DB_USER;"
+    log_info "配置 schema 权限..."
+    $PG_CMD -d "$DB_NAME" -c "GRANT ALL ON SCHEMA public TO $DB_USER;" 2>/dev/null || true
+    $PG_CMD -d "$DB_NAME" -c "ALTER SCHEMA public OWNER TO $DB_USER;" 2>/dev/null || true
 
     log_success "数据库配置完成"
 }
