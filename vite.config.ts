@@ -10,15 +10,23 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks(id) {
           // React core
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
+            return 'vendor-react';
+          }
           // UI libraries
-          'vendor-ui': ['lucide-react', '@uiw/react-md-editor'],
-          // LTC related (loaded on demand)
-          'ltc': ['./src/components/ltc', './src/pages/ltc-config'],
-          // Skills related (loaded on demand)
-          'skill': ['./src/components/skill', './src/pages/skills'],
+          if (id.includes('node_modules/lucide-react') || id.includes('node_modules/@uiw/react-md-editor')) {
+            return 'vendor-ui';
+          }
+          // LTC related
+          if (id.includes('/src/components/ltc/') || id.includes('/src/pages/ltc-config/')) {
+            return 'ltc';
+          }
+          // Skills related
+          if (id.includes('/src/components/skill/') || id.includes('/src/pages/skills/')) {
+            return 'skill';
+          }
         }
       }
     }
