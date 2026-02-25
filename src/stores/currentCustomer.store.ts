@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import type { Customer, CustomerProfile } from '../types';
 
 interface CurrentCustomerState {
@@ -20,7 +20,7 @@ interface CurrentCustomerState {
 
 export const useCurrentCustomerStore = create<CurrentCustomerState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // Initial state
       currentCustomer: null,
       customerProfile: null,

@@ -138,6 +138,7 @@ export interface SkillInteraction {
   updated_at: string;
   skill?: Skill;
   customer?: Customer;
+  team?: TeamBasic;
   messages?: InteractionMessage[];
 }
 

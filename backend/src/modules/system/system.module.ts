@@ -8,6 +8,7 @@ import { TeamMember } from '../../entities/team-member.entity';
 import { Customer } from '../../entities/customer.entity';
 import { Skill } from '../../entities/skill.entity';
 import { SkillInteraction } from '../../entities/interaction.entity';
+import { InteractionMessage } from '../../entities/interaction-message.entity';
 import { Document } from '../../entities/document.entity';
 import { TeamApplication } from '../../entities/team-application.entity';
 import { SystemLtcNode } from '../../entities/system-ltc-node.entity';
@@ -18,7 +19,7 @@ import { NodeSkillBinding } from '../../entities/node-skill-binding.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([
-    User, Team, TeamMember, Customer, Skill, SkillInteraction, Document, TeamApplication,
+    User, Team, TeamMember, Customer, Skill, SkillInteraction, InteractionMessage, Document, TeamApplication,
     SystemLtcNode, SystemRoleSkillConfig, LtcNode, TeamRoleSkillConfig, NodeSkillBinding
   ])],
   controllers: [SystemController],
