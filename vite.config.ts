@@ -31,6 +31,12 @@ export default defineConfig({
 
   clearScreen: true,
 
+  preview: {
+    host: true,
+    port: 5180,
+    allowedHosts: ['winai.top', 'www.winai.top', '69.5.7.242'],
+  },
+
   optimizeDeps: {
     include: [
       'react',

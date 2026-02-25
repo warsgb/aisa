@@ -1,5 +1,33 @@
 # Changelog
 
+## [v2.0.4] - 2026-02-25
+
+### 服务器部署优化
+
+#### 生产环境部署脚本
+- 新增 `start-prod.sh`: 生产环境启动脚本，自动检测代码变化并重新构建
+- 新增 `stop-prod.sh`: 生产环境停止脚本
+- 新增 `status-prod.sh`: 生产环境状态查看脚本
+- 新增 `setup-ssl.sh`: SSL 证书配置脚本（支持阿里云证书）
+
+#### Nginx 反向代理配置
+- 配置域名访问: winai.top, www.winai.top
+- HTTP 自动重定向到 HTTPS
+- API 路径代理: /api/ → backend:3001
+- WebSocket 支持: /socket.io/, /ws/
+- SSL 安全配置: TLSv1.2/TLSv1.3, HSTS, 安全头部
+
+#### 构建优化
+- Vite 配置添加 `preview.allowedHosts`: 允许域名访问
+- `.env` 配置更新为 HTTPS: https://winai.top/api
+- 自动检测源代码变化，智能重新构建
+
+#### 系统配置页面增强
+- LTC 配置页面限制为只有团队所有者可访问
+- 系统配置页面功能增强
+
+---
+
 ## [v2.0.3] - 2026-02-25
 
 ### 安装和构建修复
