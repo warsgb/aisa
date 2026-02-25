@@ -120,7 +120,7 @@ export function WorkspaceTabPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 px-4 py-2">
       {/* Team Switcher Button - only show if user has multiple teams */}
       {teams.length > 1 && (
         <div className="px-1">

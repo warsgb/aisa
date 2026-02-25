@@ -54,9 +54,9 @@ export function CustomersTabPage() {
   };
 
   return (
-    <div>
+    <div className="px-4 py-2">
       {/* Header */}
-      <h2 className="text-xl font-bold text-gray-900 mb-4">客户管理</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">客户管��</h2>
 
       {/* Search Bar */}
       <div className="relative mb-4">

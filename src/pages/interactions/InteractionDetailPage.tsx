@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { apiService } from '../../services/api.service';
 import type { SkillInteraction, InteractionMessage } from '../../types';
 import MDEditor from '@uiw/react-md-editor';
@@ -31,6 +32,7 @@ export default function InteractionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { team } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [interaction, setInteraction] = useState<SkillInteraction | null>(null);
   const [messages, setMessages] = useState<InteractionMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -218,8 +220,8 @@ export default function InteractionDetailPage() {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className={isMobile ? 'px-4 py-2' : 'max-w-5xl mx-auto p-6'}>
         {/* 头部导航 */}
         <div className="mb-6 flex items-center gap-3">
           <button
@@ -291,7 +293,7 @@ export default function InteractionDetailPage() {
 
         {/* 消息列表 */}
         <div>
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-6 px-2">
             <MessageSquare className="w-6 h-6 text-[#1677FF]" />
             <h2 className="text-xl font-bold text-gray-900">对话记录</h2>
             <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
@@ -317,7 +319,7 @@ export default function InteractionDetailPage() {
                 return (
                   <div
                     key={message.id}
-                    className={`bg-white rounded-2xl shadow-sm border ${isUser ? 'border-gray-100 mr-0 ml-12' : 'border-[#1677FF]/10 mr-12 ml-0'} overflow-hidden transition-all duration-200`}
+                    className={`bg-white shadow-sm border ${isUser ? 'border-gray-100 mr-0 ml-12' : 'border-[#1677FF]/10 mr-12 ml-0'} overflow-hidden transition-all duration-200`}
                   >
                     {/* Message Header */}
                     <div className={`px-6 py-4 ${isUser ? 'bg-gray-50' : 'bg-gradient-to-r from-[#1677FF]/5 to-transparent'} border-b border-gray-100`}>
