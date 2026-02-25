@@ -37,13 +37,15 @@ export default function SkillsPage() {
 
   const loadSkills = async () => {
     try {
+      let data: Skill[];
       if (isSystemAdmin) {
-        const data = await apiService.getSystemSkills();
-        setSkills(data.data);
+        const response = await apiService.getSystemSkills();
+        data = response.data;
       } else {
-        const data = await apiService.getSkills();
-        setSkills(data);
+        data = await apiService.getSkills();
       }
+      // 只显示已启用的技能
+      setSkills(data.filter(skill => skill.is_enabled !== false));
     } catch (error) {
       console.error('加载技能失败:', error);
     } finally {
