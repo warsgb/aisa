@@ -32,3 +32,4 @@ backend/.env
 # Uploads
 uploads/
 
+backend/.backend.pid
