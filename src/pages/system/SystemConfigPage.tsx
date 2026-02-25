@@ -158,10 +158,13 @@ export default function SystemConfigPage() {
 
   // Update pending config (local state only, no save)
   const handlePendingRoleConfigUpdate = (role: IronTriangleRole, skillIds: string[]) => {
-    setPendingRoleConfigs(prev => ({
-      ...prev,
-      [role]: skillIds,
-    }));
+    setPendingRoleConfigs(prev => {
+      const current = prev || { AR: [], SR: [], FR: [] };
+      return {
+        ...current,
+        [role]: skillIds,
+      };
+    });
     setHasPendingChanges(true);
   };
 
@@ -194,19 +197,6 @@ export default function SystemConfigPage() {
   const handleDiscardRoleConfigs = () => {
     setPendingRoleConfigs(null);
     setHasPendingChanges(false);
-  };
-
-  const handleUpdateRoleConfig = async (role: IronTriangleRole, skillIds: string[]) => {
-    setIsSaving(true);
-    try {
-      await apiService.updateSystemRoleSkillConfig(role, skillIds);
-      loadData();
-    } catch (error) {
-      console.error('更新角色配置失败:', error);
-      alert('更新角色配置失败');
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   // ========== Sync Operations ==========

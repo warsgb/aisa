@@ -1,4 +1,4 @@
-import { Flame, Zap, MoreHorizontal } from 'lucide-react';
+import { Flame, Zap } from 'lucide-react';
 import type { Skill, SkillInteraction } from '../../types';
 
 interface HotSkillsProps {

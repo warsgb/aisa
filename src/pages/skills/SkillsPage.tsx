@@ -240,11 +240,15 @@ export default function SkillsPage() {
                             required={param.required}
                           >
                             <option value="">请选择</option>
-                            {param.options.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
+                            {param.options?.map((option) => {
+                              const optionLabel = typeof option === 'string' ? option : option.label;
+                              const optionValue = typeof option === 'string' ? option : option.value;
+                              return (
+                                <option key={optionValue} value={optionValue}>
+                                  {optionLabel}
+                                </option>
+                              );
+                            })}
                           </select>
                         ) : param.type === 'text' || param.type === 'string' ? (
                           <textarea

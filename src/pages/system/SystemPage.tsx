@@ -1085,9 +1085,6 @@ export default function SystemPage() {
                           type="checkbox"
                           checked={isMember}
                           onChange={(e) => {
-                            const updatedTeamIds = e.target.checked
-                              ? [...selectedUserForTeams.teams.map(t => t.id), team.id]
-                              : selectedUserForTeams.teams.map(t => t.id).filter(id => id !== team.id);
                             // Update local state for UI
                             setSelectedUserForTeams({
                               ...selectedUserForTeams,

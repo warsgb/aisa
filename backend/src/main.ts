@@ -28,7 +28,7 @@ async function bootstrap() {
   const allowAllOrigins = process.env.NODE_ENV === 'development' && process.env.CORS_ALLOW_ALL === 'true';
 
   app.enableCors({
-    origin: allowAllOrigins ? true : corsOrigins,
+    origin: true, // Allow all origins for now
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],

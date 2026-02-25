@@ -21,6 +21,15 @@
 set -e
 
 # ============================================
+# 调试模式
+# ============================================
+DEBUG="${DEBUG:-false}"
+if [ "$DEBUG" = "true" ]; then
+    set -x
+    log_info "调试模式已启用"
+fi
+
+# ============================================
 # 配置变量
 # ============================================
 AISA_REPO="${AISA_REPO:-https://github.com/warsgb/aisa.git}"
@@ -352,15 +361,53 @@ generate_secrets() {
 get_user_input() {
     log_step "6. 获取配置信息"
 
+    # 检查是否在交互模式 (stdin 是否为终端)
+    if [ ! -t 0 ]; then
+        log_warning "检测到非交互模式（通过管道运行）"
+        log_info "请使用以下方式之一提供配置："
+        echo "  1. 设置环境变量: export ZHIPU_API_KEY=your_key"
+        echo "  2. 下载后直接运行: wget install.sh && chmod +x install.sh && sudo ./install.sh"
+        echo ""
+
+        # 验证必需的环境变量
+        if [ -z "$ZHIPU_API_KEY" ] || [ "$ZHIPU_API_KEY" = "your_zhipu_api_key_here" ]; then
+            log_error "ZHIPU_API_KEY 环境变量未设置"
+            log_info "请先设置: export ZHIPU_API_KEY=your_key"
+            exit 1
+        fi
+
+        # 使用环境变量
+        SERVER_IP="${SERVER_IP:-$(get_server_ip)}"
+
+        log_info "使用环境变量配置"
+        log_info "配置摘要:"
+        echo "  智谱AI API Key: ${ZHIPU_API_KEY:0:8}..."
+        echo "  服务器IP: $SERVER_IP"
+        echo "  数据库密码: $DB_PASSWORD"
+        echo ""
+        return
+    fi
+
+    # 交互模式：提示用户输入
+    log_info "检测到交互模式，将提示输入配置信息"
+
     # 获取智谱AI API Key
     echo ""
-    while true; do
-        read -p "请输入智谱AI API Key (从 https://open.bigmodel.cn/ 获取): " ZHIPU_API_KEY
-        if [ -n "$ZHIPU_API_KEY" ] && [ "$ZHIPU_API_KEY" != "your_zhipu_api_key_here" ]; then
-            break
+    if [ -n "$ZHIPU_API_KEY" ] && [ "$ZHIPU_API_KEY" != "your_zhipu_api_key_here" ]; then
+        log_info "使用预设的 ZHIPU_API_KEY: ${ZHIPU_API_KEY:0:8}..."
+        read -p "按回车使用预设值，或输入新的 API Key: " input_key
+        if [ -n "$input_key" ]; then
+            ZHIPU_API_KEY="$input_key"
         fi
-        log_error "API Key 不能为空"
-    done
+    else
+        while true; do
+            read -p "请输入智谱AI API Key (从 https://open.bigmodel.cn/ 获取): " ZHIPU_API_KEY
+            if [ -n "$ZHIPU_API_KEY" ] && [ "$ZHIPU_API_KEY" != "your_zhipu_api_key_here" ]; then
+                break
+            fi
+            log_error "API Key 不能为空"
+        done
+    fi
 
     # 确认服务器IP
     local detected_ip=$(get_server_ip)
@@ -466,6 +513,16 @@ build_project() {
 
     cd "$AISA_DIR"
 
+    # 构建前端
+    log_info "构建前端..."
+    cd "$AISA_DIR"
+    npm run build --silent
+
+    if [ ! -d "dist" ]; then
+        log_error "前端构建失败: dist 目录不存在"
+        exit 1
+    fi
+
     # 构建后端
     log_info "构建后端..."
     cd "$AISA_DIR/backend"
@@ -485,6 +542,89 @@ build_project() {
     cd "$AISA_DIR"
 
     log_success "项目构建完成"
+}
+
+# ============================================
+# 验证构建完整性
+# ============================================
+verify_build() {
+    log_step "9.5 验证构建完整性"
+
+    cd "$AISA_DIR"
+
+    # 检查关键文件是否存在且大小合理
+    local missing_files=0
+
+    # 检查前端构建目录
+    if [ ! -d "dist/assets" ]; then
+        log_error "前端构建目录不存在: dist/assets"
+        missing_files=$((missing_files + 1))
+    else
+        # 查找前端主文件
+        local index_js=$(ls dist/assets/index-*.js 2>/dev/null | head -1)
+        if [ -z "$index_js" ]; then
+            log_error "前端主文件缺失: dist/assets/index-*.js"
+            missing_files=$((missing_files + 1))
+        else
+            local js_size=$(stat -f%z "$index_js" 2>/dev/null || stat -c%s "$index_js" 2>/dev/null || echo "0")
+            if [ "$js_size" -lt 10000 ]; then
+                log_error "前端文件大小异常: $js_size 字节（可能损坏）"
+                missing_files=$((missing_files + 1))
+            else
+                log_info "前端文件大小: $js_size 字节"
+            fi
+        fi
+
+        # 检查前端 chunk 文件
+        local chunk_count=$(ls dist/assets/*.js 2>/dev/null | wc -l | tr -d ' ')
+        log_info "前端 chunk 文件数量: $chunk_count"
+
+        if [ "$chunk_count" -lt 5 ]; then
+            log_warning "前端 chunk 文件数量异常少（可能构建不完整）"
+        fi
+    fi
+
+    # 检查后端构建产物
+    if [ ! -f "backend/dist/main.js" ]; then
+        # 尝试检查 dist/src/main.js
+        if [ ! -f "backend/dist/src/main.js" ]; then
+            log_error "后端入口文件缺失: backend/dist/main.js 或 backend/dist/src/main.js"
+            missing_files=$((missing_files + 1))
+        else
+            local backend_size=$(stat -f%z "backend/dist/src/main.js" 2>/dev/null || stat -c%s "backend/dist/src/main.js" 2>/dev/null || echo "0")
+            if [ "$backend_size" -lt 5000 ]; then
+                log_error "后端文件大小异常: $backend_size 字节（可能损坏）"
+                missing_files=$((missing_files + 1))
+            else
+                log_info "后端文件大小: $backend_size 字节"
+            fi
+        fi
+    else
+        local backend_size=$(stat -f%z "backend/dist/main.js" 2>/dev/null || stat -c%s "backend/dist/main.js" 2>/dev/null || echo "0")
+        if [ "$backend_size" -lt 5000 ]; then
+            log_error "后端文件大小异常: $backend_size 字节（可能损坏）"
+            missing_files=$((missing_files + 1))
+        else
+            log_info "后端文件大小: $backend_size 字节"
+        fi
+    fi
+
+    # 检查 index.html
+    if [ ! -f "dist/index.html" ]; then
+        log_error "前端入口文件缺失: dist/index.html"
+        missing_files=$((missing_files + 1))
+    fi
+
+    if [ "$missing_files" -gt 0 ]; then
+        log_error "构建验证失败，缺少 $missing_files 个关键文件"
+        log_info "请尝试重新构建："
+        echo "  cd $AISA_DIR"
+        echo "  rm -rf dist node_modules"
+        echo "  npm install && npm run build"
+        exit 1
+    fi
+
+    log_success "构建验证通过"
 }
 
 # ============================================
@@ -629,6 +769,7 @@ main() {
     create_config_files
     install_project_dependencies
     build_project
+    verify_build
     configure_pm2
     start_services
     show_access_info
