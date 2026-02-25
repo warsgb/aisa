@@ -36,7 +36,7 @@ export default function RegisterPage() {
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">AISA</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Win AI</h1>
             <p className="text-gray-600 mt-2">创建您的账号</p>
           </div>
 

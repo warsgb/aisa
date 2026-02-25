@@ -28,11 +28,24 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-[#e6f0ff] flex items-center justify-center px-4">
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="relative w-16 h-16 mx-auto mb-4">
+              <div className="absolute inset-0 border-4 border-[#1677FF]/20 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-t-[#1677FF] rounded-full animate-spin"></div>
+            </div>
+            <p className="text-lg font-medium text-gray-700">正在唤醒AI，请稍后</p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">AISA</h1>
-            <p className="text-gray-600 mt-2">AI 售前助手平台</p>
+            <h1 className="text-3xl font-bold text-gray-900">Win AI</h1>
+            <p className="text-gray-600 mt-2">AI 赢单技能服务平台</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
