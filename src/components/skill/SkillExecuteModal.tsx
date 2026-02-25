@@ -78,7 +78,7 @@ export function SkillExecuteModal({
     }
   }, [isOpen]);
 
-  // Initialize parameters when skill changes
+  // Initialize parameters when skill changes or currentCustomer changes
   useEffect(() => {
     if (skill?.parameters) {
       const initialParams: Record<string, ParameterValue> = {};
@@ -115,7 +115,7 @@ export function SkillExecuteModal({
     setConversationHistory([]);
     setIsWaitingForUserInput(false);
     setIsConversationEnded(false);
-  }, [skill]);
+  }, [skill, currentCustomer]);
 
   // Auto-scroll output
   useEffect(() => {
