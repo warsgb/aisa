@@ -133,14 +133,14 @@ echo ""
 echo "5️⃣ Log Files"
 echo "------------"
 if [ -f "$BACKEND_DIR/logs/backend.log" ]; then
-    local size=$(du -h "$BACKEND_DIR/logs/backend.log" 2>/dev/null | cut -f1)
-    local lines=$(wc -l < "$BACKEND_DIR/logs/backend.log" 2>/dev/null)
+    size=$(du -h "$BACKEND_DIR/logs/backend.log" 2>/dev/null | cut -f1)
+    lines=$(wc -l < "$BACKEND_DIR/logs/backend.log" 2>/dev/null)
     echo "  • Backend:  $BACKEND_DIR/logs/backend.log"
     echo "    Size: $size, Lines: $lines"
 fi
 if [ -f "$FRONTEND_DIR/logs/frontend.log" ]; then
-    local size=$(du -h "$FRONTEND_DIR/logs/frontend.log" 2>/dev/null | cut -f1)
-    local lines=$(wc -l < "$FRONTEND_DIR/logs/frontend.log" 2>/dev/null)
+    size=$(du -h "$FRONTEND_DIR/logs/frontend.log" 2>/dev/null | cut -f1)
+    lines=$(wc -l < "$FRONTEND_DIR/logs/frontend.log" 2>/dev/null)
     echo "  • Frontend: $FRONTEND_DIR/logs/frontend.log"
     echo "    Size: $size, Lines: $lines"
 fi

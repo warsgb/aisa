@@ -130,9 +130,10 @@ if needs_rebuild "$BACKEND_BUILD_MARKER" "$BACKEND_DIR" "$BACKEND_DIR/dist" "Bac
     echo ""
     echo "🔨 Building Backend..."
     cd "$BACKEND_DIR"
+    # 清理旧构建产物避免权限问题
+    rm -rf dist 2>/dev/null || true
     npm run build 2>&1 | tail -5
     # 更新标记文件
-    find src -type f -name "*.ts" -exec touch {} \; 2>/dev/null || true
     touch "$BACKEND_BUILD_MARKER"
     echo "✅ Backend build complete"
 else
@@ -144,9 +145,10 @@ if needs_rebuild "$FRONTEND_BUILD_MARKER" "$FRONTEND_DIR" "$FRONTEND_DIR/dist" "
     echo ""
     echo "🔨 Building Frontend..."
     cd "$FRONTEND_DIR"
+    # 清理旧构建产物
+    rm -rf dist 2>/dev/null || true
     npm run build 2>&1 | tail -5
     # 更新标记文件
-    find src -type f \( -name "*.tsx" -o -name "*.ts" \) -exec touch {} \; 2>/dev/null || true
     touch "$FRONTEND_BUILD_MARKER"
     echo "✅ Frontend build complete"
 else
