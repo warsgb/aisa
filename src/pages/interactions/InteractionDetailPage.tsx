@@ -388,7 +388,7 @@ export default function InteractionDetailPage() {
                       ) : (
                         /* View mode */
                         <>
-                          <div className="prose max-w-none prose-headings:font-semibold prose-a:text-[#1677FF] prose-a:no-underline hover:prose-a:underline" data-color-mode="light">
+                          <div className={`prose max-w-none prose-headings:font-semibold prose-a:text-[#1677FF] prose-a:no-underline hover:prose-a:underline ${isMobile ? 'prose-sm prose-p:text-sm' : ''}`} data-color-mode="light">
                             <MDEditor.Markdown source={message.content} />
                           </div>
 
