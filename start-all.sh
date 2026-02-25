@@ -61,7 +61,15 @@ fi
 mkdir -p logs
 
 # Start backend with logging
-NODE_ENV=production node --enable-source-maps "$BACKEND_DIR/dist/src/main" 2>&1 | tee logs/backend.log &
+# Try both possible paths for compatibility
+if [ -f "$BACKEND_DIR/dist/main.js" ]; then
+    NODE_ENV=production node --enable-source-maps "$BACKEND_DIR/dist/main.js" 2>&1 | tee logs/backend.log &
+elif [ -f "$BACKEND_DIR/dist/src/main.js" ]; then
+    NODE_ENV=production node --enable-source-maps "$BACKEND_DIR/dist/src/main.js" 2>&1 | tee logs/backend.log &
+else
+    echo "❌ Error: Cannot find backend entry file (tried dist/main.js and dist/src/main.js)"
+    exit 1
+fi
 
 BACKEND_PID=$!
 echo "✅ Backend started (PID: $BACKEND_PID)"
