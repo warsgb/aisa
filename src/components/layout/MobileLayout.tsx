@@ -11,8 +11,10 @@ interface MobileLayoutProps {
  */
 export function MobileLayout({ children }: MobileLayoutProps) {
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {children || <Outlet />}
+    <div className="min-h-screen bg-background">
+      <div className="pb-20">
+        {children || <Outlet />}
+      </div>
       <MobileTabBar />
     </div>
   );
