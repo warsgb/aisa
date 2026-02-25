@@ -223,7 +223,7 @@ export default function InteractionDetailPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className={isMobile ? 'px-4 py-2' : 'max-w-5xl mx-auto p-6'}>
         {/* 头部导航 - PC only */}
-        {!isMobile && (
+        {!isMobile ? (
           <div className="mb-6 flex items-center gap-3">
             <button
               onClick={() => navigate('/interactions')}
@@ -239,6 +239,17 @@ export default function InteractionDetailPage() {
             >
               <Home className="w-4 h-4" />
               返回首页
+            </button>
+          </div>
+        ) : (
+          /* Mobile back button */
+          <div className="mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-[#1677FF] rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              返回
             </button>
           </div>
         )}
