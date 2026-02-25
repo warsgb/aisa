@@ -49,6 +49,7 @@ export function SkillExecuteModal({
   const [isConversationEnded, setIsConversationEnded] = useState(false);
 
   const outputRef = useRef<HTMLDivElement>(null);
+  const streamContentRef = useRef('');
 
   // Load available documents when modal opens
   useEffect(() => {
@@ -113,6 +114,7 @@ export function SkillExecuteModal({
     }
     setReferenceDocumentId('');
     setStreamOutput('');
+    streamContentRef.current = '';
     setCurrentInteractionId(null);
     setError(null);
     setExecutionStage('idle');
@@ -172,6 +174,7 @@ export function SkillExecuteModal({
     setIsExecuting(true);
     setExecutionStage('preparing');
     setStreamOutput('');
+    streamContentRef.current = '';
     setError(null);
 
     // Stage 1: Preparing parameters (with small delay for UI visibility)
@@ -205,7 +208,13 @@ export function SkillExecuteModal({
         },
         onChunk: (data) => {
           console.log('📦 [SkillExecuteModal] onChunk called', data.chunk?.substring(0, 50) + '...');
-          setStreamOutput((prev) => prev + data.chunk);
+          // Store in ref for direct DOM access
+          streamContentRef.current += data.chunk;
+          setStreamOutput(streamContentRef.current);
+          // Force browser to paint by accessing offsetHeight
+          if (outputRef.current) {
+            outputRef.current.offsetHeight;
+          }
         },
         onComplete: (data) => {
           console.log('✅ [SkillExecuteModal] onComplete called', data);
@@ -261,6 +270,7 @@ export function SkillExecuteModal({
 
     // Clear previous output for new response
     setStreamOutput('');
+    streamContentRef.current = '';
 
     // Send follow-up message via WebSocket
     webSocketService.executeSkill(
@@ -305,6 +315,7 @@ export function SkillExecuteModal({
     setConversationMode(true);
     setCurrentInteractionId(null);
     setStreamOutput('');
+    streamContentRef.current = '';
     setConversationHistory([]);
     setIsWaitingForUserInput(false);
     setIsConversationEnded(false);
@@ -320,6 +331,7 @@ export function SkillExecuteModal({
     setIsExecuting(true);
     setExecutionStage('receiving');
     setStreamOutput('');
+    streamContentRef.current = '';
 
     // Send end conversation signal to get summary
     webSocketService.executeSkill(
