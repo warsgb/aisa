@@ -166,9 +166,6 @@ export function SkillExecuteModal({
   const handleExecute = useCallback(async () => {
     if (!skill || !team?.id) return;
 
-    console.log('🔍 [SkillExecuteModal] handleExecute called');
-    console.log('🔍 [SkillExecuteModal] WebSocket connected:', webSocketService.connected);
-
     if (!validateParameters()) return;
 
     setIsExecuting(true);
@@ -202,12 +199,10 @@ export function SkillExecuteModal({
       },
       {
         onStart: (data) => {
-          console.log('🟢 [SkillExecuteModal] onStart called', data);
           setCurrentInteractionId(data.interactionId);
           setExecutionStage('receiving');
         },
         onChunk: (data) => {
-          console.log('📦 [SkillExecuteModal] onChunk called', data.chunk?.substring(0, 50) + '...');
           // Store in ref for direct DOM access
           streamContentRef.current += data.chunk;
           setStreamOutput(streamContentRef.current);
@@ -217,7 +212,6 @@ export function SkillExecuteModal({
           }
         },
         onComplete: (data) => {
-          console.log('✅ [SkillExecuteModal] onComplete called', data);
           setIsExecuting(false);
           setExecutionStage('completed');
           setStreamOutput(data.content);

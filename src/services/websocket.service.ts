@@ -24,11 +24,6 @@ class WebSocketService {
     // Support relative paths for same-origin deployment, fallback to localhost
     const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3001');
 
-    console.log('🔌 [WebSocket Service] Attempting to connect...', {
-      url: wsUrl,
-      token: token ? `Bearer ${token.substring(0, 20)}...` : 'No token',
-    });
-
     this.socket = io(wsUrl, {
       path: '/ws',
       auth: { token },
@@ -39,16 +34,11 @@ class WebSocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('✅ [WebSocket Service] Connected successfully!');
-      console.log('📊 Socket ID:', this.socket?.id);
+      // Connected
     });
 
-    this.socket.on('disconnect', (reason) => {
-      console.log('❌ [WebSocket Service] Disconnected:', reason);
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
+    this.socket.on('disconnect', () => {
+      // Disconnected
     });
 
     this.socket.on('error', (error) => {
@@ -80,29 +70,23 @@ class WebSocketService {
       throw new Error('WebSocket not connected');
     }
 
-    console.log('📤 [WebSocket Service] Setting up event handlers for skill execution');
-
     // Set up one-time event handlers for this execution
     const setupHandlers = () => {
       this.socket?.once('response:start', (data: SkillExecutionStart) => {
-        console.log('✅ [WebSocket Service] Received response:start', data);
         handlers.onStart?.(data);
       });
 
       this.socket?.on('response:chunk', (data: ResponseChunk) => {
-        console.log('📦 [WebSocket Service] Received response:chunk', data.chunk?.substring(0, 50) + '...');
         handlers.onChunk?.(data);
       });
 
       this.socket?.once('response:complete', (data: ResponseComplete) => {
-        console.log('✅ [WebSocket Service] Received response:complete', data);
         handlers.onComplete?.(data);
         // Clean up chunk listener
         this.socket?.off('response:chunk');
       });
 
       this.socket?.once('response:error', (data: ResponseError) => {
-        console.log('❌ [WebSocket Service] Received response:error', data);
         handlers.onError?.(data);
         // Clean up listeners
         this.socket?.off('response:chunk');
@@ -110,7 +94,6 @@ class WebSocketService {
     };
 
     setupHandlers();
-    console.log('🚀 [WebSocket Service] Emitting skill:execute', data);
     this.socket?.emit('skill:execute', data);
   }
 
