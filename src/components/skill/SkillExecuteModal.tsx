@@ -725,14 +725,13 @@ export function SkillExecuteModal({
                     </div>
                   )}
 
-                  {/* Show streaming output during execution */}
+                  {/* Show streaming output during execution - use plain text for better performance */}
                   {isExecuting && streamOutput && (
                     <div className="flex justify-start">
                       <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm max-w-[85%]">
-                        <MDEditor.Markdown
-                          source={streamOutput}
-                          className="prose prose-sm max-w-none"
-                        />
+                        <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                          {streamOutput}
+                        </div>
                       </div>
                     </div>
                   )}
