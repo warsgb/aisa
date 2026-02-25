@@ -17,7 +17,7 @@ import { X, ChevronDown, Users } from 'lucide-react';
  */
 export function WorkspaceTabPage() {
   const { user, team } = useAuth();
-  const { clearCustomer } = useCurrentCustomerStore();
+  const { currentCustomer, setCurrentCustomer } = useCurrentCustomerStore();
   const { nodes, setNodes } = useLtcConfigStore();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -32,21 +32,19 @@ export function WorkspaceTabPage() {
   const [teams, setTeams] = useState<{id: string; name: string; role: string}[]>([]);
   const [isLoadingTeams] = useState(false);
 
-  // Load data
+  // Load initial data (without interactions)
   useEffect(() => {
     const loadData = async () => {
       if (!team) return;
       setIsLoading(true);
       try {
-        const [customersData, interactionsData, skillsData, ltcNodes] = await Promise.all([
+        const [customersData, skillsData, ltcNodes] = await Promise.all([
           apiService.getCustomers(team.id),
-          apiService.getInteractions(team.id),
           apiService.getSkills(true),
           apiService.getLtcNodes(team.id),
         ]);
 
         setCustomers(customersData);
-        setInteractions(interactionsData.slice(0, 10)); // Last 10 interactions
         setAllSkills(skillsData.filter((s) => s.is_enabled !== false));
 
         // Load LTC nodes into store
@@ -83,6 +81,24 @@ export function WorkspaceTabPage() {
     loadData();
   }, [team, setNodes]);
 
+  // Load interactions when customer changes
+  useEffect(() => {
+    const loadInteractions = async () => {
+      if (!team) return;
+      try {
+        const interactionsData = await apiService.getInteractions(
+          team.id,
+          currentCustomer ? { customerId: currentCustomer.id } : undefined
+        );
+        setInteractions(interactionsData.slice(0, 10)); // Last 10 interactions
+      } catch (error) {
+        console.error('Failed to load interactions:', error);
+      }
+    };
+
+    loadInteractions();
+  }, [team, currentCustomer]);
+
   // Load teams for switcher
   useEffect(() => {
     const loadTeams = async () => {
@@ -100,7 +116,7 @@ export function WorkspaceTabPage() {
   // Handle team switch
   const handleTeamSwitch = async (selectedTeamId: string) => {
     try {
-      clearCustomer();
+      setCurrentCustomer(null);
       localStorage.removeItem('current-customer-storage');
       const response = await apiService.switchTeam(selectedTeamId);
       localStorage.setItem('access_token', response.access_token);
