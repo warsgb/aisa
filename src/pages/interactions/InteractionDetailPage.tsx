@@ -222,24 +222,26 @@ export default function InteractionDetailPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className={isMobile ? 'px-4 py-2' : 'max-w-5xl mx-auto p-6'}>
-        {/* 头部导航 */}
-        <div className="mb-6 flex items-center gap-3">
-          <button
-            onClick={() => navigate('/interactions')}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#1677FF] hover:bg-white rounded-xl transition-all duration-200"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            返回列表
-          </button>
-          <ChevronRight className="w-4 h-4 text-gray-300" />
-          <button
-            onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#1677FF] hover:bg-white rounded-xl transition-all duration-200"
-          >
-            <Home className="w-4 h-4" />
-            返回首页
-          </button>
-        </div>
+        {/* 头部导航 - PC only */}
+        {!isMobile && (
+          <div className="mb-6 flex items-center gap-3">
+            <button
+              onClick={() => navigate('/interactions')}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#1677FF] hover:bg-white rounded-xl transition-all duration-200"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              返回列表
+            </button>
+            <ChevronRight className="w-4 h-4 text-gray-300" />
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#1677FF] hover:bg-white rounded-xl transition-all duration-200"
+            >
+              <Home className="w-4 h-4" />
+              返回首页
+            </button>
+          </div>
+        )}
 
         {/* 交互信息卡片 */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">

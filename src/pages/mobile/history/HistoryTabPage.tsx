@@ -107,7 +107,7 @@ export function HistoryTabPage() {
     <div className="px-4 py-2">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900">执行历��</h2>
+        <h2 className="text-xl font-bold text-gray-900">执行历史</h2>
         <button
           onClick={() => setShowFilterMenu(!showFilterMenu)}
           className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"

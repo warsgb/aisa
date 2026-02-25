@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Search, Building2, ChevronRight, Check } from 'lucide-react';
+import { Search, Building2, ChevronRight, Check, Plus } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useCurrentCustomerStore } from '../../../stores/currentCustomer.store';
 import { useMobileTabStore } from '../../../stores/mobileTab.store';
 import { apiService } from '../../../services/api.service';
 import type { Customer } from '../../../types';
+import { CustomerFormModal } from '../../../components/customer/CustomerFormModal';
 
 /**
  * Customers Tab Page - Mobile customer list with search
@@ -18,6 +19,7 @@ export function CustomersTabPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Load customers
   useEffect(() => {
@@ -53,10 +55,21 @@ export function CustomersTabPage() {
     setActiveTab('workspace');
   };
 
+  // Handle customer added
+  const handleCustomerAdded = async () => {
+    if (!team) return;
+    try {
+      const data = await apiService.getCustomers(team.id);
+      setCustomers(data);
+    } catch (error) {
+      console.error('Failed to reload customers:', error);
+    }
+  };
+
   return (
     <div className="px-4 py-2">
       {/* Header */}
-      <h2 className="text-xl font-bold text-gray-900 mb-4">客户管��</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">客户管理</h2>
 
       {/* Search Bar */}
       <div className="relative mb-4">
@@ -139,11 +152,21 @@ export function CustomersTabPage() {
         </div>
       )}
 
-      {/* Add Customer Button (placeholder) */}
-      <button className="w-full mt-4 py-3 bg-[#1677FF] hover:bg-[#1677FF]/90 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
-        <span>+</span>
+      {/* Add Customer Button */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        className="w-full mt-4 py-3 bg-[#1677FF] hover:bg-[#1677FF]/90 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+      >
+        <Plus className="w-5 h-5" />
         <span>添加新客户</span>
       </button>
+
+      {/* Add Customer Modal */}
+      <CustomerFormModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={handleCustomerAdded}
+      />
     </div>
   );
 }

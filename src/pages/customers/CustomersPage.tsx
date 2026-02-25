@@ -627,7 +627,7 @@ function CustomerViewModal({
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -814,7 +814,7 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave }: Cu
             <p className="text-sm text-gray-500">{customer.name}</p>
           </div>
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
