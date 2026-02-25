@@ -239,6 +239,39 @@ export class LtcService {
     return this.findAllNodes(teamId, userId);
   }
 
+  // Batch: Get all bindings for all nodes at once (avoids N+1 queries)
+  async findAllBindings(teamId: string, userId: string) {
+    await this.verifyTeamAccess(teamId, userId);
+
+    // Get all nodes for this team
+    const nodes = await this.ltcNodeRepository.find({
+      where: { team_id: teamId },
+      select: ['id'],
+    });
+
+    if (nodes.length === 0) {
+      return {};
+    }
+
+    // Get all bindings for all nodes in one query with relations
+    const nodeIds = nodes.map((n) => n.id);
+    const allBindings = await this.nodeSkillBindingRepository.find({
+      where: { node_id: In(nodeIds) },
+      relations: ['skill'],
+      order: { order: 'ASC' },
+    });
+
+    // Group bindings by node_id
+    const bindingsByNode: Record<string, NodeSkillBinding[]> = {};
+    for (const node of nodes) {
+      bindingsByNode[node.id] = allBindings.filter(
+        (b) => b.node_id === node.id,
+      );
+    }
+
+    return bindingsByNode;
+  }
+
   // Node-Skill Binding Management
   async findBindings(teamId: string, nodeId: string, userId: string) {
     await this.verifyTeamAccess(teamId, userId);

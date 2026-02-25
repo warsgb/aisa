@@ -177,19 +177,25 @@ export default function LtcConfigPage() {
         setNodes(sortedNodes);
         setAllSkills(skillsData);
 
-        // Load bindings for each node
-        const bindingsMap: Record<string, NodeSkillBinding[]> = {};
-        await Promise.all(
-          sortedNodes.map(async (node) => {
-            try {
-              const nodeBindings = await apiService.getNodeSkillBindings(team.id, node.id);
-              bindingsMap[node.id] = nodeBindings;
-            } catch {
-              bindingsMap[node.id] = [];
-            }
-          })
-        );
-        // Update bindings for each node individually
+        // Try batch API first (optimization: avoids N+1 queries), fallback to parallel requests
+        let bindingsMap: Record<string, NodeSkillBinding[]> = {};
+        try {
+          const allBindings = await apiService.getAllNodeBindings(team.id);
+          bindingsMap = allBindings;
+        } catch {
+          // Fallback: load bindings for each node in parallel
+          await Promise.all(
+            sortedNodes.map(async (node) => {
+              try {
+                const nodeBindings = await apiService.getNodeSkillBindings(team.id, node.id);
+                bindingsMap[node.id] = nodeBindings;
+              } catch {
+                bindingsMap[node.id] = [];
+              }
+            })
+          );
+        }
+        // Update bindings for each node
         Object.entries(bindingsMap).forEach(([nodeId, nodeBindings]) => {
           setBindings(nodeId, nodeBindings ?? []);
         });

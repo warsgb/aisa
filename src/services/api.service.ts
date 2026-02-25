@@ -81,6 +81,30 @@ class ApiService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
 
+  // Simple in-memory cache for API responses
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private readonly CACHE_TTL = 60000; // 1 minute TTL
+
+  private getCached<T>(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.data as T;
+    }
+    return null;
+  }
+
+  private setCache(key: string, data: any): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  private clearCache(key?: string): void {
+    if (key) {
+      this.cache.delete(key);
+    } else {
+      this.cache.clear();
+    }
+  }
+
   constructor() {
     // Load tokens from localStorage on init
     this.accessToken = safeStorage.getItem('access_token');
@@ -356,11 +380,12 @@ class ApiService {
     });
   }
 
-  // Interactions endpoints
-  async getInteractions(teamId: string, filters?: { customerId?: string; skillId?: string }): Promise<SkillInteraction[]> {
+  // Interactions endpoints (cached for list without filters)
+  async getInteractions(teamId: string, filters?: { customerId?: string; skillId?: string; limit?: number }): Promise<SkillInteraction[]> {
     const params = new URLSearchParams();
     if (filters?.customerId) params.append('customerId', filters.customerId);
     if (filters?.skillId) params.append('skillId', filters.skillId);
+    if (filters?.limit) params.append('limit', filters.limit.toString());
     const queryString = params.toString();
     return this.request<SkillInteraction[]>(`/teams/${teamId}/interactions${queryString ? `?${queryString}` : ''}`);
   }
@@ -633,9 +658,22 @@ class ApiService {
 
   // ========== LTC (Lead To Cash) API ==========
 
-  // LTC Nodes
+  // LTC Nodes (cached)
   async getLtcNodes(teamId: string): Promise<LtcNode[]> {
-    return this.request<LtcNode[]>(`/teams/${teamId}/ltc-nodes`);
+    const cacheKey = `ltcNodes:${teamId}`;
+    const cached = this.getCached<LtcNode[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const data = await this.request<LtcNode[]>(`/teams/${teamId}/ltc-nodes`);
+    this.setCache(cacheKey, data);
+    return data;
+  }
+
+  // Clear LTC nodes cache (call after modifying nodes)
+  clearLtcNodesCache(teamId: string): void {
+    this.clearCache(`ltcNodes:${teamId}`);
   }
 
   async createLtcNode(teamId: string, data: CreateLtcNodeDto): Promise<LtcNode> {
@@ -669,7 +707,26 @@ class ApiService {
     });
   }
 
-  // Node-Skill Bindings
+  // Node-Skill Bindings - Batch (optimization to avoid N+1 queries)
+  async getAllNodeBindings(teamId: string): Promise<Record<string, NodeSkillBinding[]>> {
+    const cacheKey = `bindings:${teamId}`;
+    const cached = this.getCached<Record<string, NodeSkillBinding[]>>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const data = await this.request<Record<string, NodeSkillBinding[]>>(
+      `/teams/${teamId}/ltc-nodes/bindings`
+    );
+    this.setCache(cacheKey, data);
+    return data;
+  }
+
+  // Clear bindings cache (call after creating/updating bindings)
+  clearBindingsCache(teamId: string): void {
+    this.clearCache(`bindings:${teamId}`);
+  }
+
   async getNodeSkillBindings(teamId: string, nodeId: string): Promise<NodeSkillBinding[]> {
     return this.request<NodeSkillBinding[]>(`/teams/${teamId}/ltc-nodes/${nodeId}/bindings`);
   }
@@ -730,9 +787,22 @@ class ApiService {
 
   // ========== Team Role Skill Configuration API ==========
 
-  // Get all role skill configurations for a team
+  // Get all role skill configurations for a team (cached)
   async getTeamRoleSkillConfigs(teamId: string): Promise<TeamRoleSkillConfig[]> {
-    return this.request<TeamRoleSkillConfig[]>(`/teams/${teamId}/role-skill-configs`);
+    const cacheKey = `roleConfigs:${teamId}`;
+    const cached = this.getCached<TeamRoleSkillConfig[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const data = await this.request<TeamRoleSkillConfig[]>(`/teams/${teamId}/role-skill-configs`);
+    this.setCache(cacheKey, data);
+    return data;
+  }
+
+  // Clear role configs cache
+  clearRoleConfigsCache(teamId: string): void {
+    this.clearCache(`roleConfigs:${teamId}`);
   }
 
   // Get a specific role's skill configuration

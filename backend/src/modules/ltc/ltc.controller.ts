@@ -96,6 +96,15 @@ export class LtcController {
     return this.ltcService.resetToDefault(teamId, req.user.id);
   }
 
+  // Batch endpoint: Get all bindings for all nodes at once (optimization for N+1 query)
+  @Get('ltc-nodes/bindings')
+  findAllBindings(
+    @Param('teamId') teamId: string,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.ltcService.findAllBindings(teamId, req.user.id);
+  }
+
   // Node-Skill Binding Management
   @Get('ltc-nodes/:nodeId/bindings')
   findBindings(

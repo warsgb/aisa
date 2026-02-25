@@ -26,7 +26,7 @@ export class InteractionsService {
     }
   }
 
-  async findAll(teamId: string, userId: string, filters?: { customerId?: string; skillId?: string }) {
+  async findAll(teamId: string, userId: string, filters?: { customerId?: string; skillId?: string; limit?: number }) {
     await this.verifyTeamAccess(teamId, userId);
 
     const where: any = { team_id: teamId };
@@ -39,11 +39,18 @@ export class InteractionsService {
       where.skill_id = filters.skillId;
     }
 
-    const interactions = await this.interactionRepository.find({
+    const findOptions: any = {
       where,
       relations: ['skill', 'customer'],
       order: { created_at: 'DESC' },
-    });
+    };
+
+    // Add limit if specified (for performance optimization on mobile)
+    if (filters?.limit && filters.limit > 0) {
+      findOptions.take = filters.limit;
+    }
+
+    const interactions = await this.interactionRepository.find(findOptions);
 
     return interactions;
   }

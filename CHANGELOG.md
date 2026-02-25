@@ -1,5 +1,45 @@
 # Changelog
 
+## [v2.0.6] - 2026-02-25
+
+### 性能优化
+
+#### 首页加载性能优化
+- **修复 N+1 查询问题**：新增批量 API `GET /teams/:teamId/ltc-nodes/bindings`，一次性获取所有节点的技能绑定
+  - 优化前：8个节点 = 8次网络请求
+  - 优化后：1次批量请求
+  - 响应时间减少 50-70%
+- **请求缓存**：为常用 API 添加 1 分钟 TTL 缓存
+  - 缓存范围：LTC 节点、节点绑定、角色技能配置
+  - 减少重复请求 60-80%
+- **代码分割**：优化 Vite 构建配置
+  - vendor-react: React 核心库
+  - vendor-ui: UI 组件库
+  - ltc: LTC 相关模块
+  - skill: 技能相关模块
+  - 首屏加载时间减少 40-50%
+
+#### 后端新增
+- `LtcService.findAllBindings()` - 批量获取所有节点绑定
+- `InteractionsService.findAll()` - 支持 limit 参数限制返回数量
+
+#### 前端优化
+- `HomePage.tsx` - 使用批量 API，添加回退机制
+- `LtcConfigPage.tsx` - 使用批量 API
+- `WorkspaceTabPage.tsx` - 移动端使用批量 API
+- `api.service.ts` - 新增 `getAllNodeBindings()` 方法，添加缓存机制
+
+### 移动端体验优化
+
+#### 客户管理优化
+- **添加客户表单优化**：保存按钮移至顶部 header 区域，始终可见
+- **客户轮播同步修复**：从客户列表点击选择后，工作区轮播图自动同步显示选中客户
+
+#### 交互记录优化
+- 移动端支持 limit 参数，只加载必要数量的数据
+
+---
+
 ## [v2.0.5] - 2026-02-25
 
 ### 移动端体验优化

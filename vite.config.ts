@@ -6,6 +6,24 @@ export default defineConfig({
   plugins: [react()],
 
   base: './',
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // UI libraries
+          'vendor-ui': ['lucide-react', '@uiw/react-md-editor'],
+          // LTC related (loaded on demand)
+          'ltc': ['./src/components/ltc', './src/pages/ltc-config'],
+          // Skills related (loaded on demand)
+          'skill': ['./src/components/skill', './src/pages/skills'],
+        }
+      }
+    }
+  },
+
   server: {
     host: true, // Listen on all interfaces (0.0.0.0)
     port: 5173,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Building2, User } from 'lucide-react';
 import { useCurrentCustomerStore } from '../../stores/currentCustomer.store';
 import { useMobileTabStore } from '../../stores/mobileTab.store';
@@ -20,6 +20,16 @@ export function CustomerCarousel({ customers }: CustomerCarouselProps) {
   const filteredCustomers = customers.length > 0 ? customers : [];
   const hasCustomers = filteredCustomers.length > 0;
   const displayCustomer = currentCustomer || (hasCustomers ? filteredCustomers[0] : null);
+
+  // Sync currentIndex when currentCustomer changes from external source (e.g., customer list)
+  useEffect(() => {
+    if (currentCustomer) {
+      const index = filteredCustomers.findIndex((c) => c.id === currentCustomer.id);
+      if (index !== -1 && index !== currentIndex) {
+        setCurrentIndex(index);
+      }
+    }
+  }, [currentCustomer, filteredCustomers, currentIndex]);
 
   const handlePrevious = () => {
     if (!hasCustomers) return;

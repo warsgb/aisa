@@ -54,10 +54,24 @@ export function WorkspaceTabPage() {
           setNodes(ltcNodes);
         }
 
-        // Load node-skill bindings
-        for (const node of ltcNodes) {
-          const bindings = await apiService.getNodeSkillBindings(team.id, node.id);
-          useLtcConfigStore.getState().setBindings(node.id, bindings);
+        // Load node-skill bindings using batch API (optimization: avoids N+1 queries)
+        try {
+          const allBindings = await apiService.getAllNodeBindings(team.id);
+          Object.entries(allBindings).forEach(([nodeId, nodeBindings]) => {
+            useLtcConfigStore.getState().setBindings(nodeId, nodeBindings);
+          });
+        } catch {
+          // Fallback to parallel requests if batch API fails
+          await Promise.all(
+            ltcNodes.map(async (node) => {
+              try {
+                const bindings = await apiService.getNodeSkillBindings(team.id, node.id);
+                useLtcConfigStore.getState().setBindings(node.id, bindings);
+              } catch {
+                useLtcConfigStore.getState().setBindings(node.id, []);
+              }
+            })
+          );
         }
       } catch (error) {
         console.error('Failed to load workspace data:', error);

@@ -32,10 +32,12 @@ export class InteractionsController {
     @Request() req: RequestWithUser,
     @Query('customerId') customerId?: string,
     @Query('skillId') skillId?: string,
+    @Query('limit') limit?: string,
   ) {
     return this.interactionsService.findAll(teamId, req.user.id, {
       customerId,
       skillId,
+      limit: limit ? parseInt(limit, 10) : undefined,
     });
   }
 
