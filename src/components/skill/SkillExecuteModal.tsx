@@ -91,8 +91,16 @@ export function SkillExecuteModal({
         }
 
         // Auto-fill industry with current customer industry
-        if (param.name === 'industry' && currentCustomer?.industry) {
+        // Support multiple possible parameter names for industry
+        const industryParamNames = ['industry', '客户行业', '所属行业', 'industry_name'];
+        if (industryParamNames.includes(param.name) && currentCustomer?.industry) {
           defaultValue = currentCustomer.industry;
+        }
+
+        // Auto-fill company_size with current customer company size
+        const sizeParamNames = ['company_size', '客户规模', '企业规模', 'company_size'];
+        if (sizeParamNames.includes(param.name) && currentCustomer?.company_size) {
+          defaultValue = currentCustomer.company_size;
         }
 
         initialParams[param.name] = {
