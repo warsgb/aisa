@@ -1,13 +1,136 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Win AI</title>
+    <style>
+      /* Loading Screen Styles */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #1677FF 0%, #0EA5E9 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      .loading-logo {
+        font-size: 48px;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 40px;
+        letter-spacing: 2px;
+      }
+
+      .loading-text {
+        font-size: 20px;
+        color: white;
+        opacity: 0.95;
+        text-align: center;
+        max-width: 80%;
+        line-height: 1.6;
+        transition: opacity 0.5s ease-in-out;
+      }
+
+      .loading-text.fade-out {
+        opacity: 0;
+      }
+
+      .loading-text.fade-in {
+        opacity: 0.95;
+      }
+
+      .loading-dots {
+        display: flex;
+        gap: 8px;
+        margin-top: 24px;
+      }
+
+      .loading-dot {
+        width: 10px;
+        height: 10px;
+        background: white;
+        border-radius: 50%;
+        opacity: 0.6;
+        animation: pulse 1.4s infinite ease-in-out;
+      }
+
+      .loading-dot:nth-child(1) { animation-delay: 0s; }
+      .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+      .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+      @keyframes pulse {
+        0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+        40% { opacity: 1; transform: scale(1.2); }
+      }
+
+      #root {
+        display: none;
+      }
+
+      #root.loaded {
+        display: block;
+      }
+    </style>
   </head>
   <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div class="loading-logo">Win AI</div>
+      <div class="loading-text" id="loading-text">借助AI更好的了解客户</div>
+      <div class="loading-dots">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+    </div>
+
+    <!-- App Root -->
     <div id="root"></div>
+
+    <!-- Loading Text Rotation Script -->
+    <script>
+      (function() {
+        const texts = [
+          '借助AI更好的了解客户',
+          '让AI成为你的超级外脑',
+          'AI 赢单，Win在当下',
+          '基于 Agent Skills体系'
+        ];
+        let currentIndex = 0;
+        const loadingText = document.getElementById('loading-text');
+
+        function rotateText() {
+          if (!loadingText) return;
+
+          // Fade out
+          loadingText.classList.add('fade-out');
+          loadingText.classList.remove('fade-in');
+
+          setTimeout(function() {
+            // Change text
+            currentIndex = (currentIndex + 1) % texts.length;
+            loadingText.textContent = texts[currentIndex];
+
+            // Fade in
+            loadingText.classList.remove('fade-out');
+            loadingText.classList.add('fade-in');
+          }, 500);
+        }
+
+        // Start rotation every 3 seconds
+        setInterval(rotateText, 3000);
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
