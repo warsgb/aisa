@@ -17,7 +17,7 @@ import { X, ChevronDown, Users } from 'lucide-react';
  */
 export function WorkspaceTabPage() {
   const { user, team } = useAuth();
-  const { currentCustomer, clearCustomer } = useCurrentCustomerStore();
+  const { clearCustomer } = useCurrentCustomerStore();
   const { nodes, setNodes } = useLtcConfigStore();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -30,7 +30,7 @@ export function WorkspaceTabPage() {
   // Team switcher state
   const [showTeamSwitcher, setShowTeamSwitcher] = useState(false);
   const [teams, setTeams] = useState<{id: string; name: string; role: string}[]>([]);
-  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
+  const [isLoadingTeams] = useState(false);
 
   // Load data
   useEffect(() => {

@@ -1,5 +1,38 @@
 # Changelog
 
+## [v2.0.3] - 2026-02-25
+
+### 安装和构建修复
+
+#### TypeScript 编译错误修复
+- `src/components/mobile/HotSkills.tsx`: 移除未使用的 `MoreHorizontal` 导入
+- `src/components/skill/RoleSkillConfigPanel.tsx`: 移除未使用的 `IRON_TRIANGLE_LABELS` 导入、`rc` 变量、`idx` 变量和 `getRoleSkills` 函数
+- `src/components/skill/SkillExecuteModal.tsx`: 移除未使用的 `isWaitingForUserInput` 状态变量和 `onStart` 回调中的未使用 `data` 参数
+- `src/pages/mobile/workspace/WorkspaceTabPage.tsx`: 移除未使用的 `currentCustomer` 和 `setIsLoadingTeams` 变量
+- `src/pages/settings/SkillsManagementPage.tsx`: 移除未使用的 `Layers` 导入，修复 `skill.parameters` 可能为 undefined 的类型问题
+- `src/pages/skills/SkillsPage.tsx`: 修复 option 类型的类型错误（处理 string | SkillParameterOption 联合类型）
+- `src/pages/system/SystemConfigPage.tsx`: 修复 `pendingRoleConfigs` 的类型问题，移除未使用的 `handleUpdateRoleConfig` 函数
+- `src/pages/system/SystemPage.tsx`: 移除未使用的 `updatedTeamIds` 变量
+- `src/pages/ltc-config/LtcConfigPage.tsx`: 移除未使用的 `handleToggleSkill` 函数
+
+#### 数据库初始化修复
+- `backend/src/app.module.ts`: 临时启用 `synchronize: true` 以自动创建数据库表
+- 运行迁移后恢复为 `synchronize: false`（生产环境安全配置）
+
+#### CORS 跨域配置修复
+- `backend/src/main.ts`: 强制启用 `origin: true` 允许所有跨域请求
+- 解决前端开发服务器访问后端 API 的跨域问题
+
+#### 前端配置更新
+- `.env`: 更新 `VITE_API_URL` 和 `VITE_WS_URL` 为公网 IP 地址
+- 构建生产版本并通过 `vite preview` 提供服务
+
+#### 用户权限修复
+- 将默认管理员账号角色设置为 `SYSTEM_ADMIN`
+- 确保系统配置和系统管理菜单正常显示
+
+---
+
 ## [v2.0.2] - 2026-02-24
 
 ### 技能参数优化 - AI智能识别

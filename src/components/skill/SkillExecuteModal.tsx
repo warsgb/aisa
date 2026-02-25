@@ -45,7 +45,7 @@ export function SkillExecuteModal({
   const [conversationMode, setConversationMode] = useState(false);
   const [userMessage, setUserMessage] = useState('');
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
-  const [isWaitingForUserInput, setIsWaitingForUserInput] = useState(false);
+  const [, setIsWaitingForUserInput] = useState(false);
   const [isConversationEnded, setIsConversationEnded] = useState(false);
 
   const outputRef = useRef<HTMLDivElement>(null);
@@ -265,7 +265,7 @@ export function SkillExecuteModal({
         referenceDocumentId: referenceDocumentId || undefined,
       },
       {
-        onStart: (data) => {
+        onStart: () => {
           // Interaction already exists, no need to update
         },
         onChunk: (data) => {
@@ -323,7 +323,7 @@ export function SkillExecuteModal({
         endConversation: true,
       },
       {
-        onStart: (data) => {
+        onStart: () => {
           // Interaction already exists
         },
         onChunk: (data) => {

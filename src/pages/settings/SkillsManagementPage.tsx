@@ -11,7 +11,6 @@ import {
   RefreshCw,
   Wrench,
   ArrowLeft,
-  Layers,
 } from 'lucide-react';
 
 interface SkillFormData {
@@ -161,7 +160,7 @@ export default function SkillsManagementPage() {
 
     try {
       // Call backend API to update parameter labels in the SKILL.md file
-      await apiService.updateSkillParameterLabels(skill.id, skill.parameters);
+      await apiService.updateSkillParameterLabels(skill.id, skill.parameters || []);
 
       // Reload skills to get updated data
       await loadSkills();
@@ -703,14 +702,14 @@ export default function SkillsManagementPage() {
                       <span className="text-xs text-gray-400">点击标签可编辑</span>
                     </div>
                     <div className="space-y-2">
-                      {viewSkill.parameters.map((param) => (
+                      {viewSkill.parameters?.map((param) => (
                         <div key={param.name} className="bg-gray-50 rounded-lg p-3">
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
                               value={param.label}
                               onChange={(e) => {
-                                const updatedParams = viewSkill.parameters.map(p =>
+                                const updatedParams = (viewSkill.parameters || []).map(p =>
                                   p.name === param.name ? { ...p, label: e.target.value } : p
                                 );
                                 setViewSkill({ ...viewSkill, parameters: updatedParams });

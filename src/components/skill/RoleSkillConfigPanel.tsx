@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
 import type { Skill, TeamRoleSkillConfig, IronTriangleRole } from '../../types';
-import { useSkillFilterStore, IRON_TRIANGLE_LABELS } from '../../stores';
+import { useSkillFilterStore } from '../../stores';
 import { Save, Loader2, Check } from 'lucide-react';
 
 interface RoleSkillConfigPanelProps {
@@ -155,8 +155,6 @@ export function RoleSkillConfigPanel({ skills }: RoleSkillConfigPanelProps) {
     if (!team?.id) return;
     if (!confirm('确定要重置此角色配置为系统默认吗？当前的自定义配置将被覆盖。')) return;
 
-    const rc = roleConfigs[roleIndex];
-
     setRoleConfigs((prev) =>
       prev.map((rc, idx) => (idx === roleIndex ? { ...rc, isResetting: true } : rc))
     );
@@ -177,7 +175,7 @@ export function RoleSkillConfigPanel({ skills }: RoleSkillConfigPanelProps) {
 
       // Update local state
       setRoleConfigs((prev) =>
-        prev.map((rc, idx) => {
+        prev.map((rc) => {
           const config = configs.find((c) => c.role === rc.role) || null;
           return {
             ...rc,
@@ -237,12 +235,6 @@ export function RoleSkillConfigPanel({ skills }: RoleSkillConfigPanelProps) {
     } finally {
       setIsResettingAll(false);
     }
-  };
-
-  // Get skills for a role
-  const getRoleSkills = (role: IronTriangleRole): Skill[] => {
-    const skillIds = teamRoleSkillConfigs[role] || [];
-    return skills.filter((s) => skillIds.includes(s.id));
   };
 
   // Check if a skill is selected for a role

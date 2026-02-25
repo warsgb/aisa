@@ -341,36 +341,6 @@ export default function LtcConfigPage() {
     }
   }, [team?.id, setNodes, setSaving]);
 
-  // Toggle skill binding
-  const handleToggleSkill = useCallback(async (skill: Skill, isBound: boolean) => {
-    if (!team?.id || !selectedNode) return;
-
-    const nodeBindings = bindings[selectedNode.id] || [];
-
-    try {
-      if (isBound) {
-        // Remove binding
-        const binding = nodeBindings.find((b) => b.skill_id === skill.id);
-        if (binding) {
-          await apiService.deleteNodeSkillBinding(team.id, selectedNode.id, binding.id);
-          setBindings(
-            selectedNode.id,
-            nodeBindings.filter((b) => b.id !== binding.id)
-          );
-        }
-      } else {
-        // Add binding
-        const newBinding = await apiService.createNodeSkillBinding(team.id, selectedNode.id, {
-          skill_id: skill.id,
-          order: nodeBindings.length,
-        });
-        setBindings(selectedNode.id, [...nodeBindings, newBinding]);
-      }
-    } catch (err) {
-      setLocalError(err instanceof Error ? err.message : '操作失败');
-    }
-  }, [team?.id, selectedNode, bindings, setBindings]);
-
   if (!team) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
