@@ -351,6 +351,21 @@ export default function LtcConfigPage() {
     );
   }
 
+  // Only OWNER can access this page
+  if (team.role !== 'OWNER') {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-2xl flex items-center justify-center">
+            <Layers className="w-8 h-8 text-gray-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">访问受限</h2>
+          <p className="text-gray-500">只有团队所有者可以配置LTC流程</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
