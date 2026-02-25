@@ -44,14 +44,16 @@ export default function InteractionsPage() {
           apiService.getSystemSkills(),
         ]);
         setCustomers(customersData.data);
-        setSkills(skillsData.data);
+        // 只显示已启用的技能
+        setSkills(skillsData.data.filter(skill => skill.is_enabled !== false));
       } else if (team) {
         const [customersData, skillsData] = await Promise.all([
           apiService.getCustomers(team.id),
           apiService.getSkills(),
         ]);
         setCustomers(customersData);
-        setSkills(skillsData);
+        // 只显示已启用的技能
+        setSkills(skillsData.filter(skill => skill.is_enabled !== false));
       }
     } catch (error) {
       console.error('加载数据失败:', error);
