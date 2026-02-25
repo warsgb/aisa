@@ -174,11 +174,30 @@ export default function SystemConfigPage() {
   // Update pending config (local state only, no save)
   const handlePendingRoleConfigUpdate = (role: IronTriangleRole, skillIds: string[]) => {
     setPendingRoleConfigs(prev => {
-      const current = prev || { AR: [], SR: [], FR: [] };
-      return {
-        ...current,
-        [role]: skillIds,
+      // If prev exists, just update the specific role
+      if (prev) {
+        return {
+          ...prev,
+          [role]: skillIds,
+        };
+      }
+
+      // If prev doesn't exist, initialize with all current configs
+      const initialConfigs: Record<IronTriangleRole, string[]> = {
+        AR: [],
+        SR: [],
+        FR: [],
       };
+
+      // Populate with current saved configs
+      roleConfigs.forEach(config => {
+        initialConfigs[config.role] = config.default_skill_ids || [];
+      });
+
+      // Update the specific role with new values
+      initialConfigs[role] = skillIds;
+
+      return initialConfigs;
     });
     setHasPendingChanges(true);
   };
