@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   team: Team | null;
   isLoading: boolean;
-  login: (data: LoginDto) => Promise<void>;
+  login: (data: LoginDto) => Promise<{ user: User; team: Team | null }>;
   register: (data: RegisterDto) => Promise<void>;
   logout: () => void;
   setTeam: (team: Team | null) => void;
@@ -55,6 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (data: LoginDto) => {
     console.log('🔐 [Auth Context] Login attempt...', { email: data.email });
     try {
+      // Clear any previous customer data before logging in
+      localStorage.removeItem('current-customer-storage');
+
       const response = await apiService.login(data);
       console.log('✅ [Auth Context] Login successful!');
       console.log('📊 User data:', response.user);
@@ -64,10 +67,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(response.user);
 
       // Try to load team data if user has a team
+      let loadedTeam: Team | null = null;
       if (response.team) {
         try {
           const fullTeam = await apiService.getTeam(response.team.id);
           setTeam(fullTeam);
+          loadedTeam = fullTeam;
         } catch (teamError) {
           console.warn('Failed to load team data:', teamError);
           setTeam(null);
@@ -75,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setTeam(null);
       }
+
+      return { user: response.user, team: loadedTeam };
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -82,6 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (data: RegisterDto) => {
+    // Clear any previous customer data before registering
+    localStorage.removeItem('current-customer-storage');
+
     const response = await apiService.register(data);
     setUser(response.user);
     if (response.team) {
@@ -96,6 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     apiService.logout();
     setUser(null);
     setTeam(null);
+    // Clear persisted customer data
+    localStorage.removeItem('current-customer-storage');
   };
 
   const setCurrentTeam = async (newTeam: Team) => {

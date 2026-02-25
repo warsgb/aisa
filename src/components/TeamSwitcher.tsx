@@ -13,7 +13,7 @@ interface Team {
 
 export default function TeamSwitcher() {
   const { user, team } = useAuth();
-  const { clearCustomer } = useCurrentCustomerStore();
+  const { clearPersistentStorage } = useCurrentCustomerStore();
   const [teams, setTeams] = useState<Team[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,10 +53,8 @@ export default function TeamSwitcher() {
 
   const handleTeamChange = async (selectedTeam: Team) => {
     try {
-      // Clear current customer state before switching team
-      clearCustomer();
-      // Also clear localStorage to prevent cross-team customer data
-      localStorage.removeItem('current-customer-storage');
+      // Clear current customer state and localStorage before switching team
+      clearPersistentStorage();
 
       // Call API to switch team (this will update the token)
       const response = await apiService.switchTeam(selectedTeam.id);

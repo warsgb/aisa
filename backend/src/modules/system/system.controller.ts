@@ -151,6 +151,11 @@ export class SystemController {
     return this.systemService.getSystemStats();
   }
 
+  @Get('dashboard-stats')
+  async getDashboardStats() {
+    return this.systemService.getDashboardStats();
+  }
+
   // System-wide data endpoints for admin
   @Get('customers')
   async getAllCustomers(
@@ -175,8 +180,24 @@ export class SystemController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
     @Query('search') search?: string,
+    @Query('customerId') customerId?: string,
+    @Query('skillId') skillId?: string,
   ) {
-    return this.systemService.getAllInteractions(page, pageSize, search);
+    return this.systemService.getAllInteractions(page, pageSize, search, customerId, skillId);
+  }
+
+  @Get('interactions/:id')
+  async getInteractionById(@Param('id') id: string) {
+    return this.systemService.getInteractionById(id);
+  }
+
+  @Put('interactions/:id/messages/:messageId')
+  async updateInteractionMessage(
+    @Param('id') id: string,
+    @Param('messageId') messageId: string,
+    @Body() body: { content: string },
+  ) {
+    return this.systemService.updateInteractionMessage(id, messageId, body.content);
   }
 
   @Get('documents')

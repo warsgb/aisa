@@ -18,6 +18,7 @@ import type {
   SystemUser,
   SystemTeam,
   SystemStats,
+  DashboardStats,
   PaginatedResponse,
   UpdateUserStatusDto,
   ResetPasswordDto,
@@ -574,10 +575,29 @@ class ApiService {
     return this.request<PaginatedResponse<Skill>>(`/system/skills?${params}`);
   }
 
-  async getSystemInteractions(page: number = 1, pageSize: number = 100, search?: string): Promise<PaginatedResponse<SkillInteraction>> {
+  async getSystemInteractions(page: number = 1, pageSize: number = 100, search?: string, customerId?: string, skillId?: string): Promise<PaginatedResponse<SkillInteraction>> {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (search) params.append('search', search);
+    if (customerId) params.append('customerId', customerId);
+    if (skillId) params.append('skillId', skillId);
     return this.request<PaginatedResponse<SkillInteraction>>(`/system/interactions?${params}`);
+  }
+
+  async getSystemInteraction(id: string): Promise<SkillInteraction> {
+    return this.request<SkillInteraction>(`/system/interactions/${id}`);
+  }
+
+  async getSystemInteractionMessages(id: string): Promise<any[]> {
+    // System admin uses the same interaction data which includes messages
+    const interaction = await this.getSystemInteraction(id);
+    return (interaction as any).messages || [];
+  }
+
+  async updateSystemInteractionMessage(interactionId: string, messageId: string, data: { content: string }): Promise<void> {
+    return this.request<void>(`/system/interactions/${interactionId}/messages/${messageId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   async getSystemDocuments(page: number = 1, pageSize: number = 100, search?: string): Promise<PaginatedResponse<Document>> {
@@ -913,6 +933,11 @@ class ApiService {
     return this.request<TeamRoleSkillConfig[]>(`/teams/${teamId}/role-skill-configs/reset`, {
       method: 'POST',
     });
+  }
+
+  // ========== Dashboard Stats for System Admin ==========
+  async getDashboardStats(): Promise<DashboardStats> {
+    return this.request<DashboardStats>('/system/dashboard-stats');
   }
 }
 

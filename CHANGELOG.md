@@ -1,5 +1,100 @@
 # Changelog
 
+## [v2.0.7] - 2026-02-25
+
+### 系统管理员 Dashboard 重新设计
+
+#### 新增系统总览页面
+- **独立菜单入口**：系统管理员登录后自动跳转到 `/dashboard`，菜单显示在首页之前
+- **权限控制**：使用 `SystemAdminRoute` 守卫，仅系统管理员可访问
+- **移动端支持**：底部导航栏新增"总览" tab
+
+#### 数据统计面板
+- **4个统计卡片**：总用户数、总团队数、总客户数、总交互数
+- **热门客户排行 Top 10**：按交互次数排序，显示排名徽章（前三名高亮）
+- **热门团队排行 Top 10**：按交互次数排序，显示排名徽章（前三名高亮）
+- **最近交互记录**：显示最近10条交互，可点击跳转到详情页
+
+#### 后端新增
+- `GET /system/dashboard-stats` - 获取系统总览数据
+- `SystemService.getDashboardStats()` - 聚合统计数据方法
+  - 基础统计（用户/团队/客户/交互计数）
+  - 热门客户查询（GROUP BY + ORDER BY + LIMIT 10）
+  - 热门团队查询（GROUP BY + ORDER BY + LIMIT 10）
+  - 最近交互查询（LEFT JOIN 关联查询）
+
+#### 前端新增
+- `DashboardStats` 类型定义
+- `DashboardPage` 重新设计
+  - 使用 lucide-react 图标（BarChart3, Trophy, Flame, MessageSquare）
+  - 相对时间显示（刚刚 / X分钟前 / X小时前 / X天前）
+  - 状态徽章组件（已完成/运行中/失败/等待中）
+- `apiService.getDashboardStats()` API 方法
+- `Layout.tsx` - 添加 Dashboard 菜单项（系统管理员专属）
+- `MobileTabBar.tsx` - 添加"总览" tab（系统管理员专属）
+- `mobileTab.store.ts` - 添加 'dashboard' tab 类型
+
+### 客户数据自动选择与清除
+
+#### 自动选择第一个客户
+- **首页加载时**：如果当前没有选中客户，自动选中团队第一个客户
+- **桌面端**：`HomePage.tsx` - 加载客户后自动选中第一个
+- **移动端**：`WorkspaceTabPage.tsx` - 加载客户后自动选中第一个
+- **客户资料同步**：桌面端自动加载客户资料，移动端按需加载
+
+#### 跨会话客户数据隔离
+- **登录时清除**：`AuthContext.login()` - 清除旧用户的客户数据
+- **注册时清除**：`AuthContext.register()` - 清除旧用户的客户数据
+- **退出登录时清除**：`AuthContext.logout()` - 清除当前用户客户数据
+- **团队切换时清除**：
+  - 桌面端：`TeamSwitcher.tsx` - 使用 `clearPersistentStorage()` 方法
+  - 移动端：`WorkspaceTabPage.tsx` - 使用 `clearPersistentStorage()` 方法
+
+#### Store 改进
+- `currentCustomer.store.ts` - 新增 `clearPersistentStorage()` 方法
+  - 同时清除 store 内部状态和 localStorage 持久化数据
+  - 避免 zustand persist 中间件异步写入导致的数据残留问题
+
+#### 登录流程优化
+- `LoginPage.tsx` - 根据用户角色重定向
+  - 系统管理员 → `/dashboard`
+  - 普通用户 → `/` (首页)
+- `AuthContext.login()` - 返回 `{ user, team }` 供调用方使用
+
+---
+
+#### 新增系统总览页面
+- **独立菜单入口**：系统管理员登录后自动跳转到 `/dashboard`，菜单显示在首页之前
+- **权限控制**：使用 `SystemAdminRoute` 守卫，仅系统管理员可访问
+- **移动端支持**：底部导航栏新增"总览" tab
+
+#### 数据统计面板
+- **4个统计卡片**：总用户数、总团队数、总客户数、总交互数
+- **热门客户排行 Top 10**：按交互次数排序，显示排名徽章（前三名高亮）
+- **热门团队排行 Top 10**：按交互次数排序，显示排名徽章（前三名高亮）
+- **最近交互记录**：显示最近10条交互，可点击跳转到详情页
+
+#### 后端新增
+- `GET /system/dashboard-stats` - 获取系统总览数据
+- `SystemService.getDashboardStats()` - 聚合统计数据方法
+  - 基础统计（用户/团队/客户/交互计数）
+  - 热门客户查询（GROUP BY + ORDER BY + LIMIT 10）
+  - 热门团队查询（GROUP BY + ORDER BY + LIMIT 10）
+  - 最近交互查询（LEFT JOIN 关联查询）
+
+#### 前端新增
+- `DashboardStats` 类型定义
+- `DashboardPage` 重新设计
+  - 使用 lucide-react 图标（BarChart3, Trophy, Flame, MessageSquare）
+  - 相对时间显示（刚刚 / X分钟前 / X小时前 / X天前）
+  - 状态徽章组件（已完成/运行中/失败/等待中）
+- `apiService.getDashboardStats()` API 方法
+- `Layout.tsx` - 添加 Dashboard 菜单项（系统管理员专属）
+- `MobileTabBar.tsx` - 添加"总览" tab（系统管理员专属）
+- `mobileTab.store.ts` - 添加 'dashboard' tab 类型
+
+---
+
 ## [v2.0.6] - 2026-02-25
 
 ### 性能优化

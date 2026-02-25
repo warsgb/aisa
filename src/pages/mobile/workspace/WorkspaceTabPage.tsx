@@ -17,7 +17,7 @@ import { X, ChevronDown, Users } from 'lucide-react';
  */
 export function WorkspaceTabPage() {
   const { user, team } = useAuth();
-  const { currentCustomer, setCurrentCustomer } = useCurrentCustomerStore();
+  const { currentCustomer, setCurrentCustomer, clearPersistentStorage } = useCurrentCustomerStore();
   const { nodes, setNodes } = useLtcConfigStore();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -50,6 +50,12 @@ export function WorkspaceTabPage() {
         // Load LTC nodes into store
         if (ltcNodes.length > 0) {
           setNodes(ltcNodes);
+        }
+
+        // Auto-select first customer if none is selected
+        if (!currentCustomer && customersData.length > 0) {
+          const firstCustomer = customersData[0];
+          setCurrentCustomer(firstCustomer);
         }
 
         // Load node-skill bindings using batch API (optimization: avoids N+1 queries)
@@ -116,8 +122,8 @@ export function WorkspaceTabPage() {
   // Handle team switch
   const handleTeamSwitch = async (selectedTeamId: string) => {
     try {
-      setCurrentCustomer(null);
-      localStorage.removeItem('current-customer-storage');
+      // Clear current customer state and localStorage before switching team
+      clearPersistentStorage();
       const response = await apiService.switchTeam(selectedTeamId);
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);

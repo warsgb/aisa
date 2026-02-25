@@ -2,62 +2,71 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
-import type { Customer, Skill, SkillInteraction, Document } from '../../types';
+import type { DashboardStats } from '../../types';
+import {
+  Users,
+  Building2,
+  MessageSquare,
+  TrendingUp,
+  Trophy,
+  Flame,
+  ArrowRight,
+} from 'lucide-react';
+
+// Helper function to format relative time
+function formatRelativeTime(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return '刚刚';
+  if (diffMins < 60) return `${diffMins}分钟前`;
+  if (diffHours < 24) return `${diffHours}小时前`;
+  if (diffDays < 7) return `${diffDays}天前`;
+  return date.toLocaleDateString('zh-CN');
+}
+
+// Status badge component
+function StatusBadge({ status }: { status: string }) {
+  const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+    COMPLETED: { bg: 'bg-green-100', text: 'text-green-800', label: '已完成' },
+    RUNNING: { bg: 'bg-blue-100', text: 'text-blue-800', label: '运行中' },
+    FAILED: { bg: 'bg-red-100', text: 'text-red-800', label: '失败' },
+    PENDING: { bg: 'bg-gray-100', text: 'text-gray-800', label: '等待中' },
+    CANCELLED: { bg: 'bg-gray-100', text: 'text-gray-800', label: '已取消' },
+  };
+
+  const config = statusConfig[status] || statusConfig.PENDING;
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+      {config.label}
+    </span>
+  );
+}
 
 export default function DashboardPage() {
-  const { team, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [interactions, setInteractions] = useState<SkillInteraction[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // System admin can access dashboard without a team
-  const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
-
   useEffect(() => {
-    // System admin doesn't need a team to view dashboard
-    if (!team && !isSystemAdmin) {
-      navigate('/login');
-      return;
-    }
-
     const loadData = async () => {
       try {
-        // System admin sees system stats instead of team data
-        if (isSystemAdmin) {
-          const [customersData, skillsData, interactionsData, documentsData] = await Promise.all([
-            apiService.getSystemCustomers(),
-            apiService.getSystemSkills(),
-            apiService.getSystemInteractions(),
-            apiService.getSystemDocuments(),
-          ]);
-          setCustomers(customersData.data);
-          setSkills(skillsData.data);
-          setInteractions(interactionsData.data);
-          setDocuments(documentsData.data);
-        } else if (team) {
-          const [customersData, skillsData, interactionsData, documentsData] = await Promise.all([
-            apiService.getCustomers(team.id),
-            apiService.getSkills(),
-            apiService.getInteractions(team.id),
-            apiService.getDocuments(team.id),
-          ]);
-          setCustomers(customersData);
-          setSkills(skillsData);
-          setInteractions(interactionsData);
-          setDocuments(documentsData);
-        }
+        const data = await apiService.getDashboardStats();
+        setStats(data);
       } catch (error) {
-        console.error('加载仪表盘数据失败:', error);
+        console.error('加载系统总览数据失败:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadData();
-  }, [team, navigate, isSystemAdmin]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -67,116 +76,212 @@ export default function DashboardPage() {
     );
   }
 
+  if (!stats) {
+    return (
+      <div className="p-6">
+        <div className="text-red-500">加载系统总览数据失败</div>
+      </div>
+    );
+  }
+
+  const { overview, topCustomers, topTeams, recentInteractions } = stats;
+
   return (
     <div className="p-6">
-      {/* 统计卡片 */}
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <TrendingUp className="w-6 h-6 text-[#1677FF]" />
+          系统总览 Dashboard
+        </h1>
+        <p className="text-gray-500 mt-1">系统管理员专用数据面板</p>
+      </div>
+
+      {/* Overview Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">客户</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{customers.length}</p>
+              <p className="text-sm font-medium text-gray-500">总用户数</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{overview.userCount}</p>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">👥</span>
+            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
+              <Users className="w-6 h-6 text-[#1677FF]" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">技能</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{skills.length}</p>
+              <p className="text-sm font-medium text-gray-500">总团队数</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{overview.teamCount}</p>
             </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">🛠️</span>
+            <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-[#1677FF]" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">交互</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{interactions.length}</p>
+              <p className="text-sm font-medium text-gray-500">总客户数</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{overview.customerCount}</p>
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">💬</span>
+            <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+              <Trophy className="w-6 h-6 text-[#1677FF]" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">文档</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{documents.length}</p>
+              <p className="text-sm font-medium text-gray-500">总交互数</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{overview.interactionCount}</p>
             </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">📄</span>
+            <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-[#1677FF]" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* 快捷操作 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <button
-          onClick={() => navigate('/customers')}
-          className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow text-left"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">客户管理</h3>
-          <p className="text-sm text-gray-600">查看和管理您的客户列表</p>
-        </button>
-
-        <button
-          onClick={() => navigate('/skills')}
-          className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow text-left"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">执行技能</h3>
-          <p className="text-sm text-gray-600">运行 AI 驱动的售前技能</p>
-        </button>
-
-        <button
-          onClick={() => navigate('/documents')}
-          className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow text-left"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">文档管理</h3>
-          <p className="text-sm text-gray-600">浏览生成的文档</p>
-        </button>
-      </div>
-
-      {/* 最近交互 */}
-      {interactions.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">最近交互</h2>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="divide-y divide-gray-200">
-              {interactions.slice(0, 5).map((interaction) => (
-                <div key={interaction.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">{interaction.skill?.name || '未知技能'}</p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {interaction.customer?.name || '无客户'} • {new Date(interaction.created_at).toLocaleDateString()}
-                      </p>
+      {/* Rankings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Top Customers */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-[#1677FF]" />
+              热门客户 Top 10
+            </h2>
+          </div>
+          <div className="p-4">
+            {topCustomers.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">暂无数据</p>
+            ) : (
+              <div className="space-y-2">
+                {topCustomers.map((customer, index) => (
+                  <div
+                    key={customer.customerId}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          index < 3
+                            ? 'bg-[#1677FF] text-white'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="font-medium text-gray-900">{customer.customerName}</span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      interaction.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                      interaction.status === 'RUNNING' ? 'bg-blue-100 text-blue-800' :
-                      interaction.status === 'FAILED' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {interaction.status}
-                    </span>
+                    <span className="text-sm text-gray-500">{customer.interactionCount} 次交互</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Teams */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Flame className="w-5 h-5 text-[#1677FF]" />
+              热门团队 Top 10
+            </h2>
+          </div>
+          <div className="p-4">
+            {topTeams.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">暂无数据</p>
+            ) : (
+              <div className="space-y-2">
+                {topTeams.map((team, index) => (
+                  <div
+                    key={team.teamId}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          index < 3
+                            ? 'bg-[#1677FF] text-white'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="font-medium text-gray-900">{team.teamName}</span>
+                    </div>
+                    <span className="text-sm text-gray-500">{team.interactionCount} 次交互</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Interactions */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-[#1677FF]" />
+            最近交互记录
+          </h2>
+          <button
+            onClick={() => navigate('/interactions')}
+            className="text-sm text-[#1677FF] hover:underline flex items-center gap-1"
+          >
+            查看全部
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {recentInteractions.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">暂无交互记录</p>
+          ) : (
+            recentInteractions.map((interaction) => (
+              <div
+                key={interaction.id}
+                className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-[#1677FF]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">
+                        {interaction.customer?.name || '无客户'}
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      <span className="text-sm text-gray-600">{interaction.skill?.name || '未知技能'}</span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {interaction.team?.name || '未知团队'} • {formatRelativeTime(interaction.created_at)}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="flex items-center gap-3">
+                  <StatusBadge status={interaction.status} />
+                  <button
+                    onClick={() => navigate(`/interactions/${interaction.id}`)}
+                    className="text-sm text-[#1677FF] hover:underline"
+                  >
+                    查看
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

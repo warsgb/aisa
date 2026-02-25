@@ -8,6 +8,7 @@ import { TeamMember, TeamRole } from '../../entities/team-member.entity';
 import { Customer } from '../../entities/customer.entity';
 import { Skill } from '../../entities/skill.entity';
 import { SkillInteraction } from '../../entities/interaction.entity';
+import { InteractionMessage } from '../../entities/interaction-message.entity';
 import { Document } from '../../entities/document.entity';
 import { TeamApplication } from '../../entities/team-application.entity';
 import { SystemLtcNode } from '../../entities/system-ltc-node.entity';
@@ -44,6 +45,26 @@ export interface SystemStats {
   totalTeamMembers: number;
 }
 
+export interface DashboardStats {
+  overview: {
+    userCount: number;
+    teamCount: number;
+    customerCount: number;
+    interactionCount: number;
+  };
+  topCustomers: Array<{
+    customerId: string;
+    customerName: string;
+    interactionCount: number;
+  }>;
+  topTeams: Array<{
+    teamId: string;
+    teamName: string;
+    interactionCount: number;
+  }>;
+  recentInteractions: SkillInteraction[];
+}
+
 @Injectable()
 export class SystemService {
   constructor(
@@ -59,6 +80,8 @@ export class SystemService {
     private skillRepository: Repository<Skill>,
     @InjectRepository(SkillInteraction)
     private interactionRepository: Repository<SkillInteraction>,
+    @InjectRepository(InteractionMessage)
+    private messageRepository: Repository<InteractionMessage>,
     @InjectRepository(Document)
     private documentRepository: Repository<Document>,
     @InjectRepository(TeamApplication)
@@ -420,14 +443,34 @@ export class SystemService {
     };
   }
 
-  async getAllInteractions(page: number = 1, pageSize: number = 20, search?: string) {
+  async getAllInteractions(page: number = 1, pageSize: number = 20, search?: string, customerId?: string, skillId?: string) {
     const query = this.interactionRepository.createQueryBuilder('interaction')
       .leftJoinAndSelect('interaction.team', 'team')
       .leftJoinAndSelect('interaction.skill', 'skill')
-      .leftJoinAndSelect('interaction.customer', 'customer');
+      .leftJoinAndSelect('interaction.customer', 'customer')
+      .leftJoinAndSelect('interaction.messages', 'messages');
+
+    // Build where conditions
+    const conditions: string[] = [];
+    const parameters: Record<string, any> = {};
 
     if (search) {
-      query.where('customer.name ILIKE :search', { search: `%${search}%` });
+      conditions.push('customer.name ILIKE :search');
+      parameters.search = `%${search}%`;
+    }
+
+    if (customerId) {
+      conditions.push('interaction.customer_id = :customerId');
+      parameters.customerId = customerId;
+    }
+
+    if (skillId) {
+      conditions.push('interaction.skill_id = :skillId');
+      parameters.skillId = skillId;
+    }
+
+    if (conditions.length > 0) {
+      query.where(conditions.join(' AND '), parameters);
     }
 
     const [interactions, total] = await query
@@ -437,22 +480,48 @@ export class SystemService {
       .getManyAndCount();
 
     return {
-      data: interactions.map(i => ({
-        id: i.id,
-        team_id: i.team_id,
-        team_name: i.team?.name,
-        skill_id: i.skill_id,
-        skill_name: i.skill?.name,
-        customer_id: i.customer_id,
-        customer_name: i.customer?.name,
-        status: i.status,
-        created_at: i.created_at,
-        updated_at: i.updated_at,
-      })),
+      data: interactions,
       total,
       page,
       pageSize,
     };
+  }
+
+  async getInteractionById(id: string) {
+    const interaction = await this.interactionRepository.createQueryBuilder('interaction')
+      .leftJoinAndSelect('interaction.team', 'team')
+      .leftJoinAndSelect('interaction.skill', 'skill')
+      .leftJoinAndSelect('interaction.customer', 'customer')
+      .leftJoinAndSelect('interaction.messages', 'messages')
+      .where('interaction.id = :id', { id })
+      .getOne();
+
+    if (!interaction) {
+      throw new NotFoundException('Interaction not found');
+    }
+
+    return interaction;
+  }
+
+  async updateInteractionMessage(interactionId: string, messageId: string, content: string) {
+    const interaction = await this.interactionRepository.findOne({
+      where: { id: interactionId },
+      relations: ['messages'],
+    });
+
+    if (!interaction) {
+      throw new NotFoundException('Interaction not found');
+    }
+
+    const message = interaction.messages.find(m => m.id === messageId);
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    message.content = content;
+    await this.messageRepository.save(message);
+
+    return { message: 'Message updated successfully' };
   }
 
   async getAllDocuments(page: number = 1, pageSize: number = 20, search?: string) {
@@ -1047,6 +1116,67 @@ export class SystemService {
         changes.ltcNodes.updated > 0 ||
         changes.roleConfigs.updated > 0,
       changes,
+    };
+  }
+
+  // ========== Dashboard Stats for System Admin ==========
+  async getDashboardStats(): Promise<DashboardStats> {
+    // Get overview stats in parallel
+    const [userCount, teamCount, customerCount, interactionCount] = await Promise.all([
+      this.userRepository.count(),
+      this.teamRepository.count(),
+      this.customerRepository.count(),
+      this.interactionRepository.count(),
+    ]);
+
+    // Get top customers by interaction count
+    const topCustomers = await this.interactionRepository
+      .createQueryBuilder('interaction')
+      .select('interaction.customer_id', 'customerId')
+      .addSelect('customer.name', 'customerName')
+      .addSelect('COUNT(*)', 'interactionCount')
+      .leftJoin('interaction.customer', 'customer')
+      .where('interaction.customer_id IS NOT NULL')
+      .groupBy('interaction.customer_id, customer.name')
+      .orderBy('COUNT(*)', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    // Get top teams by interaction count
+    const topTeams = await this.interactionRepository
+      .createQueryBuilder('interaction')
+      .select('interaction.team_id', 'teamId')
+      .addSelect('team.name', 'teamName')
+      .addSelect('COUNT(*)', 'interactionCount')
+      .leftJoin('interaction.team', 'team')
+      .groupBy('interaction.team_id, team.name')
+      .orderBy('COUNT(*)', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    // Get recent interactions with relations
+    const recentInteractions = await this.interactionRepository
+      .createQueryBuilder('interaction')
+      .leftJoinAndSelect('interaction.customer', 'customer')
+      .leftJoinAndSelect('interaction.skill', 'skill')
+      .leftJoinAndSelect('interaction.team', 'team')
+      .orderBy('interaction.created_at', 'DESC')
+      .limit(10)
+      .getMany();
+
+    return {
+      overview: { userCount, teamCount, customerCount, interactionCount },
+      topCustomers: topCustomers.map(c => ({
+        customerId: c.customerId,
+        customerName: c.customerName || '未知客户',
+        interactionCount: parseInt(c.interactionCount as string),
+      })),
+      topTeams: topTeams.map(t => ({
+        teamId: t.teamId,
+        teamName: t.teamName || '未知团队',
+        interactionCount: parseInt(t.interactionCount as string),
+      })),
+      recentInteractions,
     };
   }
 }

@@ -317,6 +317,26 @@ export interface SystemStats {
   totalTeamMembers: number;
 }
 
+export interface DashboardStats {
+  overview: {
+    userCount: number;
+    teamCount: number;
+    customerCount: number;
+    interactionCount: number;
+  };
+  topCustomers: Array<{
+    customerId: string;
+    customerName: string;
+    interactionCount: number;
+  }>;
+  topTeams: Array<{
+    teamId: string;
+    teamName: string;
+    interactionCount: number;
+  }>;
+  recentInteractions: SkillInteraction[];
+}
+
 export interface UpdateUserStatusDto {
   is_active: boolean;
 }

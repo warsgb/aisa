@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   Database,
+  BarChart3,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -34,6 +35,9 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const navItems = [
+    ...(user?.role === 'SYSTEM_ADMIN' ? [
+      { path: '/dashboard', label: '系统总览', icon: BarChart3 },
+    ] : []),
     { path: '/', label: '首页', icon: Home },
     { path: '/customers', label: '客户管理', icon: Users },
     { path: '/ltc-config', label: 'LTC流程配置', icon: Workflow },

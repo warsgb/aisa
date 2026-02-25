@@ -16,9 +16,10 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(formData);
-      // Direct navigation after successful login
-      navigate('/', { replace: true });
+      const { user } = await login(formData);
+      // Redirect system admins to dashboard, others to home
+      const redirectPath = user?.role === 'SYSTEM_ADMIN' ? '/dashboard' : '/';
+      navigate(redirectPath, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败');
     } finally {

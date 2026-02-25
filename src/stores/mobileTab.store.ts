@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type MobileTab = 'workspace' | 'customers' | 'history';
+export type MobileTab = 'dashboard' | 'workspace' | 'customers' | 'history';
 
 interface MobileTabState {
   activeTab: MobileTab;

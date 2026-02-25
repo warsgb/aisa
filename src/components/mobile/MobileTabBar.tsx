@@ -1,8 +1,10 @@
-import { LayoutDashboard, Users, Clock } from 'lucide-react';
+import { LayoutDashboard, Users, Clock, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMobileTabStore, type MobileTab } from '../../stores/mobileTab.store';
+import { useAuth } from '../../context/AuthContext';
 
-const tabs: { key: MobileTab; label: string; icon: React.ElementType; path: string }[] = [
+const allTabs: { key: MobileTab; label: string; icon: React.ElementType; path: string; systemOnly?: boolean }[] = [
+  { key: 'dashboard', label: '总览', icon: BarChart3, path: '/dashboard', systemOnly: true },
   { key: 'workspace', label: '工作台', icon: LayoutDashboard, path: '/' },
   { key: 'customers', label: '客户', icon: Users, path: '/customers' },
   { key: 'history', label: '历史', icon: Clock, path: '/interactions' },
@@ -10,11 +12,15 @@ const tabs: { key: MobileTab; label: string; icon: React.ElementType; path: stri
 
 /**
  * Bottom tab navigation bar for mobile experience
- * Fixed at bottom with 3 tabs: Workspace, Customers, History
+ * System admins see 4 tabs, regular users see 3 tabs
  */
 export function MobileTabBar() {
   const { activeTab, setActiveTab } = useMobileTabStore();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Filter tabs based on user role
+  const visibleTabs = allTabs.filter(tab => !tab.systemOnly || user?.role === 'SYSTEM_ADMIN');
 
   const handleTabClick = (tab: MobileTab, path: string) => {
     setActiveTab(tab);
@@ -24,7 +30,7 @@ export function MobileTabBar() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe-bottom">
       <div className="flex items-center justify-around h-16">
-        {tabs.map((tab) => {
+        {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
 

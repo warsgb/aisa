@@ -156,6 +156,16 @@ export function DesktopHomePage() {
         setRoleSkillConfigs(configsMap);
 
         hasInitialized.current = true;
+
+        // Auto-select first customer if none is selected
+        if (!currentCustomer && customersData.length > 0) {
+          const firstCustomer = customersData[0];
+          setCurrentCustomer(firstCustomer);
+          // Load customer profile
+          apiService.getCustomerProfile(team.id, firstCustomer.id).catch(() => {
+            // Profile may not exist yet, silently ignore
+          });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : '加载数据失败');
       } finally {
@@ -164,7 +174,7 @@ export function DesktopHomePage() {
     };
 
     loadData();
-  }, [team?.id, setNodes, setBindings]);
+  }, [team?.id, setNodes, setBindings, currentCustomer, setCurrentCustomer]);
 
   // Filter interactions when customer changes or after initial load completes
   useEffect(() => {

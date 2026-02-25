@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Customer, CustomerProfile } from '../types';
 
 interface CurrentCustomerState {
@@ -15,11 +15,12 @@ interface CurrentCustomerState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearCustomer: () => void;
+  clearPersistentStorage: () => void;
 }
 
 export const useCurrentCustomerStore = create<CurrentCustomerState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Initial state
       currentCustomer: null,
       customerProfile: null,
@@ -55,6 +56,17 @@ export const useCurrentCustomerStore = create<CurrentCustomerState>()(
           customerProfile: null,
           error: null,
         }),
+
+      clearPersistentStorage: () => {
+        // Clear the state
+        set({
+          currentCustomer: null,
+          customerProfile: null,
+          error: null,
+        });
+        // Clear the localStorage directly
+        localStorage.removeItem('current-customer-storage');
+      },
     }),
     {
       name: 'current-customer-storage',
