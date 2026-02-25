@@ -1,10 +1,11 @@
 import { LayoutDashboard, Users, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useMobileTabStore, type MobileTab } from '../../stores/mobileTab.store';
 
-const tabs: { key: MobileTab; label: string; icon: React.ElementType }[] = [
-  { key: 'workspace', label: '工作台', icon: LayoutDashboard },
-  { key: 'customers', label: '客户', icon: Users },
-  { key: 'history', label: '历史', icon: Clock },
+const tabs: { key: MobileTab; label: string; icon: React.ElementType; path: string }[] = [
+  { key: 'workspace', label: '工作台', icon: LayoutDashboard, path: '/' },
+  { key: 'customers', label: '客户', icon: Users, path: '/customers' },
+  { key: 'history', label: '历史', icon: Clock, path: '/interactions' },
 ];
 
 /**
@@ -13,6 +14,12 @@ const tabs: { key: MobileTab; label: string; icon: React.ElementType }[] = [
  */
 export function MobileTabBar() {
   const { activeTab, setActiveTab } = useMobileTabStore();
+  const navigate = useNavigate();
+
+  const handleTabClick = (tab: MobileTab, path: string) => {
+    setActiveTab(tab);
+    navigate(path);
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe-bottom">
@@ -24,7 +31,7 @@ export function MobileTabBar() {
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabClick(tab.key, tab.path)}
               className="flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors duration-200"
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}

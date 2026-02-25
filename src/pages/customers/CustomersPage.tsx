@@ -21,7 +21,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export default function CustomersPage() {
+export function CustomersPage() {
   const { team, user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -876,3 +876,5 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave }: Cu
     </div>
   );
 }
+
+export default CustomersPage;

@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export default function InteractionsPage() {
+export function InteractionsPage() {
   const { team, user } = useAuth();
   const navigate = useNavigate();
   const [interactions, setInteractions] = useState<SkillInteraction[]>([]);
@@ -367,3 +367,5 @@ export default function InteractionsPage() {
     </div>
   );
 }
+
+export default InteractionsPage;

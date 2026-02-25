@@ -67,7 +67,7 @@ export default function Layout({ children }: LayoutProps) {
                 )}
               </button>
 
-              <h1 className="text-lg font-bold text-primary">AISA</h1>
+              <h1 className="text-lg font-bold text-primary">Win-AI</h1>
               <span className="ml-3 text-sm text-gray-500">
                 {team?.name || '未加入团队'}
               </span>

@@ -5,9 +5,9 @@ import { MobileLayout } from './components/layout/MobileLayout';
 import LoginPage from './pages/auth/LoginPage';
 import { AdaptiveHomePage } from './pages/home/AdaptiveHomePage';
 import DashboardPage from './pages/dashboard/DashboardPage';
-import CustomersPage from './pages/customers/CustomersPage';
+import { AdaptiveCustomersPage } from './pages/customers/AdaptiveCustomersPage';
 import SkillsPage from './pages/skills/SkillsPage';
-import InteractionsPage from './pages/interactions/InteractionsPage';
+import { AdaptiveInteractionsPage } from './pages/interactions/AdaptiveInteractionsPage';
 import InteractionDetailPage from './pages/interactions/InteractionDetailPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import SettingsPage from './pages/settings/SettingsPage';
@@ -104,7 +104,7 @@ function App() {
             path="/customers"
             element={
               <ProtectedRoute>
-                <CustomersPage />
+                <AdaptiveCustomersPage />
               </ProtectedRoute>
             }
           />
@@ -120,7 +120,7 @@ function App() {
             path="/interactions"
             element={
               <ProtectedRoute>
-                <InteractionsPage />
+                <AdaptiveInteractionsPage />
               </ProtectedRoute>
             }
           />

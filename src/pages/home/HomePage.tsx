@@ -258,7 +258,7 @@ export function DesktopHomePage() {
           <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#1677FF]/10 to-[#1677FF]/5 rounded-2xl flex items-center justify-center border border-[#1677FF]/10">
             <Users className="w-10 h-10 text-[#1677FF]/40" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-3">欢迎使用 AISA</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">欢迎使用 Win-AI</h2>
           <p className="text-gray-500 mb-8">请先加入或创建一个团队，开始您的智能销售旅程</p>
           <Link
             to="/settings"

@@ -40,6 +40,7 @@ export function SkillExecuteModal({
   const [currentInteractionId, setCurrentInteractionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [executionStage, setExecutionStage] = useState<'idle' | 'preparing' | 'initiating' | 'waiting' | 'receiving' | 'completed'>('idle');
+  const [progress, setProgress] = useState(0);
 
   // Multi-turn conversation state
   const [conversationMode, setConversationMode] = useState(false);
@@ -49,6 +50,7 @@ export function SkillExecuteModal({
   const [isConversationEnded, setIsConversationEnded] = useState(false);
 
   const outputRef = useRef<HTMLDivElement>(null);
+  const paramsRef = useRef<HTMLDivElement>(null);
   const streamContentRef = useRef('');
 
   // Load available documents when modal opens
@@ -127,12 +129,57 @@ export function SkillExecuteModal({
     setIsConversationEnded(false);
   }, [skill, currentCustomer]);
 
-  // Auto-scroll output
+  // Auto-scroll output to bottom when content changes (not on isExecuting change)
   useEffect(() => {
     if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+      // Use setTimeout to ensure DOM has been updated
+      setTimeout(() => {
+        if (outputRef.current) {
+          outputRef.current.scrollTop = outputRef.current.scrollHeight;
+        }
+      }, 50);
     }
-  }, [streamOutput]);
+  }, [streamOutput, conversationHistory]);
+
+  // Scroll params to bottom when executing (to show buttons)
+  useEffect(() => {
+    if (isExecuting && paramsRef.current) {
+      setTimeout(() => {
+        if (paramsRef.current) {
+          paramsRef.current.scrollTop = paramsRef.current.scrollHeight;
+        }
+      }, 300); // Wait for transition
+    }
+  }, [isExecuting]);
+
+  // Progress bar timer - starts at 30s, extends to 45s
+  useEffect(() => {
+    if (executionStage === 'waiting' || executionStage === 'receiving') {
+      setProgress(0);
+      const interval = 100; // update every 100ms
+
+      const timer = setInterval(() => {
+        setProgress(prev => {
+          // First 30s: go from 0 to 66
+          // Next 15s: go from 66 to 100
+          if (prev < 66) {
+            // First phase: 30 seconds to reach 66%
+            // 66 / 300 = 0.22 per second = 0.022 per 100ms
+            return prev + 0.22;
+          } else if (prev < 100) {
+            // Second phase: 15 seconds to reach 100%
+            // (100 - 66) / 150 = 0.226 per second = 0.0226 per 100ms
+            return prev + 0.226;
+          }
+          return prev; // Cap at 100
+        });
+      }, interval);
+
+      return () => clearInterval(timer);
+    } else {
+      setProgress(0);
+    }
+  }, [executionStage]);
 
   const validateParameters = (): boolean => {
     if (!skill?.parameters) return true;
@@ -201,6 +248,7 @@ export function SkillExecuteModal({
         onStart: (data) => {
           setCurrentInteractionId(data.interactionId);
           setExecutionStage('receiving');
+          setProgress(0);
         },
         onChunk: (data) => {
           // Store in ref for direct DOM access
@@ -214,6 +262,7 @@ export function SkillExecuteModal({
         onComplete: (data) => {
           setIsExecuting(false);
           setExecutionStage('completed');
+          setProgress(100);
           setStreamOutput(data.content);
 
           // Add assistant response to conversation history
@@ -227,6 +276,7 @@ export function SkillExecuteModal({
         onError: (data) => {
           setIsExecuting(false);
           setExecutionStage('idle');
+          setProgress(0);
           setError(data.message);
           setIsWaitingForUserInput(false);
         },
@@ -286,6 +336,7 @@ export function SkillExecuteModal({
         onComplete: (data) => {
           setIsExecuting(false);
           setExecutionStage('completed');
+          setProgress(100);
           setStreamOutput(data.content);
 
           // Add assistant response to conversation history
@@ -298,6 +349,7 @@ export function SkillExecuteModal({
         onError: (data) => {
           setIsExecuting(false);
           setExecutionStage('idle');
+          setProgress(0);
           setError(data.message);
           setIsWaitingForUserInput(false);
         },
@@ -346,6 +398,7 @@ export function SkillExecuteModal({
         onComplete: (data) => {
           setIsExecuting(false);
           setExecutionStage('completed');
+          setProgress(100);
           setStreamOutput(data.content);
 
           // Add summary to conversation history
@@ -356,6 +409,7 @@ export function SkillExecuteModal({
         onError: (data) => {
           setIsExecuting(false);
           setExecutionStage('idle');
+          setProgress(0);
           setError(data.message);
         },
       }
@@ -468,7 +522,14 @@ export function SkillExecuteModal({
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
           {/* Left: Parameters and Document Selection */}
-          <div className="w-full lg:w-1/2 p-6 border-r border-gray-100 overflow-y-auto min-w-[400px]">
+          <div
+            ref={paramsRef}
+            className={`w-full lg:w-1/2 p-6 border-b lg:border-b-0 lg:border-r border-gray-100 overflow-y-auto shrink-0 lg:shrink transition-all duration-300 ${
+              isExecuting || currentInteractionId
+                ? 'max-h-[10vh] lg:max-h-none'  // 执行中/后：收起到10%
+                : 'max-h-[70vh] lg:max-h-none'  // 默认：70%高度
+            }`}
+          >
             {/* Customer info */}
             {currentCustomer && (
               <div className="mb-4 p-3 bg-[#F5F7FA] rounded-lg">
@@ -576,8 +637,12 @@ export function SkillExecuteModal({
           </div>
 
           {/* Right: Stream output */}
-          <div className="w-full lg:w-1/2 flex flex-col bg-gray-50 min-w-[400px]">
-            <div className="px-4 py-2 bg-gray-100 border-b border-gray-200 flex items-center justify-between">
+          <div className={`w-full lg:w-1/2 flex flex-col bg-gray-50 min-w-0 transition-all duration-300 ${
+            isExecuting || currentInteractionId
+              ? 'flex-1 max-h-[90vh]'  // 执行中/后：90%高度
+              : 'flex-1'  // 默认：剩余空间
+          } overflow-hidden`}>
+            <div className="px-4 py-2 bg-gray-100 border-b border-gray-200 flex items-center justify-between shrink-0">
               <h3 className="text-sm font-medium text-gray-700">
                 {conversationHistory.length > 0 ? '对话历史' : '执行输出'}
               </h3>
@@ -608,7 +673,7 @@ export function SkillExecuteModal({
             {/* Output area with conversation history */}
             <div
               ref={outputRef}
-              className="flex-1 overflow-y-auto"
+              className="flex-1 overflow-y-auto min-h-0"
               data-color-mode="light"
             >
               {/* Execution Status Indicator */}
@@ -678,17 +743,32 @@ export function SkillExecuteModal({
                     </div>
                   </div>
 
-                  {/* Progress bar */}
+                  {/* Progress bar - shows 30s progress, extends to 45s */}
                   <div className="mt-4">
-                    <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                      <div className={`h-full bg-[#1677FF] transition-all duration-500 ${
-                        executionStage === 'preparing' ? 'w-1/4' :
-                        executionStage === 'initiating' ? 'w-2/4' :
-                        executionStage === 'waiting' ? 'w-3/4' :
-                        executionStage === 'receiving' ? 'w-4/4 animate-pulse' :
-                        'w-0'
-                      }`}></div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                      <span>{executionStage === 'receiving' ? '接收中...' : '加载中...'}</span>
+                      <span>
+                        {progress < 66
+                          ? `${Math.round(progress / 66 * 30)}s`
+                          : progress < 100
+                          ? `30s+${Math.round((progress - 66) / 34 * 15)}s`
+                          : '45s+'}
+                      </span>
                     </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${
+                          progress >= 100 ? 'bg-red-500 animate-pulse' :
+                          progress >= 66 ? 'bg-orange-500' : 'bg-[#1677FF]'
+                        }`}
+                        style={{ width: `${Math.min(progress, 100)}%` }}
+                      ></div>
+                    </div>
+                    {progress >= 100 ? (
+                      <p className="text-xs text-red-500 mt-1 font-medium">🚀 AI 正在奋力执行中，辛苦等待啦！</p>
+                    ) : progress >= 66 ? (
+                      <p className="text-xs text-orange-500 mt-1">AI 正在思考中，请耐心等待...</p>
+                    ) : null}
                   </div>
                 </div>
               )}
