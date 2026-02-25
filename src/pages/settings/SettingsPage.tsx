@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
 import {
@@ -457,22 +456,6 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
-
-        {/* 技能管理入口 */}
-        <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">技能管理</h2>
-              <p className="text-sm text-gray-500">查看和管理系统技能，配置技能参数</p>
-            </div>
-            <Link
-              to="/settings/skills"
-              className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] transition-colors"
-            >
-              进入管理 →
-            </Link>
-          </div>
-        </div>
 
         {/* 团队成员 */}
         <div className="bg-white rounded-lg shadow p-6 lg:col-span-2">

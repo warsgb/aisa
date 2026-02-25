@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
+import SkillsManagementPage from '../settings/SkillsManagementPage';
 import type {
   SystemLtcNode,
   SystemRoleSkillConfig,
@@ -9,13 +11,26 @@ import type {
   IronTriangleRole,
 } from '../../types';
 
-type ConfigTabType = 'ltc' | 'roles';
+type ConfigTabType = 'ltc' | 'roles' | 'skills';
 
 export default function SystemConfigPage() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<ConfigTabType>('ltc');
+  // Tab state - initialize from URL query param
+  const [activeTab, setActiveTab] = useState<ConfigTabType>(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'ltc' || tabParam === 'roles' || tabParam === 'skills') {
+      return tabParam;
+    }
+    return 'ltc';
+  });
+
+  // Update URL when tab changes
+  const handleTabChange = (tab: ConfigTabType) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   // LTC nodes state
   const [systemNodes, setSystemNodes] = useState<SystemLtcNode[]>([]);
@@ -247,7 +262,7 @@ export default function SystemConfigPage() {
       <div className="mb-6 border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
-            onClick={() => setActiveTab('ltc')}
+            onClick={() => handleTabChange('ltc')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'ltc'
                 ? 'border-blue-500 text-blue-600'
@@ -257,7 +272,7 @@ export default function SystemConfigPage() {
             LTC节点模板
           </button>
           <button
-            onClick={() => setActiveTab('roles')}
+            onClick={() => handleTabChange('roles')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'roles'
                 ? 'border-blue-500 text-blue-600'
@@ -265,6 +280,16 @@ export default function SystemConfigPage() {
             }`}
           >
             角色技能配置
+          </button>
+          <button
+            onClick={() => handleTabChange('skills')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'skills'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            技能管理
           </button>
         </nav>
       </div>
@@ -334,7 +359,11 @@ export default function SystemConfigPage() {
       )}
 
       {/* Content */}
-      {isLoading ? (
+      {activeTab === 'skills' ? (
+        <div className="bg-white rounded-lg shadow">
+          <SkillsManagementPage />
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>

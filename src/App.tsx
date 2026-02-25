@@ -11,7 +11,6 @@ import InteractionsPage from './pages/interactions/InteractionsPage';
 import InteractionDetailPage from './pages/interactions/InteractionDetailPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import SettingsPage from './pages/settings/SettingsPage';
-import SkillsManagementPage from './pages/settings/SkillsManagementPage';
 import SystemPage from './pages/system/SystemPage';
 import SystemConfigPage from './pages/system/SystemConfigPage';
 import LtcConfigPage from './pages/ltc-config/LtcConfigPage';
@@ -153,7 +152,7 @@ function App() {
             path="/settings/skills"
             element={
               <ProtectedRoute>
-                <SkillsManagementPage />
+                <Navigate to="/system-config?tab=skills" replace />
               </ProtectedRoute>
             }
           />
