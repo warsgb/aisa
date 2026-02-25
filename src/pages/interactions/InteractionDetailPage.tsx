@@ -26,37 +26,82 @@ import {
   MessageSquare,
   Info,
   ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function InteractionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { team } = useAuth();
+  const { team, user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [interaction, setInteraction] = useState<SkillInteraction | null>(null);
   const [messages, setMessages] = useState<InteractionMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
 
   useEffect(() => {
-    if (!id || !team) return;
+    if (!id) return;
     loadData();
-  }, [id, team]);
+  }, [id, team, isSystemAdmin]);
+
+  // Create a timeout promise
+  const createTimeout = (ms: number) => {
+    return new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('请求超时，请稍后重试')), ms);
+    });
+  };
 
   const loadData = async () => {
-    if (!id || !team) return;
+    if (!id) return;
+
     try {
       setIsLoading(true);
-      const [interactionData, messagesData] = await Promise.all([
-        apiService.getInteraction(team.id, id),
-        apiService.getInteractionMessages(team.id, id),
-      ]);
+      setError(null);
+
+      // Use different API endpoints based on user role
+      let interactionData: SkillInteraction;
+      let messagesData: InteractionMessage[];
+
+      if (isSystemAdmin) {
+        // System admin uses system-wide API
+        [interactionData, messagesData] = await Promise.all([
+          Promise.race<SkillInteraction>([
+            apiService.getSystemInteraction(id),
+            createTimeout(10000) as Promise<SkillInteraction>,
+          ]),
+          Promise.race<InteractionMessage[]>([
+            apiService.getSystemInteractionMessages(id),
+            createTimeout(10000) as Promise<InteractionMessage[]>,
+          ]),
+        ]);
+      } else {
+        // Regular user needs team context
+        if (!team) {
+          setIsLoading(false);
+          return;
+        }
+        [interactionData, messagesData] = await Promise.all([
+          Promise.race<SkillInteraction>([
+            apiService.getInteraction(team.id, id),
+            createTimeout(10000) as Promise<SkillInteraction>,
+          ]),
+          Promise.race<InteractionMessage[]>([
+            apiService.getInteractionMessages(team.id, id),
+            createTimeout(10000) as Promise<InteractionMessage[]>,
+          ]),
+        ]);
+      }
+
       setInteraction(interactionData);
       setMessages(messagesData);
-    } catch (error) {
-      console.error('加载交互详情失败:', error);
+    } catch (err) {
+      console.error('加载交互详情失败:', err);
+      const errorMessage = err instanceof Error ? err.message : '加载失败，请稍后重试';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -154,13 +199,22 @@ export default function InteractionDetailPage() {
   };
 
   const handleSaveEdit = async (messageId: string) => {
-    if (!team || !id) return;
+    if (!id) return;
+
+    // System admin doesn't need team context for updating messages
+    if (!isSystemAdmin && !team) return;
 
     setIsSaving(true);
     try {
-      await apiService.updateInteractionMessage(team.id, id, messageId, {
-        content: editContent,
-      });
+      if (isSystemAdmin) {
+        await apiService.updateSystemInteractionMessage(id, messageId, {
+          content: editContent,
+        });
+      } else {
+        await apiService.updateInteractionMessage(team!.id, id, messageId, {
+          content: editContent,
+        });
+      }
 
       // Update local state
       setMessages((prev) =>
@@ -188,6 +242,37 @@ export default function InteractionDetailPage() {
             <div className="absolute top-0 left-0 w-16 h-16 border-4 border-transparent border-t-[#1677FF] rounded-full animate-spin"></div>
           </div>
           <p className="mt-6 text-gray-600 font-medium">加载交互详情...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 bg-red-50 rounded-2xl flex items-center justify-center">
+              <XCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">加载失败</h2>
+            <p className="text-gray-500 mb-6">{error}</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => navigate('/interactions')}
+                className="inline-flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                返回列表
+              </button>
+              <button
+                onClick={loadData}
+                className="inline-flex items-center gap-2 bg-[#1677FF] text-white px-6 py-3 rounded-xl hover:bg-[#4096FF] transition-all duration-200 font-medium"
+              >
+                重试
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -261,6 +346,12 @@ export default function InteractionDetailPage() {
               <div className="flex items-center gap-4 mb-4 flex-wrap">
                 <h1 className="text-2xl font-bold text-gray-900">
                   {interaction.title || interaction.skill?.name || '技能执行'}
+                  {!interaction.skill && !interaction.title && (
+                    <span className="ml-2 text-sm font-normal text-yellow-600 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      (技能已删除)
+                    </span>
+                  )}
                 </h1>
                 <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold ${getStatusColor(interaction.status)}`}>
                   <StatusIcon className={`w-4 h-4 ${interaction.status === 'RUNNING' ? 'animate-spin' : ''}`} />
@@ -269,10 +360,18 @@ export default function InteractionDetailPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-500">
-                {interaction.skill && (
+                {interaction.skill ? (
                   <div className="flex items-center gap-2">
                     <Wrench className="w-4 h-4 text-gray-400" />
                     <span className="font-medium">{interaction.skill.name}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Wrench className="w-4 h-4 text-yellow-500" />
+                    <span className="font-medium text-yellow-600 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      技能已删除
+                    </span>
                   </div>
                 )}
                 {interaction.customer && (

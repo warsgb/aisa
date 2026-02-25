@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
@@ -13,6 +13,7 @@ import {
   Calendar,
   ArrowRight,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 
 export function InteractionsPage() {
@@ -25,6 +26,25 @@ export function InteractionsPage() {
   const [filterCustomer, setFilterCustomer] = useState<string>('');
   const [filterSkill, setFilterSkill] = useState<string>('');
   const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
+
+  // Create a map of skill IDs to skill names for lookups
+  const skillNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    skills.forEach(skill => map.set(skill.id, skill.name));
+    return map;
+  }, [skills]);
+
+  // Get skill name with fallback
+  const getSkillName = (interaction: SkillInteraction): string => {
+    if (interaction.title) return interaction.title;
+    if (interaction.skill?.name) return interaction.skill.name;
+    // If skill object is null but we have skill_id, try to find it in our local skills list
+    if ((interaction as any).skill_id) {
+      const skillName = skillNameMap.get((interaction as any).skill_id);
+      if (skillName) return skillName;
+    }
+    return '未知技能';
+  };
 
   useEffect(() => {
     if (!team && !isSystemAdmin) return;
@@ -64,7 +84,14 @@ export function InteractionsPage() {
     try {
       setIsLoading(true);
       if (isSystemAdmin) {
-        const data = await apiService.getSystemInteractions();
+        // System admin now also supports filtering
+        const params: { page?: number; pageSize?: number; customerId?: string; skillId?: string } = {
+          page: 1,
+          pageSize: 100, // Load more for system admin
+        };
+        if (filterCustomer) params.customerId = filterCustomer;
+        if (filterSkill) params.skillId = filterSkill;
+        const data = await apiService.getSystemInteractions(params.page, params.pageSize, undefined, params.customerId, params.skillId);
         setInteractions(data.data);
       } else if (team) {
         const filters: { customerId?: string; skillId?: string } = {};
@@ -301,7 +328,7 @@ export function InteractionsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#1677FF] transition-colors">
-                          {interaction.title || interaction.skill?.name || '未知技能'}
+                          {getSkillName(interaction)}
                         </h3>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(interaction.status)}`}>
                           <span>{statusConfig.icon}</span>
@@ -315,10 +342,17 @@ export function InteractionsPage() {
 
                       {/* Meta Info */}
                       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500">
-                        {interaction.skill && (
+                        {(interaction.skill || (interaction as any).skill_id) && (
                           <div className="flex items-center gap-2">
-                            <Wrench className="w-4 h-4 text-gray-400" />
-                            <span>{interaction.skill.name}</span>
+                            <Wrench className={`w-4 h-4 ${!interaction.skill ? 'text-yellow-500' : 'text-gray-400'}`} />
+                            <span className={interaction.skill ? '' : 'text-yellow-600 flex items-center gap-1'}>
+                              {interaction.skill ? interaction.skill.name : (
+                                <>
+                                  <AlertCircle className="w-3.5 h-3.5" />
+                                  技能已删除
+                                </>
+                              )}
+                            </span>
                           </div>
                         )}
                         {interaction.customer && (
