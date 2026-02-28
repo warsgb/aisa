@@ -307,9 +307,127 @@ export class AIService {
     }
   }
 
+  /**
+   * 执行Web搜索（智谱AI WebSearch API）
+   * @param query 搜索查询
+   * @param options 搜索选项
+   * @returns 搜索结果
+   */
+  async webSearch(
+    query: string,
+    options?: {
+      searchEngine?: 'search_std' | 'search_pro' | 'search_pro_sogou' | 'search_pro_quark';
+      count?: number;
+      searchRecencyFilter?: 'noLimit' | 'day' | 'week' | 'month' | 'year';
+      contentSize?: 'low' | 'medium' | 'high';
+    },
+  ): Promise<{ title: string; link: string; content: string }[]> {
+    const {
+      searchEngine = 'search_std',
+      count = 10,
+      searchRecencyFilter = 'noLimit',
+      contentSize = 'medium',
+    } = options || {};
+
+    this.logger.log(`🔍 [WebSearch] Searching: "${query}"`);
+
+    try {
+      // Check if AI client is configured
+      if (!this.client) {
+        this.logger.warn('AI client not configured, returning empty search results');
+        return [];
+      }
+
+      // 使用智谱AI的WebSearch API
+      // 通过 OpenAI 客户端的 chat.completions.create 配合 tools 参数调用 web_search
+      const response = await this.client.chat.completions.create({
+        model: this.defaultModel,
+        messages: [{ role: 'user', content: query }],
+        tools: [
+          {
+            type: 'web_search',
+            function: {
+              name: 'web_search',
+              parameters: {
+                search_engine: searchEngine,
+                search_query: query,
+                count: count,
+                search_recency_filter: searchRecencyFilter,
+                content_size: contentSize,
+              },
+            },
+          } as any,
+        ],
+        tool_choice: 'auto',
+      });
+
+      // 解析搜索结果
+      const toolCalls = response.choices[0]?.message?.tool_calls;
+      if (!toolCalls || toolCalls.length === 0) {
+        this.logger.warn('No search results returned');
+        return [];
+      }
+
+      // 提取搜索结果
+      const results: { title: string; link: string; content: string }[] = [];
+
+      for (const toolCall of toolCalls) {
+        const func = (toolCall as any).function;
+        if (func && func.name === 'web_search') {
+          try {
+            const searchResult = JSON.parse(func.arguments);
+            if (searchResult.results && Array.isArray(searchResult.results)) {
+              results.push(...searchResult.results);
+            }
+          } catch (e) {
+            this.logger.error('Failed to parse search result:', e);
+          }
+        }
+      }
+
+      this.logger.log(`✅ [WebSearch] Found ${results.length} results for "${query}"`);
+      return results;
+    } catch (error) {
+      this.logger.error('WebSearch API error:', error);
+      return []; // 返回空数组而不是抛出错误，确保技能可以继续执行
+    }
+  }
+
+  /**
+   * 执行多个搜索查询并合并结果
+   * @param queries 搜索查询列表
+   * @param options 搜索选项
+   * @returns 合并后的搜索结果
+   */
+  async webSearchMultiple(
+    queries: string[],
+    options?: {
+      searchEngine?: 'search_std' | 'search_pro' | 'search_pro_sogou' | 'search_pro_quark';
+      count?: number;
+      searchRecencyFilter?: 'noLimit' | 'day' | 'week' | 'month' | 'year';
+      contentSize?: 'low' | 'medium' | 'high';
+    },
+  ): Promise<{ query: string; results: { title: string; link: string; content: string }[] }[]> {
+    this.logger.log(`🔍 [WebSearch] Executing ${queries.length} search queries`);
+
+    const allResults: { query: string; results: { title: string; link: string; content: string }[] }[] = [];
+
+    // 顺序执行搜索，避免并发限制
+    for (const query of queries) {
+      const results = await this.webSearch(query, options);
+      allResults.push({ query, results });
+
+      // 添加小延迟，避免请求过于频繁
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+
+    this.logger.log(`✅ [WebSearch] Completed all ${queries.length} searches`);
+    return allResults;
+  }
+
   private generateMockResponse(messages: Message[], system?: string): string {
     // Extract parameters from the last user message if present
-    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    const lastUserMessage = messages.filter((m) => m.role === 'user').pop();
     let response = '';
 
     if (lastUserMessage && lastUserMessage.content.includes('目标角色')) {
@@ -324,7 +442,7 @@ export class AIService {
 🚀 **缩短50%审批周期** - 流程自动化，从立项到验收全面提速
 💡 **降低70%沟通成本** - 跨部门协作无缝衔接，信息零延迟
 
-WPS 365已服务超过500家建筑国企，包括中建、中铁等龙头企业。我们的平台正在帮助您的同行实现**"降本增效、安全可控"**的数字化目���。
+WPS 365已服务超过500家建筑国企，包括中建、中铁等龙头企业。我们的平台正在帮助您的同行实现**"降本增效、安全可控"**的数字化目标。
 
 **下周一上午10点，我能用15分钟为您展示具体案例吗？**
 
