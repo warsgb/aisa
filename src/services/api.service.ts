@@ -784,6 +784,29 @@ class ApiService {
     });
   }
 
+  async autoFillCustomerProfile(
+    teamId: string,
+    customerId: string,
+    searchGoal: 'background' | 'decision_chain' | 'cooperation_history' | 'all'
+  ): Promise<{
+    success: boolean;
+    filledFields: string[];
+    searchResults: Array<{ query: string; resultCount: number }>;
+    profile: CustomerProfile;
+    message: string;
+  }> {
+    return this.request<{
+      success: boolean;
+      filledFields: string[];
+      searchResults: Array<{ query: string; resultCount: number }>;
+      profile: CustomerProfile;
+      message: string;
+    }>(`/teams/${teamId}/customers/${customerId}/auto-fill-profile`, {
+      method: 'POST',
+      body: JSON.stringify({ searchGoal }),
+    });
+  }
+
   // Team Member Preference (Iron Triangle Role)
   async getTeamMemberPreference(teamId: string, memberId: string): Promise<TeamMemberPreference> {
     return this.request<TeamMemberPreference>(`/teams/${teamId}/members/${memberId}/preference`);

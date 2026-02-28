@@ -20,6 +20,9 @@ import { UpdateLtcNodeDto } from './dto/update-ltc-node.dto';
 import { CreateNodeSkillBindingDto } from './dto/create-node-skill-binding.dto';
 import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 import { UpdateTeamMemberPreferenceDto } from './dto/update-team-member-preference.dto';
+import { AutoFillCustomerProfileDto } from './dto/auto-fill-customer-profile.dto';
+import { AIService } from '../../common/services/ai.service';
+import { Logger } from '@nestjs/common';
 
 // Default LTC nodes - 产品需求文档确认版本
 const DEFAULT_LTC_NODES = [
@@ -35,6 +38,8 @@ const DEFAULT_LTC_NODES = [
 
 @Injectable()
 export class LtcService {
+  private readonly logger = new Logger(LtcService.name);
+
   constructor(
     @InjectRepository(LtcNode)
     private ltcNodeRepository: Repository<LtcNode>,
@@ -56,6 +61,7 @@ export class LtcService {
     private systemRoleSkillConfigRepository: Repository<SystemRoleSkillConfig>,
     @InjectRepository(TeamRoleSkillConfig)
     private teamRoleSkillConfigRepository: Repository<TeamRoleSkillConfig>,
+    private aiService: AIService,
   ) {}
 
   private async verifyTeamAccess(teamId: string, userId: string): Promise<void> {
@@ -410,6 +416,188 @@ export class LtcService {
     }
 
     return this.customerProfileRepository.save(profile);
+  }
+
+  async autoFillCustomerProfile(
+    teamId: string,
+    customerId: string,
+    userId: string,
+    dto: AutoFillCustomerProfileDto,
+  ) {
+    await this.verifyTeamAccess(teamId, userId);
+
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId, team_id: teamId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    // Check if customer has a name
+    if (!customer.name || customer.name.trim() === '') {
+      throw new Error('Customer name is required for auto-fill');
+    }
+
+    const customerName = customer.name.trim();
+    const searchGoal = dto.searchGoal;
+
+    // Build search queries based on goal
+    const searchQueries: string[] = [];
+    const filledFields: string[] = [];
+
+    if (searchGoal === 'background' || searchGoal === 'all') {
+      // 合并：公司简介、规模、上下游 → 综合查询
+      searchQueries.push(
+        `${customerName} 企业简介 公司规模 主营业务 上下游关系`
+      );
+      filledFields.push('background_info');
+    }
+
+    if (searchGoal === 'decision_chain' || searchGoal === 'all') {
+      // 合并：CEO、CIO、数科公司 → 综合查询
+      searchQueries.push(
+        `${customerName} CEO CIO 数科公司 管理层 组织架构`
+      );
+      filledFields.push('decision_chain');
+    }
+
+    if (searchGoal === 'cooperation_history' || searchGoal === 'all') {
+      // 合并：WPS合作、金山办公案例 → 综合查询
+      searchQueries.push(
+        `${customerName} WPS 金山办公 合作 案例 中标`
+      );
+      filledFields.push('history_notes');
+    }
+
+    this.logger.log(`🔍 Auto-filling customer profile for "${customerName}" with goal: ${searchGoal}`);
+
+    // Execute web searches (并行执行3个综合查询)
+    const searchResults = await this.aiService.webSearchMultiple(searchQueries, {
+      maxConcurrency: 3,  // 控制3个并发（对应3个综合查询）
+      count: 10,          // 增加到10条结果（原5条），提高信息丰富度
+      contentSize: 'medium',
+    });
+
+    this.logger.log(`📊 Found ${searchResults.length} search result groups`);
+
+    // Build AI prompt to generate structured profile
+    const searchContext = searchResults
+      .map(({ query, results }) => {
+        return `## 搜索关键词: ${query}\n${results.map(r => `- ${r.title}\n  ${r.content}`).join('\n')}`;
+      })
+      .join('\n\n');
+
+    const systemPrompt = `你是一个专业的企业信息分析助手。
+根据综合搜索结果，提取并生成客户背景��料。
+
+**任务**：从搜索结果中提取以下维度的信息：
+1. background_info - 公司规模、行业地位、主营业务、上下游关系
+2. decision_chain - CEO、CIO、数科负责人等关键决策人信息
+3. history_notes - 与WPS/金山办公的合作项目、中标信息、合作状态
+
+**重要**：
+- 搜索词可能是综合的，需要从多条结果中分别提取各维度信息
+- 某个字段没有找到信息时，返回null
+- 使用Markdown格式，内容简洁专业
+
+输出格式必须是JSON，包含以下字段（根据搜索目标决定哪些字段）：
+- background_info: 客户背景（公司规模、行业地位、主要业务、上下游关系）
+- decision_chain: 决策链（关键决策人姓名、职位、联系方式如有）
+- history_notes: 历史合作（合作项目、合作时间、合作状态）`;
+
+    const userPrompt = `客户名称：${customerName}
+
+搜索结果：
+${searchContext}
+
+请分析上述搜索结果，生成客户背景资料JSON。只输出JSON，不要有其他内容。`;
+
+    try {
+      const aiResponse = await this.aiService.create({
+        messages: [{ role: 'user', content: userPrompt }],
+        system: systemPrompt,
+        temperature: 0.3,
+        maxTokens: 3000,
+      });
+
+      this.logger.log(`🤖 AI response received for auto-fill`);
+
+      // Parse JSON response
+      let profileData: any = {};
+      try {
+        // Try to extract JSON from response (in case there's extra text)
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          profileData = JSON.parse(jsonMatch[0]);
+        } else {
+          profileData = JSON.parse(aiResponse);
+        }
+      } catch (parseError) {
+        this.logger.warn('Failed to parse AI response as JSON, using raw response');
+        // If parsing fails, use the raw response for background_info
+        if (searchGoal === 'background' || searchGoal === 'all') {
+          profileData.background_info = aiResponse;
+        } else if (searchGoal === 'decision_chain') {
+          profileData.decision_chain = aiResponse;
+        } else if (searchGoal === 'cooperation_history') {
+          profileData.history_notes = aiResponse;
+        }
+      }
+
+      // Build update data with only requested fields
+      const updateData: Partial<UpdateCustomerProfileDto> = {};
+      const actualFilledFields: string[] = [];
+
+      if ((searchGoal === 'background' || searchGoal === 'all') && profileData.background_info) {
+        updateData.background_info = profileData.background_info;
+        actualFilledFields.push('background_info');
+      }
+
+      if ((searchGoal === 'decision_chain' || searchGoal === 'all') && profileData.decision_chain) {
+        updateData.decision_chain = profileData.decision_chain;
+        actualFilledFields.push('decision_chain');
+      }
+
+      if ((searchGoal === 'cooperation_history' || searchGoal === 'all') && profileData.history_notes) {
+        updateData.history_notes = profileData.history_notes;
+        actualFilledFields.push('history_notes');
+      }
+
+      // Update customer profile
+      let profile = await this.customerProfileRepository.findOne({
+        where: { customer_id: customerId },
+      });
+
+      if (!profile) {
+        profile = this.customerProfileRepository.create({
+          customer_id: customerId,
+          ...updateData,
+        });
+      } else {
+        Object.assign(profile, updateData);
+      }
+
+      const savedProfile = await this.customerProfileRepository.save(profile);
+
+      this.logger.log(`✅ Auto-fill completed for "${customerName}". Filled fields: ${actualFilledFields.join(', ')}`);
+
+      return {
+        success: true,
+        filledFields: actualFilledFields,
+        searchResults: searchResults.map(r => ({
+          query: r.query,
+          resultCount: r.results.length,
+        })),
+        profile: savedProfile,
+        message: actualFilledFields.length > 0
+          ? '自动填充成功'
+          : '未找到相关信息，请手动填写',
+      };
+    } catch (error) {
+      this.logger.error(`❌ Auto-fill failed for "${customerName}":`, error);
+      throw error;
+    }
   }
 
   // Team Member Preference Management

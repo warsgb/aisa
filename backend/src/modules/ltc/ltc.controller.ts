@@ -17,6 +17,7 @@ import { ReorderLtcNodesDto } from './dto/reorder-ltc-nodes.dto';
 import { CreateNodeSkillBindingDto } from './dto/create-node-skill-binding.dto';
 import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 import { UpdateTeamMemberPreferenceDto } from './dto/update-team-member-preference.dto';
+import { AutoFillCustomerProfileDto } from './dto/auto-fill-customer-profile.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -153,6 +154,21 @@ export class LtcController {
     @Body() dto: UpdateCustomerProfileDto,
   ) {
     return this.ltcService.updateCustomerProfile(
+      teamId,
+      customerId,
+      req.user.id,
+      dto,
+    );
+  }
+
+  @Post('customers/:customerId/auto-fill-profile')
+  autoFillCustomerProfile(
+    @Param('teamId') teamId: string,
+    @Param('customerId') customerId: string,
+    @Request() req: RequestWithUser,
+    @Body() dto: AutoFillCustomerProfileDto,
+  ) {
+    return this.ltcService.autoFillCustomerProfile(
       teamId,
       customerId,
       req.user.id,

@@ -12,6 +12,7 @@ import { Skill } from '../../entities/skill.entity';
 import { SystemLtcNode } from '../../entities/system-ltc-node.entity';
 import { SystemRoleSkillConfig } from '../../entities/system-role-skill-config.entity';
 import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
+import { AIService } from '../../common/services/ai.service';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entit
     ]),
   ],
   controllers: [LtcController],
-  providers: [LtcService],
-  exports: [LtcService],
+  providers: [LtcService, AIService],
+  exports: [LtcService, AIService],
 })
 export class LtcModule {}

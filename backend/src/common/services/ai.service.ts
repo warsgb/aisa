@@ -323,14 +323,11 @@ export class AIService {
     },
   ): Promise<{ title: string; link: string; content: string }[]> {
     const {
-      searchEngine = 'search_std',
       count = 10,
-      searchRecencyFilter = 'noLimit',
-      contentSize = 'medium',
     } = options || {};
 
     this.logger.log(`🔍 [WebSearch] Starting search: "${query}"`);
-    this.logger.log(`   [WebSearch] Engine: ${searchEngine}, Count: ${count}, Content: ${contentSize}`);
+    this.logger.log(`   [WebSearch] Count: ${count}`);
 
     try {
       // Check if AI client is configured
@@ -340,54 +337,107 @@ export class AIService {
       }
 
       // 使用智谱AI的WebSearch API
-      // 通过 OpenAI 客户端的 chat.completions.create 配合 tools 参数调用 web_search
+      // 根据官方文档使用 web_search 类型
       this.logger.log(`🌐 [WebSearch] Calling Zhipu WebSearch API...`);
+
+      const {
+        searchEngine = 'search_std',
+        searchRecencyFilter = 'noLimit',
+        contentSize = 'medium',
+      } = options || {};
+
+      this.logger.log(`📝 [WebSearch] Query: "${query}"`);
+      this.logger.log(`📝 [WebSearch] Engine: ${searchEngine}, Count: ${count}, Recency: ${searchRecencyFilter}`);
+
       const response = await this.client.chat.completions.create({
         model: this.defaultModel,
-        messages: [{ role: 'user', content: query }],
+        messages: [
+          {
+            role: 'user',
+            content: `请帮我搜索关于"${query}"的信息。`
+          }
+        ],
         tools: [
           {
             type: 'web_search',
-            function: {
-              name: 'web_search',
-              parameters: {
-                search_engine: searchEngine,
-                search_query: query,
-                count: count,
-                search_recency_filter: searchRecencyFilter,
-                content_size: contentSize,
-              },
+            web_search: {
+              search_query: query,
+              search_engine: searchEngine,
+              enable: true,  // 必须设为true才能启用搜索
+              count: count,
+              search_recency_filter: searchRecencyFilter,
+              content_size: contentSize,
+              search_result: true,  // 返回搜索来源的详细信息
             },
           } as any,
         ],
         tool_choice: 'auto',
-      });
+      } as any);
 
       // 解析搜索结果
-      const toolCalls = response.choices[0]?.message?.tool_calls;
-      if (!toolCalls || toolCalls.length === 0) {
-        this.logger.warn('[WebSearch] No tool calls returned from API');
-        return [];
-      }
+      const message = response.choices[0]?.message;
+      const toolCalls = message?.tool_calls;
 
-      this.logger.log(`📥 [WebSearch] Received ${toolCalls.length} tool calls`);
+      this.logger.log(`📥 [WebSearch] API Response keys:`, Object.keys(response.choices[0] || {}));
+      this.logger.log(`📥 [WebSearch] Message keys:`, Object.keys(message || {}));
+      this.logger.log(`📥 [WebSearch] Tool calls: ${toolCalls?.length || 0}`);
+      this.logger.log(`📥 [WebSearch] Full response:`, JSON.stringify(response.choices[0], null, 2));
 
-      // 提取搜索结果
+      // web_search 工具的结果可能直接在 message.content 中
+      // 或者需要通过 tool_calls 获取
       const results: { title: string; link: string; content: string }[] = [];
 
-      for (const toolCall of toolCalls) {
-        const func = (toolCall as any).function;
-        if (func && func.name === 'web_search') {
-          try {
-            const searchResult = JSON.parse(func.arguments);
-            this.logger.log(`📊 [WebSearch] Parsed search result, found ${searchResult.results?.length || 0} items`);
-            if (searchResult.results && Array.isArray(searchResult.results)) {
-              results.push(...searchResult.results);
+      // 首先检查是否有直接的 content 响应
+      const content = message?.content;
+      if (content && content.trim()) {
+        this.logger.log(`📥 [WebSearch] Got content response: ${content.substring(0, 200)}...`);
+        // AI已经基于搜索结果生成了回答，直接返回
+        results.push({
+          title: 'AI搜索结果',
+          link: '',
+          content: content
+        });
+      }
+
+      // 如果有 tool_calls，尝试从中提取搜索结果详情
+      if (toolCalls && toolCalls.length > 0) {
+        this.logger.log(`📥 [WebSearch] Processing ${toolCalls.length} tool calls`);
+
+        for (const toolCall of toolCalls) {
+          const func = (toolCall as any).function;
+          if (func) {
+            this.logger.log(`📊 [WebSearch] Tool call function name: ${func.name}`);
+            this.logger.log(`📊 [WebSearch] Function arguments: ${func.arguments}`);
+
+            // web_search 可能返回各种 function name
+            // 尝试解析参数获取结构化搜索结果
+            try {
+              const args = JSON.parse(func.arguments);
+              this.logger.log(`📊 [WebSearch] Parsed arguments:`, JSON.stringify(args, null, 2));
+
+              // 检查是否有搜索结果列表
+              const searchResults = args.search_results || args.results || [];
+
+              if (Array.isArray(searchResults) && searchResults.length > 0) {
+                this.logger.log(`📊 [WebSearch] Found ${searchResults.length} structured results`);
+                for (const item of searchResults) {
+                  results.push({
+                    title: item.title || '',
+                    link: item.url || item.link || item.media_name || '',
+                    content: item.content || item.snippet || item.description || ''
+                  });
+                }
+              }
+            } catch (e) {
+              this.logger.error('[WebSearch] Failed to parse tool arguments:', e);
             }
-          } catch (e) {
-            this.logger.error('[WebSearch] Failed to parse search result:', e);
           }
         }
+      }
+
+      if (results.length === 0) {
+        this.logger.warn('[WebSearch] No results found in response');
+        return [];
       }
 
       this.logger.log(`✅ [WebSearch] Completed: "${query}" -> ${results.length} results`);
@@ -399,7 +449,7 @@ export class AIService {
   }
 
   /**
-   * 执行多个搜索查询并合并结果
+   * 执行多个搜索查询并合并结果（并行执行优化版）
    * @param queries 搜索查询列表
    * @param options 搜索选项
    * @returns 合并后的搜索结果
@@ -407,26 +457,40 @@ export class AIService {
   async webSearchMultiple(
     queries: string[],
     options?: {
+      maxConcurrency?: number;
       searchEngine?: 'search_std' | 'search_pro' | 'search_pro_sogou' | 'search_pro_quark';
       count?: number;
       searchRecencyFilter?: 'noLimit' | 'day' | 'week' | 'month' | 'year';
       contentSize?: 'low' | 'medium' | 'high';
     },
   ): Promise<{ query: string; results: { title: string; link: string; content: string }[] }[]> {
-    this.logger.log(`🔍 [WebSearch] Executing ${queries.length} search queries`);
+    const { maxConcurrency = 5 } = options || {};
+    this.logger.log(`🔍 [WebSearch] Executing ${queries.length} search queries with maxConcurrency=${maxConcurrency}`);
 
     const allResults: { query: string; results: { title: string; link: string; content: string }[] }[] = [];
 
-    // 顺序执行搜索，避免并发限制
-    for (const query of queries) {
-      const results = await this.webSearch(query, options);
-      allResults.push({ query, results });
+    // 分批并行执行，避免触发API限流
+    for (let i = 0; i < queries.length; i += maxConcurrency) {
+      const batch = queries.slice(i, i + maxConcurrency);
+      this.logger.log(`📦 [WebSearch] Processing batch ${Math.floor(i / maxConcurrency) + 1} with ${batch.length} queries`);
 
-      // 添加小延迟，避免请求过于频繁
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // 并行执行当前批次的所有搜索
+      const batchPromises = batch.map(q => this.webSearch(q, options));
+      const batchResults: { title: string; link: string; content: string }[][] = await Promise.all(batchPromises);
+
+      // 收集批次结果
+      allResults.push(...batch.map((query, idx) => ({
+        query,
+        results: batchResults[idx]
+      })));
+
+      // 批次间添加小延迟，进一步避免限流
+      if (i + maxConcurrency < queries.length) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
 
-    this.logger.log(`✅ [WebSearch] Completed all ${queries.length} searches`);
+    this.logger.log(`✅ [WebSearch] Completed all ${queries.length} searches in parallel`);
     return allResults;
   }
 

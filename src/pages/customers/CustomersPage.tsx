@@ -6,7 +6,6 @@ import MDEditor from '@uiw/react-md-editor';
 import {
   Users,
   Plus,
-  Search,
   Mail,
   Phone,
   Globe,
@@ -19,6 +18,7 @@ import {
   X,
   Save,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 
 export function CustomersPage() {
@@ -187,6 +187,26 @@ export function CustomersPage() {
     });
   };
 
+  const handleAutoFill = async (customer: Customer) => {
+    if (!team) return;
+
+    if (!customer.name || customer.name.trim() === '') {
+      alert('请先填写客户名称');
+      return;
+    }
+
+    try {
+      const result = await apiService.autoFillCustomerProfile(team.id, customer.id, 'all');
+      alert(result.message || '自动填充成功');
+      // Reload the customer data to show updated profile
+      loadCustomers();
+    } catch (error: any) {
+      console.error('自动填充失败:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || '自动填充失败，请稍后重试';
+      alert(errorMsg);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
@@ -258,6 +278,7 @@ export function CustomersPage() {
                 onEdit={() => openEditModal(customer)}
                 onDelete={() => handleDelete(customer)}
                 onEditProfile={() => openProfileModal(customer)}
+                onAutoFill={handleAutoFill}
               />
             ))}
           </div>
@@ -330,6 +351,11 @@ export function CustomersPage() {
             setCustomerProfile(profile);
             setShowProfileModal(false);
           }}
+          onAutoFill={async (searchGoal) => {
+            if (!team) return;
+            await apiService.autoFillCustomerProfile(team.id, selectedCustomer.id, searchGoal);
+            // The modal will reload the profile data
+          }}
         />
       )}
     </div>
@@ -343,9 +369,20 @@ interface CustomerCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onEditProfile: () => void;
+  onAutoFill: (customer: Customer) => void;
 }
 
-function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile }: CustomerCardProps) {
+function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAutoFill }: CustomerCardProps) {
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+
+  const handleAutoFill = async () => {
+    setIsAutoFilling(true);
+    try {
+      await onAutoFill(customer);
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
   return (
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-[#1677FF]/20 overflow-hidden">
       {/* Header with gradient */}
@@ -398,11 +435,21 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile }: Cus
       {/* Third-party data button */}
       <div className="px-5 pb-4">
         <button
-          onClick={() => alert('天眼查数据对接功能开发中...')}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 group-hover:bg-[#1677FF]/5 group-hover:border-[#1677FF]/20 group-hover:text-[#1677FF]"
+          onClick={handleAutoFill}
+          disabled={isAutoFilling || !customer.name}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 group-hover:bg-[#1677FF]/5 group-hover:border-[#1677FF]/20 group-hover:text-[#1677FF] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Search className="w-4 h-4" />
-          天眼查企业信息
+          {isAutoFilling ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              填充中...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              AI 自动填充
+            </>
+          )}
         </button>
       </div>
 
@@ -780,14 +827,17 @@ interface CustomerProfileModalProps {
   teamId: string;
   onClose: () => void;
   onSave: (profile: CustomerProfile) => void;
+  onAutoFill?: (searchGoal: 'background' | 'decision_chain' | 'cooperation_history' | 'all') => Promise<void>;
 }
 
-function CustomerProfileModal({ customer, profile, teamId, onClose, onSave }: CustomerProfileModalProps) {
+function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAutoFill }: CustomerProfileModalProps) {
   // 使用 useEffect 确保 profile 数据变化时也能正确更新
   const [backgroundInfo, setBackgroundInfo] = useState('');
   const [decisionChain, setDecisionChain] = useState('');
   const [historyNotes, setHistoryNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [searchGoal, setSearchGoal] = useState<'background' | 'decision_chain' | 'cooperation_history' | 'all'>('all');
 
   // 当 profile 变化时更新 state
   useEffect(() => {
@@ -813,6 +863,32 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave }: Cu
     }
   };
 
+  const handleAutoFill = async () => {
+    if (!customer.name || customer.name.trim() === '') {
+      alert('请先填写客户名称');
+      return;
+    }
+
+    setIsAutoFilling(true);
+    try {
+      if (onAutoFill) {
+        await onAutoFill(searchGoal);
+        // Reload profile after auto-fill
+        const updated = await apiService.getCustomerProfile(teamId, customer.id);
+        setBackgroundInfo(updated.background_info || '');
+        setDecisionChain(updated.decision_chain || '');
+        setHistoryNotes(updated.history_notes || '');
+        alert('自动填充成功');
+      }
+    } catch (error: any) {
+      console.error('自动填充失败:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || '自动填充失败，请稍后重试';
+      alert(errorMsg);
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -822,9 +898,39 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave }: Cu
             <h2 className="text-lg font-bold text-gray-900">编辑背景资料</h2>
             <p className="text-sm text-gray-500">{customer.name}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={searchGoal}
+              onChange={(e) => setSearchGoal(e.target.value as any)}
+              className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#1677FF]"
+              disabled={isAutoFilling}
+            >
+              <option value="all">全部填充</option>
+              <option value="background">仅背景资料</option>
+              <option value="decision_chain">仅决策链</option>
+              <option value="cooperation_history">仅历史合作</option>
+            </select>
+            <button
+              onClick={handleAutoFill}
+              disabled={isAutoFilling || !customer.name}
+              className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-[#1677FF] rounded-lg hover:bg-[#4096FF] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isAutoFilling ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  填充中...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  AI 填充
+                </>
+              )}
+            </button>
+            <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
