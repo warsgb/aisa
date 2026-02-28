@@ -329,17 +329,19 @@ export class AIService {
       contentSize = 'medium',
     } = options || {};
 
-    this.logger.log(`🔍 [WebSearch] Searching: "${query}"`);
+    this.logger.log(`🔍 [WebSearch] Starting search: "${query}"`);
+    this.logger.log(`   [WebSearch] Engine: ${searchEngine}, Count: ${count}, Content: ${contentSize}`);
 
     try {
       // Check if AI client is configured
       if (!this.client) {
-        this.logger.warn('AI client not configured, returning empty search results');
+        this.logger.warn('[WebSearch] AI client not configured, returning empty search results');
         return [];
       }
 
       // 使用智谱AI的WebSearch API
       // 通过 OpenAI 客户端的 chat.completions.create 配合 tools 参数调用 web_search
+      this.logger.log(`🌐 [WebSearch] Calling Zhipu WebSearch API...`);
       const response = await this.client.chat.completions.create({
         model: this.defaultModel,
         messages: [{ role: 'user', content: query }],
@@ -364,9 +366,11 @@ export class AIService {
       // 解析搜索结果
       const toolCalls = response.choices[0]?.message?.tool_calls;
       if (!toolCalls || toolCalls.length === 0) {
-        this.logger.warn('No search results returned');
+        this.logger.warn('[WebSearch] No tool calls returned from API');
         return [];
       }
+
+      this.logger.log(`📥 [WebSearch] Received ${toolCalls.length} tool calls`);
 
       // 提取搜索结果
       const results: { title: string; link: string; content: string }[] = [];
@@ -376,19 +380,20 @@ export class AIService {
         if (func && func.name === 'web_search') {
           try {
             const searchResult = JSON.parse(func.arguments);
+            this.logger.log(`📊 [WebSearch] Parsed search result, found ${searchResult.results?.length || 0} items`);
             if (searchResult.results && Array.isArray(searchResult.results)) {
               results.push(...searchResult.results);
             }
           } catch (e) {
-            this.logger.error('Failed to parse search result:', e);
+            this.logger.error('[WebSearch] Failed to parse search result:', e);
           }
         }
       }
 
-      this.logger.log(`✅ [WebSearch] Found ${results.length} results for "${query}"`);
+      this.logger.log(`✅ [WebSearch] Completed: "${query}" -> ${results.length} results`);
       return results;
     } catch (error) {
-      this.logger.error('WebSearch API error:', error);
+      this.logger.error(`❌ [WebSearch] API error for "${query}":`, error);
       return []; // 返回空数组而不是抛出错误，确保技能可以继续执行
     }
   }
