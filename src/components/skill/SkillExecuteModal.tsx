@@ -89,7 +89,9 @@ export function SkillExecuteModal({
         let defaultValue = param.default ?? (param.type === 'boolean' ? false : param.type === 'array' ? [] : '');
 
         // Auto-fill company_name or customer_name with current customer name
-        if ((param.name === 'company_name' || param.name === 'customer_name') && currentCustomer?.name) {
+        // Support multiple possible parameter names for customer/school name
+        const nameParamNames = ['company_name', 'customer_name', 'school_name', '客户名称', '学校名称', 'customer_company'];
+        if (nameParamNames.includes(param.name) && currentCustomer?.name) {
           defaultValue = currentCustomer.name;
         }
 

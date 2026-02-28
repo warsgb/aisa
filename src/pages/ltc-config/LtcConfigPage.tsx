@@ -347,6 +347,37 @@ export default function LtcConfigPage() {
     }
   }, [team?.id, setNodes, setSaving]);
 
+  // Toggle skill binding (add/remove)
+  const handleToggleSkill = useCallback(async (skill: Skill) => {
+    if (!team?.id || !selectedNode) return;
+
+    const nodeBindings = bindings[selectedNode.id] || [];
+    const existingBinding = nodeBindings.find((b) => b.skill_id === skill.id);
+
+    try {
+      setSaving(true);
+
+      if (existingBinding) {
+        // Remove binding
+        await apiService.deleteNodeSkillBinding(team.id, selectedNode.id, existingBinding.id);
+        setBindings(
+          selectedNode.id,
+          nodeBindings.filter((b) => b.id !== existingBinding.id)
+        );
+      } else {
+        // Add binding
+        const newBinding = await apiService.createNodeSkillBinding(team.id, selectedNode.id, {
+          skill_id: skill.id,
+        });
+        setBindings(selectedNode.id, [...nodeBindings, newBinding]);
+      }
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : '操作失败');
+    } finally {
+      setSaving(false);
+    }
+  }, [team?.id, selectedNode, bindings, setBindings]);
+
   if (!team) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
@@ -357,8 +388,8 @@ export default function LtcConfigPage() {
     );
   }
 
-  // Only OWNER can access this page
-  if (team.role !== 'OWNER') {
+  // Only OWNER and ADMIN can access this page
+  if (team.role !== 'OWNER' && team.role !== 'ADMIN') {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
         <div className="text-center">
@@ -366,7 +397,7 @@ export default function LtcConfigPage() {
             <Layers className="w-8 h-8 text-gray-400" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">访问受限</h2>
-          <p className="text-gray-500">只有团队所有者可以配置LTC流程</p>
+          <p className="text-gray-500">只有团队所有者或管理员可以配置LTC流程</p>
         </div>
       </div>
     );
@@ -519,8 +550,9 @@ export default function LtcConfigPage() {
                       const isBound = nodeBindings.some((b) => b.skill_id === skill.id);
 
                       return (
-                        <label
+                        <div
                           key={skill.id}
+                          onClick={() => handleToggleSkill(skill)}
                           className={`
                             group flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
                             ${isBound ? 'border-[#1677FF] bg-[#1677FF]/5 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}
@@ -538,7 +570,7 @@ export default function LtcConfigPage() {
                           {isBound && (
                             <Check className="w-5 h-5 text-[#1677FF]" />
                           )}
-                        </label>
+                        </div>
                       );
                     })}
                   </div>

@@ -165,9 +165,10 @@ export function CustomersPage() {
     setShowViewModal(true);
   };
 
-  const openProfileModal = (customer: Customer) => {
+  const openProfileModal = async (customer: Customer) => {
     setSelectedCustomer(customer);
-    loadCustomerProfile(customer.id);
+    setCustomerProfile(null); // 先清空，避免显示之前客户的数据
+    await loadCustomerProfile(customer.id); // 等待加载完成后再显示 modal
     setShowProfileModal(true);
   };
 
@@ -782,10 +783,18 @@ interface CustomerProfileModalProps {
 }
 
 function CustomerProfileModal({ customer, profile, teamId, onClose, onSave }: CustomerProfileModalProps) {
-  const [backgroundInfo, setBackgroundInfo] = useState(profile?.background_info || '');
-  const [decisionChain, setDecisionChain] = useState(profile?.decision_chain || '');
-  const [historyNotes, setHistoryNotes] = useState(profile?.history_notes || '');
+  // 使用 useEffect 确保 profile 数据变化时也能正确更新
+  const [backgroundInfo, setBackgroundInfo] = useState('');
+  const [decisionChain, setDecisionChain] = useState('');
+  const [historyNotes, setHistoryNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // 当 profile 变化时更新 state
+  useEffect(() => {
+    setBackgroundInfo(profile?.background_info || '');
+    setDecisionChain(profile?.decision_chain || '');
+    setHistoryNotes(profile?.history_notes || '');
+  }, [profile]);
 
   const handleSave = async () => {
     setIsSaving(true);
