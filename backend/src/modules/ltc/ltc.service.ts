@@ -15,6 +15,7 @@ import { Skill } from '../../entities/skill.entity';
 import { SystemLtcNode } from '../../entities/system-ltc-node.entity';
 import { SystemRoleSkillConfig } from '../../entities/system-role-skill-config.entity';
 import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
+import { SystemConfig } from '../../entities/system-config.entity';
 import { CreateLtcNodeDto } from './dto/create-ltc-node.dto';
 import { UpdateLtcNodeDto } from './dto/update-ltc-node.dto';
 import { CreateNodeSkillBindingDto } from './dto/create-node-skill-binding.dto';
@@ -61,8 +62,18 @@ export class LtcService {
     private systemRoleSkillConfigRepository: Repository<SystemRoleSkillConfig>,
     @InjectRepository(TeamRoleSkillConfig)
     private teamRoleSkillConfigRepository: Repository<TeamRoleSkillConfig>,
+    @InjectRepository(SystemConfig)
+    private systemConfigRepository: Repository<SystemConfig>,
     private aiService: AIService,
   ) {}
+
+  // Helper method to get system config
+  private async getSystemConfig(key: string): Promise<string | null> {
+    const config = await this.systemConfigRepository.findOne({
+      where: { key: key as any },
+    });
+    return config?.value || null;
+  }
 
   private async verifyTeamAccess(teamId: string, userId: string): Promise<void> {
     const membership = await this.teamMemberRepository.findOne({
@@ -472,11 +483,16 @@ export class LtcService {
 
     this.logger.log(`🔍 Auto-filling customer profile for "${customerName}" with goal: ${searchGoal}`);
 
+    // Get search engine from system config (default to search_std)
+    const searchEngine = (await this.getSystemConfig('web_search_engine')) || 'search_std';
+    this.logger.log(`⚙️ Using search engine: ${searchEngine}`);
+
     // Execute web searches (并行执行3个综合查询)
     const searchResults = await this.aiService.webSearchMultiple(searchQueries, {
       maxConcurrency: 3,  // 控制3个并发（对应3个综合查询）
       count: 10,          // 增加到10条结果（原5条），提高信息丰富度
       contentSize: 'medium',
+      searchEngine: searchEngine as any,
     });
 
     this.logger.log(`📊 Found ${searchResults.length} search result groups`);

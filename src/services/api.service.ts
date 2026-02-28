@@ -43,6 +43,7 @@ import type {
   SystemLtcNode,
   SystemRoleSkillConfig,
   SyncResult,
+  SystemConfig,
 } from '../types';
 
 // Support relative paths for same-origin deployment, fallback to localhost
@@ -961,6 +962,22 @@ class ApiService {
   // ========== Dashboard Stats for System Admin ==========
   async getDashboardStats(): Promise<DashboardStats> {
     return this.request<DashboardStats>('/system/dashboard-stats');
+  }
+
+  // ========== System Configuration ==========
+  async getAllSystemConfigs(): Promise<SystemConfig[]> {
+    return this.request<SystemConfig[]>('/system/configs');
+  }
+
+  async getSystemConfig(key: string): Promise<{ key: string; value: string | null }> {
+    return this.request<{ key: string; value: string | null }>(`/system/configs/${key}`);
+  }
+
+  async setSystemConfig(key: string, value: string, description?: string): Promise<SystemConfig> {
+    return this.request<SystemConfig>(`/system/configs/${key}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value, description }),
+    });
   }
 }
 

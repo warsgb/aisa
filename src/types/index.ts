@@ -543,3 +543,22 @@ export interface SyncResult {
     error?: string;
   }>;
 }
+
+// WebSearch Engine Types
+export type WebSearchEngine = 'search_std' | 'search_pro' | 'search_pro_sogou' | 'search_pro_quark';
+
+// System Configuration Types
+export const ConfigKey = {
+  WEB_SEARCH_ENGINE: 'web_search_engine',
+} as const;
+
+export type ConfigKey = typeof ConfigKey[keyof typeof ConfigKey];
+
+export interface SystemConfig {
+  id: string;
+  key: ConfigKey;
+  value: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}

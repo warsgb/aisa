@@ -8,8 +8,6 @@ import {
   Plus,
   Mail,
   Phone,
-  Globe,
-  MapPin,
   Building2,
   Edit,
   Trash2,
@@ -19,6 +17,7 @@ import {
   Save,
   Sparkles,
   Loader2,
+  Check,
 } from 'lucide-react';
 
 export function CustomersPage() {
@@ -34,18 +33,21 @@ export function CustomersPage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
 
+  // Auto-fill progress state
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [autoFillProgress, setAutoFillProgress] = useState(0);
+  const [autoFillStatus, setAutoFillStatus] = useState('');
+  const [autoFillStartTime, setAutoFillStartTime] = useState<number | null>(null);
+
   const [formData, setFormData] = useState<CreateCustomerDto>({
     name: '',
     industry: '',
     company_size: '',
     description: '',
-    contact_info: {
-      email: '',
-      phone: '',
-      website: '',
-      address: '',
-    },
   });
+
+  // Auto-fill option state
+  const [enableAutoFill, setEnableAutoFill] = useState(true);
 
   useEffect(() => {
     if (!team && !isSystemAdmin) return;
@@ -92,10 +94,62 @@ export function CustomersPage() {
     }
 
     try {
-      await apiService.createCustomer(team!.id, formData);
-      setShowCreateModal(false);
-      resetForm();
-      loadCustomers();
+      // Create customer first
+      const createdCustomer = await apiService.createCustomer(team!.id, formData);
+
+      // If auto-fill is enabled, trigger it after customer creation
+      if (enableAutoFill && createdCustomer.name) {
+        setShowCreateModal(false);
+        setIsAutoFilling(true);
+        setAutoFillProgress(0);
+        setAutoFillStatus('正在搜索客户信息...');
+        setAutoFillStartTime(Date.now());
+
+        // Time-based progress updates (similar to skill execution)
+        const progressInterval = setInterval(() => {
+          if (!autoFillStartTime) return;
+          const elapsed = (Date.now() - autoFillStartTime) / 1000; // seconds
+          // Progress: 0-30s = 0-66%, 30-45s = 66-100%, 45s+ = 100%
+          let progress: number;
+          if (elapsed < 30) {
+            progress = (elapsed / 30) * 66;
+            setAutoFillStatus('正在搜索客户信息...');
+          } else if (elapsed < 45) {
+            progress = 66 + ((elapsed - 30) / 15) * 34;
+            setAutoFillStatus('AI 正在分析搜索结果...');
+          } else {
+            progress = 100;
+            setAutoFillStatus('AI 正在奋力处理中...');
+          }
+          setAutoFillProgress(Math.min(progress, 100));
+        }, 500);
+
+        try {
+          await apiService.autoFillCustomerProfile(team!.id, createdCustomer.id, 'all');
+          clearInterval(progressInterval);
+          setAutoFillProgress(100);
+          setAutoFillStatus('自动填充完成！');
+          setAutoFillStartTime(null);
+          setTimeout(() => {
+            setIsAutoFilling(false);
+            resetForm();
+            loadCustomers();
+          }, 1500);
+        } catch (error: any) {
+          clearInterval(progressInterval);
+          setIsAutoFilling(false);
+          setAutoFillStartTime(null);
+          const errorMsg = error?.response?.data?.message || error?.message || '自动填充失败，请稍后重试';
+          alert(`客户创建成功，但自动填充失败：${errorMsg}`);
+          resetForm();
+          loadCustomers();
+        }
+      } else {
+        // Normal create without auto-fill
+        setShowCreateModal(false);
+        resetForm();
+        loadCustomers();
+      }
     } catch (error) {
       console.error('创建客户失败:', error);
       alert('创建客户失败');
@@ -149,12 +203,6 @@ export function CustomersPage() {
       industry: customer.industry || '',
       company_size: customer.company_size || '',
       description: customer.description || '',
-      contact_info: customer.contact_info || {
-        email: '',
-        phone: '',
-        website: '',
-        address: '',
-      },
     });
     setShowEditModal(true);
   };
@@ -178,12 +226,6 @@ export function CustomersPage() {
       industry: '',
       company_size: '',
       description: '',
-      contact_info: {
-        email: '',
-        phone: '',
-        website: '',
-        address: '',
-      },
     });
   };
 
@@ -296,6 +338,8 @@ export function CustomersPage() {
             setShowCreateModal(false);
             resetForm();
           }}
+          enableAutoFill={enableAutoFill}
+          setEnableAutoFill={setEnableAutoFill}
         />
       )}
 
@@ -358,6 +402,80 @@ export function CustomersPage() {
           }}
         />
       )}
+
+      {/* Auto-fill Progress Modal */}
+      {isAutoFilling && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center animate-in zoom-in-95 duration-200">
+            <div className="mb-6">
+              <div className="w-20 h-20 mx-auto mb-4 relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1677FF]/20 to-[#4096FF]/20 rounded-full animate-pulse"></div>
+                <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                  {autoFillProgress < 100 ? (
+                    <Loader2 className="w-10 h-10 text-[#1677FF] animate-spin" />
+                  ) : (
+                    <Check className="w-10 h-10 text-green-500" />
+                  )}
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {autoFillProgress < 100 ? 'AI 自动调研中...' : '调研完成！'}
+              </h3>
+              <p className="text-sm text-gray-500">{autoFillStatus}</p>
+            </div>
+
+            {/* Timer-based Progress Bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <span>{autoFillStatus}</span>
+                <span>
+                  {autoFillProgress < 66
+                    ? `${Math.round(autoFillProgress / 66 * 30)}s`
+                    : autoFillProgress < 100
+                    ? `30s+${Math.round((autoFillProgress - 66) / 34 * 15)}s`
+                    : '45s+'}
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    autoFillProgress >= 100 ? 'bg-red-500 animate-pulse' :
+                    autoFillProgress >= 66 ? 'bg-orange-500' : 'bg-[#1677FF]'
+                  }`}
+                  style={{ width: `${Math.min(autoFillProgress, 100)}%` }}
+                ></div>
+              </div>
+              {autoFillProgress >= 100 ? (
+                <p className="text-xs text-red-500 mt-1 font-medium">🚀 AI 正在奋力执行中，辛苦等待啦！</p>
+              ) : autoFillProgress >= 66 ? (
+                <p className="text-xs text-orange-500 mt-1">AI 正在分析搜索结果，请耐心等待...</p>
+              ) : null}
+            </div>
+
+            {/* Progress Steps */}
+            <div className="space-y-2 text-left">
+              <div className={`flex items-center gap-3 text-sm ${autoFillProgress >= 20 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${autoFillProgress >= 20 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 20 ? <Check className="w-4 h-4" /> : <span className="text-xs">1</span>}
+                </div>
+                <span>搜索客户背景资料</span>
+              </div>
+              <div className={`flex items-center gap-3 text-sm ${autoFillProgress >= 60 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${autoFillProgress >= 60 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 60 ? <Check className="w-4 h-4" /> : <span className="text-xs">2</span>}
+                </div>
+                <span>分析决策链信息</span>
+              </div>
+              <div className={`flex items-center gap-3 text-sm ${autoFillProgress >= 90 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${autoFillProgress >= 90 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 90 ? <Check className="w-4 h-4" /> : <span className="text-xs">3</span>}
+                </div>
+                <span>整理历史合作信息</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -374,13 +492,47 @@ interface CustomerCardProps {
 
 function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAutoFill }: CustomerCardProps) {
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [autoFillProgress, setAutoFillProgress] = useState(0);
+  const [autoFillStatus, setAutoFillStatus] = useState('');
+  const [autoFillStartTime, setAutoFillStartTime] = useState<number | null>(null);
 
   const handleAutoFill = async () => {
     setIsAutoFilling(true);
+    setAutoFillProgress(0);
+    setAutoFillStatus('正在搜索客户信息...');
+    setAutoFillStartTime(Date.now());
+
+    // Time-based progress updates
+    const progressInterval = setInterval(() => {
+      if (!autoFillStartTime) return;
+      const elapsed = (Date.now() - autoFillStartTime) / 1000;
+      let progress: number;
+      if (elapsed < 30) {
+        progress = (elapsed / 30) * 66;
+        setAutoFillStatus('正在搜索客户信息...');
+      } else if (elapsed < 45) {
+        progress = 66 + ((elapsed - 30) / 15) * 34;
+        setAutoFillStatus('AI 正在分析搜索结果...');
+      } else {
+        progress = 100;
+        setAutoFillStatus('AI 正在奋力处理中...');
+      }
+      setAutoFillProgress(Math.min(progress, 100));
+    }, 500);
+
     try {
       await onAutoFill(customer);
-    } finally {
+      clearInterval(progressInterval);
+      setAutoFillProgress(100);
+      setAutoFillStatus('自动填充完成！');
+      setAutoFillStartTime(null);
+      setTimeout(() => {
+        setIsAutoFilling(false);
+      }, 1500);
+    } catch (error: any) {
+      clearInterval(progressInterval);
       setIsAutoFilling(false);
+      setAutoFillStartTime(null);
     }
   };
   return (
@@ -482,6 +634,75 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAut
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Auto-fill Progress Modal */}
+      {isAutoFilling && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70] animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-in zoom-in-95 duration-200">
+            <div className="mb-4">
+              <div className="w-16 h-16 mx-auto mb-3 relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1677FF]/20 to-[#4096FF]/20 rounded-full animate-pulse"></div>
+                <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                  {autoFillProgress < 100 ? (
+                    <Loader2 className="w-8 h-8 text-[#1677FF] animate-spin" />
+                  ) : (
+                    <Check className="w-8 h-8 text-green-500" />
+                  )}
+                </div>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                {autoFillProgress < 100 ? 'AI 自动调研中...' : '调研完成！'}
+              </h3>
+              <p className="text-xs text-gray-500">{autoFillStatus}</p>
+            </div>
+
+            {/* Timer-based Progress Bar */}
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <span>{autoFillStatus}</span>
+                <span>
+                  {autoFillProgress < 66
+                    ? `${Math.round(autoFillProgress / 66 * 30)}s`
+                    : autoFillProgress < 100
+                    ? `30s+${Math.round((autoFillProgress - 66) / 34 * 15)}s`
+                    : '45s+'}
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    autoFillProgress >= 100 ? 'bg-green-500' :
+                    autoFillProgress >= 66 ? 'bg-orange-500' : 'bg-[#1677FF]'
+                  }`}
+                  style={{ width: `${Math.min(autoFillProgress, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="space-y-1.5 text-left">
+              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 20 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 20 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 20 ? <Check className="w-3 h-3" /> : <span className="text-xs">1</span>}
+                </div>
+                <span>搜索客户背景资料</span>
+              </div>
+              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 60 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 60 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 60 ? <Check className="w-3 h-3" /> : <span className="text-xs">2</span>}
+                </div>
+                <span>分析决策链信息</span>
+              </div>
+              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 90 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 90 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 90 ? <Check className="w-3 h-3" /> : <span className="text-xs">3</span>}
+                </div>
+                <span>整理历史合作信息</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -493,18 +714,11 @@ interface CustomerFormModalProps {
   setFormData: (data: CreateCustomerDto) => void;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
+  enableAutoFill?: boolean;
+  setEnableAutoFill?: (value: boolean) => void;
 }
 
-function CustomerFormModal({ title, formData, setFormData, onSubmit, onClose }: CustomerFormModalProps) {
-  const updateContactInfo = (field: string, value: string) => {
-    setFormData({
-      ...formData,
-      contact_info: {
-        ...formData.contact_info,
-        [field]: value,
-      },
-    });
-  };
+function CustomerFormModal({ title, formData, setFormData, onSubmit, onClose, enableAutoFill = true, setEnableAutoFill }: CustomerFormModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
@@ -569,55 +783,31 @@ function CustomerFormModal({ title, formData, setFormData, onSubmit, onClose }: 
                 placeholder="简要描述客户背景..."
               />
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span>联系方式</span>
-                <span className="text-xs font-normal text-gray-400">(可选)</span>
-              </label>
-              <div className="space-y-3">
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    value={formData.contact_info?.email || ''}
-                    onChange={(e) => updateContactInfo('email', e.target.value)}
-                    placeholder="邮箱地址"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
-                  />
-                </div>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="tel"
-                    value={formData.contact_info?.phone || ''}
-                    onChange={(e) => updateContactInfo('phone', e.target.value)}
-                    placeholder="联系电话"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
-                  />
-                </div>
-                <div className="relative">
-                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="url"
-                    value={formData.contact_info?.website || ''}
-                    onChange={(e) => updateContactInfo('website', e.target.value)}
-                    placeholder="官方网站"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
-                  />
-                </div>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={formData.contact_info?.address || ''}
-                    onChange={(e) => updateContactInfo('address', e.target.value)}
-                    placeholder="公司地址"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#1677FF] focus:ring-2 focus:ring-[#1677FF]/20 transition-all"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
+
+          {/* AI Auto-fill Option - Only show in Create mode */}
+          {title === '添加客户' && (
+            <div className="px-6 py-4 bg-gradient-to-r from-[#1677FF]/5 to-transparent border-t border-gray-100">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={enableAutoFill}
+                    onChange={(e) => setEnableAutoFill?.(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded-md peer-checked:bg-[#1677FF] peer-checked:border-[#1677FF] transition-all flex items-center justify-center">
+                    {enableAutoFill && <Check className="w-3.5 h-3.5 text-white" />}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-900">AI 自动调研</span>
+                  <p className="text-xs text-gray-500 mt-0.5">自动搜索并填充客户背景资料</p>
+                </div>
+              </label>
+            </div>
+          )}
+
           <div className="px-6 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
             <button
               type="button"
@@ -837,6 +1027,9 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAu
   const [historyNotes, setHistoryNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [autoFillProgress, setAutoFillProgress] = useState(0);
+  const [autoFillStatus, setAutoFillStatus] = useState('');
+  const [autoFillStartTime, setAutoFillStartTime] = useState<number | null>(null);
   const [searchGoal, setSearchGoal] = useState<'background' | 'decision_chain' | 'cooperation_history' | 'all'>('all');
 
   // 当 profile 变化时更新 state
@@ -870,22 +1063,51 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAu
     }
 
     setIsAutoFilling(true);
+    setAutoFillProgress(0);
+    setAutoFillStatus('正在搜索客户信息...');
+    setAutoFillStartTime(Date.now());
+
+    // Time-based progress updates
+    const progressInterval = setInterval(() => {
+      if (!autoFillStartTime) return;
+      const elapsed = (Date.now() - autoFillStartTime) / 1000;
+      let progress: number;
+      if (elapsed < 30) {
+        progress = (elapsed / 30) * 66;
+        setAutoFillStatus('正在搜索客户信息...');
+      } else if (elapsed < 45) {
+        progress = 66 + ((elapsed - 30) / 15) * 34;
+        setAutoFillStatus('AI 正在分析搜索结果...');
+      } else {
+        progress = 100;
+        setAutoFillStatus('AI 正在奋力处理中...');
+      }
+      setAutoFillProgress(Math.min(progress, 100));
+    }, 500);
+
     try {
       if (onAutoFill) {
         await onAutoFill(searchGoal);
+        clearInterval(progressInterval);
+        setAutoFillProgress(100);
+        setAutoFillStatus('自动填充完成！');
+        setAutoFillStartTime(null);
         // Reload profile after auto-fill
         const updated = await apiService.getCustomerProfile(teamId, customer.id);
         setBackgroundInfo(updated.background_info || '');
         setDecisionChain(updated.decision_chain || '');
         setHistoryNotes(updated.history_notes || '');
-        alert('自动填充成功');
+        setTimeout(() => {
+          setIsAutoFilling(false);
+        }, 1500);
       }
     } catch (error: any) {
+      clearInterval(progressInterval);
+      setIsAutoFilling(false);
+      setAutoFillStartTime(null);
       console.error('自动填充失败:', error);
       const errorMsg = error?.response?.data?.message || error?.message || '自动填充失败，请稍后重试';
       alert(errorMsg);
-    } finally {
-      setIsAutoFilling(false);
     }
   };
 
@@ -988,6 +1210,75 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAu
           </button>
         </div>
       </div>
+
+      {/* Auto-fill Progress Modal */}
+      {isAutoFilling && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-in zoom-in-95 duration-200">
+            <div className="mb-4">
+              <div className="w-16 h-16 mx-auto mb-3 relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1677FF]/20 to-[#4096FF]/20 rounded-full animate-pulse"></div>
+                <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                  {autoFillProgress < 100 ? (
+                    <Loader2 className="w-8 h-8 text-[#1677FF] animate-spin" />
+                  ) : (
+                    <Check className="w-8 h-8 text-green-500" />
+                  )}
+                </div>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                {autoFillProgress < 100 ? 'AI 自动调研中...' : '调研完成！'}
+              </h3>
+              <p className="text-xs text-gray-500">{autoFillStatus}</p>
+            </div>
+
+            {/* Timer-based Progress Bar */}
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <span>{autoFillStatus}</span>
+                <span>
+                  {autoFillProgress < 66
+                    ? `${Math.round(autoFillProgress / 66 * 30)}s`
+                    : autoFillProgress < 100
+                    ? `30s+${Math.round((autoFillProgress - 66) / 34 * 15)}s`
+                    : '45s+'}
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    autoFillProgress >= 100 ? 'bg-green-500' :
+                    autoFillProgress >= 66 ? 'bg-orange-500' : 'bg-[#1677FF]'
+                  }`}
+                  style={{ width: `${Math.min(autoFillProgress, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="space-y-1.5 text-left">
+              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 20 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 20 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 20 ? <Check className="w-3 h-3" /> : <span className="text-xs">1</span>}
+                </div>
+                <span>搜索客户背景资料</span>
+              </div>
+              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 60 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 60 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 60 ? <Check className="w-3 h-3" /> : <span className="text-xs">2</span>}
+                </div>
+                <span>分析决策链信息</span>
+              </div>
+              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 90 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 90 ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  {autoFillProgress >= 90 ? <Check className="w-3 h-3" /> : <span className="text-xs">3</span>}
+                </div>
+                <span>整理历史合作信息</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -264,4 +264,24 @@ export class SystemController {
   async syncToAllTeams() {
     return this.systemService.syncToAllTeams();
   }
+
+  // System Config Management
+  @Get('configs')
+  async getAllConfigs() {
+    return this.systemService.getAllSystemConfigs();
+  }
+
+  @Get('configs/:key')
+  async getConfig(@Param('key') key: string) {
+    const value = await this.systemService.getSystemConfig(key);
+    return { key, value };
+  }
+
+  @Put('configs/:key')
+  async setConfig(
+    @Param('key') key: string,
+    @Body() dto: { value: string; description?: string },
+  ) {
+    return this.systemService.setSystemConfig(key, dto.value, dto.description);
+  }
 }

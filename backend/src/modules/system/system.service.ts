@@ -17,6 +17,7 @@ import { LtcNode } from '../../entities/ltc-node.entity';
 import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
 import { NodeSkillBinding } from '../../entities/node-skill-binding.entity';
 import { IronTriangleRole } from '../../entities/team-member-preference.entity';
+import { SystemConfig, ConfigKey } from '../../entities/system-config.entity';
 
 export interface TeamSyncChanges {
   hasChanges: boolean;
@@ -96,7 +97,45 @@ export class SystemService {
     private teamRoleSkillConfigRepository: Repository<TeamRoleSkillConfig>,
     @InjectRepository(NodeSkillBinding)
     private nodeSkillBindingRepository: Repository<NodeSkillBinding>,
+    @InjectRepository(SystemConfig)
+    private systemConfigRepository: Repository<SystemConfig>,
   ) {}
+
+  // ========== System Config Management ==========
+
+  async getSystemConfig(key: string): Promise<string | null> {
+    const config = await this.systemConfigRepository.findOne({
+      where: { key: key as ConfigKey },
+    });
+    return config?.value || null;
+  }
+
+  async setSystemConfig(key: string, value: string, description?: string): Promise<SystemConfig> {
+    let config = await this.systemConfigRepository.findOne({
+      where: { key: key as ConfigKey },
+    });
+
+    if (config) {
+      config.value = value;
+      if (description !== undefined) {
+        config.description = description;
+      }
+    } else {
+      config = this.systemConfigRepository.create({
+        key: key as ConfigKey,
+        value,
+        description: description || null,
+      });
+    }
+
+    return this.systemConfigRepository.save(config);
+  }
+
+  async getAllSystemConfigs(): Promise<SystemConfig[]> {
+    return this.systemConfigRepository.find({
+      order: { key: 'ASC' },
+    });
+  }
 
   async getAllUsers(page: number = 1, pageSize: number = 20, search?: string) {
     const query = this.userRepository.createQueryBuilder('user');

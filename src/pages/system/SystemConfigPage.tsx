@@ -9,9 +9,10 @@ import type {
   SyncResult,
   Skill,
   IronTriangleRole,
+  WebSearchEngine,
 } from '../../types';
 
-type ConfigTabType = 'ltc' | 'roles' | 'skills';
+type ConfigTabType = 'ltc' | 'roles' | 'skills' | 'ai';
 
 export default function SystemConfigPage() {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ export default function SystemConfigPage() {
   // Tab state - initialize from URL query param
   const [activeTab, setActiveTab] = useState<ConfigTabType>(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'ltc' || tabParam === 'roles' || tabParam === 'skills') {
+    if (tabParam === 'ltc' || tabParam === 'roles' || tabParam === 'skills' || tabParam === 'ai') {
       return tabParam;
     }
     return 'ltc';
@@ -46,6 +47,9 @@ export default function SystemConfigPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+
+  // AI Config state
+  const [webSearchEngine, setWebSearchEngine] = useState<WebSearchEngine>('search_std');
 
   // Edit state
   const [editingNode, setEditingNode] = useState<SystemLtcNode | null>(null);
@@ -74,9 +78,15 @@ export default function SystemConfigPage() {
       if (activeTab === 'ltc') {
         const nodesData = await apiService.getSystemLtcNodes();
         setSystemNodes(nodesData);
-      } else {
+      } else if (activeTab === 'roles') {
         const configsData = await apiService.getSystemRoleSkillConfigs();
         setRoleConfigs(configsData);
+      } else if (activeTab === 'ai') {
+        // Load AI config
+        const configData = await apiService.getSystemConfig('web_search_engine');
+        if (configData.value) {
+          setWebSearchEngine(configData.value as WebSearchEngine);
+        }
       }
     } catch (error) {
       console.error('加载系统配置失败:', error);
@@ -257,6 +267,25 @@ export default function SystemConfigPage() {
     }
   };
 
+  // ========== AI Config Management ==========
+
+  const handleSaveWebSearchEngine = async () => {
+    setIsSaving(true);
+    try {
+      await apiService.setSystemConfig(
+        'web_search_engine',
+        webSearchEngine,
+        '智谱AI WebSearch 搜索引擎选择'
+      );
+      alert('保存成功！AI配置已更新。');
+    } catch (error) {
+      console.error('保存AI配置失败:', error);
+      alert('保存失败');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Access control
   if (!user || user.role !== 'SYSTEM_ADMIN') {
     return (
@@ -309,6 +338,16 @@ export default function SystemConfigPage() {
             }`}
           >
             技能管理
+          </button>
+          <button
+            onClick={() => handleTabChange('ai')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'ai'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            AI配置
           </button>
         </nav>
       </div>
@@ -382,6 +421,13 @@ export default function SystemConfigPage() {
         <div className="bg-white rounded-lg shadow">
           <SkillsManagementPage />
         </div>
+      ) : activeTab === 'ai' ? (
+        <AIConfigTab
+          webSearchEngine={webSearchEngine}
+          setWebSearchEngine={setWebSearchEngine}
+          onSave={handleSaveWebSearchEngine}
+          isSaving={isSaving}
+        />
       ) : isLoading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -794,6 +840,96 @@ function NodeFormModal({ node, form, skills, onChange, onSave, onCancel, isSavin
           >
             {isSaving ? '保存中...' : '保存'}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== AI Config Tab Component ==========
+
+interface AIConfigTabProps {
+  webSearchEngine: WebSearchEngine;
+  setWebSearchEngine: (engine: WebSearchEngine) => void;
+  onSave: () => void;
+  isSaving: boolean;
+}
+
+function AIConfigTab({ webSearchEngine, setWebSearchEngine, onSave, isSaving }: AIConfigTabProps) {
+  const searchEngineOptions: { value: WebSearchEngine; label: string; description: string }[] = [
+    { value: 'search_std', label: 'search_std (标准搜索)', description: '基础搜索功能，适合一般查询需求' },
+    { value: 'search_pro', label: 'search_pro (专业搜索)', description: '更精准的搜索结果，适合深度研究' },
+    { value: 'search_pro_sogou', label: 'search_pro_sogou (搜狗搜索)', description: '使用搜狗引擎的专业搜索' },
+    { value: 'search_pro_quark', label: 'search_pro_quark (夸克搜索)', description: '使用夸克引擎的专业搜索' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">智谱AI WebSearch 配置</h2>
+        <p className="text-sm text-gray-600 mb-6">
+          配置AI自动填充客户背景资料时使用的搜索引擎
+        </p>
+
+        <div className="space-y-4">
+          {searchEngineOptions.map((option) => (
+            <label
+              key={option.value}
+              className={`flex items-start p-4 border rounded-lg cursor-pointer transition-all ${
+                webSearchEngine === option.value
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="webSearchEngine"
+                value={option.value}
+                checked={webSearchEngine === option.value}
+                onChange={(e) => setWebSearchEngine(e.target.value as WebSearchEngine)}
+                className="mt-1 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              />
+              <div className="ml-3">
+                <span className="block text-sm font-medium text-gray-900">{option.label}</span>
+                <span className="block text-sm text-gray-500 mt-1">{option.description}</span>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <button
+            onClick={onSave}
+            disabled={isSaving}
+            className="inline-flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSaving ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                保存中...
+              </>
+            ) : (
+              '保存配置'
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-blue-700">
+              <strong>说明：</strong>此配置仅在AI自动填充客户背景资料时使用。配置更改后立即生效。
+            </p>
+          </div>
         </div>
       </div>
     </div>

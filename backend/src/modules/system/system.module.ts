@@ -16,11 +16,12 @@ import { SystemRoleSkillConfig } from '../../entities/system-role-skill-config.e
 import { LtcNode } from '../../entities/ltc-node.entity';
 import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
 import { NodeSkillBinding } from '../../entities/node-skill-binding.entity';
+import { SystemConfig } from '../../entities/system-config.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([
     User, Team, TeamMember, Customer, Skill, SkillInteraction, InteractionMessage, Document, TeamApplication,
-    SystemLtcNode, SystemRoleSkillConfig, LtcNode, TeamRoleSkillConfig, NodeSkillBinding
+    SystemLtcNode, SystemRoleSkillConfig, LtcNode, TeamRoleSkillConfig, NodeSkillBinding, SystemConfig
   ])],
   controllers: [SystemController],
   providers: [SystemService],
