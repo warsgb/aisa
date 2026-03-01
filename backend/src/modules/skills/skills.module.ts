@@ -7,6 +7,7 @@ import { SkillLoaderService } from './skill-loader.service';
 import { SkillExecutorService } from './skill-executor.service';
 import { StreamingGateway } from './streaming.gateway';
 import { AIService } from '../../common/services/ai.service';
+import { SearchService } from '../../common/services/search.service';
 import { Skill } from '../../entities/skill.entity';
 import { SkillInteraction } from '../../entities/interaction.entity';
 import { InteractionMessage } from '../../entities/interaction-message.entity';
@@ -45,12 +46,14 @@ import { AuthModule } from '../auth/auth.module';
     SkillExecutorService,
     StreamingGateway,
     AIService,
+    SearchService,
   ],
   exports: [
     SkillsService,
     SkillLoaderService,
     SkillExecutorService,
     AIService,
+    SearchService,
   ],
 })
 export class SkillsModule implements OnModuleInit {

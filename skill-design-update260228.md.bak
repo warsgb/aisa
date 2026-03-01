@@ -1,0 +1,801 @@
+# Skills 搜索框架扩展说明
+
+**日期**: 2026-02-28
+**版本**: v2.0.0
+**作者**: Claude
+
+---
+
+## 一、修改概述
+
+本次更新对 Skills 模块的搜索框架进行了全面扩展，将百度智能搜索能力从**3种搜索类型**扩展到**12种搜索类型**，并新增了**4个框架文件**，使 Skills 可以更灵活地复用搜索能力。
+
+### 核心改进
+
+| 维度 | 修改前 | 修改后 |
+|------|--------|--------|
+| 搜索类型 | 3种 | 12种 |
+| 框架文件 | 2个 | 6个 |
+| 行业支持 | 4个 | 5个（新增金融） |
+| 代码硬编码 | 是 | 否（框架化） |
+| 模板加载方式 | 硬编码 | 从文件动态读取 **[新增]** |
+| 时间过滤 | 无 | 支持时间范围过滤 **[新增]** |
+
+---
+
+## 二、搜索类型扩展
+
+### 原有搜索类型（3种）
+
+| 类型 | 标记 | 说明 |
+|------|------|------|
+| 背景资料 | `@baidu-search:background` | 客户基本规模、行业地位 |
+| 决策链 | `@baidu-search:decision` | 关键决策人及观点 |
+| 历史合作 | `@baidu-search:cooperation` | 与WPS历史合作 |
+
+### 新增搜索类型（9种）
+
+| 类型 | 标记 | 说明 | 适用技能 |
+|------|------|------|---------|
+| 数字化转型 | `@baidu-search:digital` | 数字化转型战略/项目 | 金融、教育、行业研究 |
+| 招投标 | `@baidu-search:bidding` | 招标/中标/采购记录 | 金融、国企、客户研究 |
+| 子公司 | `@baidu-search:subsidiary` | 集团/子公司信息 | 金融、国企 |
+| 年报/战略 | `@baidu-search:annual-report` | 年报、战略规划 | 财报解码、战略分析 |
+| 技术栈 | `@baidu-search:tech-stack` | 技术架构、招聘JD | 技术栈侦探 |
+| 行业热点 | `@baidu-search:industry-trend` | 行业政策、热点 | 破冰话题、竞品分析 |
+| 竞品信息 | `@baidu-search:competitor` | 竞品动态、功能对比 | 竞品分析 |
+| 案例参考 | `@baidu-search:case-study` | 行业成功案例 | 方案制作、需求发现 |
+| 通用搜索 | `@baidu-search:custom` | 自定义查询 | 任何场景 |
+
+---
+
+## 三、框架文件说明
+
+### 1. `baidu-web-search.md` - 主框架文件
+
+**路径**: `skills/shared-frameworks/search/baidu-web-search.md`
+
+**功能**: 定义所有12种搜索类型的标记语法、使用方法和结果格式
+
+**关键内容**:
+- 12种搜索类型的完整文档
+- 每种类型的查询模板说明
+- 结果引用标记 `@search-result:xxx`
+- 完整使用示例
+
+### 2. `customer-search-queries.md` - 客户搜索模板
+
+**路径**: `skills/shared-frameworks/search/customer-search-queries.md`
+
+**功能**: 按行业提供客户搜索的查询模板
+
+**支持行业**:
+- 教育 (education)
+- 医疗 (medical)
+- 政府 (government)
+- 企业 (enterprise)
+- 金融 (finance) **[新增]**
+
+**查询类型**:
+- 背景资料查询
+- 决策链查询
+- 历史合作查询
+- 数字化转型查询 **[新增]**
+
+### 3. `industry-queries.md` - 行业分析模板 **[新文件]**
+
+**路径**: `skills/shared-frameworks/search/industry-queries.md`
+
+**功能**: 提供行业热点、竞品分析、案例参考的查询模板
+
+**内容分类**:
+- 行业热点查询（教育信息化、医疗信息化、数字政府、金融科技）
+- 竞品信息查询（钉钉、企业微信、飞书、腾讯文档、石墨文档）
+- 案例参考查询（各行业成功案例）
+
+### 4. `bidding-queries.md` - 招投标模板 **[新文件]**
+
+**路径**: `skills/shared-frameworks/search/bidding-queries.md`
+
+**功能**: 提供招投标信息查询和分析的完整模板
+
+**内容分类**:
+- 招投标查询模板（通用及各行业专项）
+- 招投标平台查询（政府采购网等）
+- 中标厂商分析
+- 采购趋势分析
+- AI指令模板
+
+### 5. `tech-queries.md` - 技术栈模板 **[新文件]**
+
+**路径**: `skills/shared-frameworks/search/tech-queries.md`
+
+**功能**: 提供技术栈查询和分析的完整模板
+
+**内容分类**:
+- 技术栈查询模板（通用及各行业）
+- 招聘JD技术栈查询
+- 技术架构分析查询
+- 技术决策分析查询
+- 技术栈与WPS产品匹配
+
+### 6. `industry-trend-queries.md` - 行业趋势模板 **[关键新增]**
+
+**路径**: `skills/shared-frameworks/search/industry-trend-queries.md`
+
+**功能**: 提供各行业热点搜索的详细查询模板（从文件动态加载）
+
+**支持行业**:
+- 教育 (education) - ��育信息化
+- 医疗 (medical) - 医疗信息化
+- 政府 (government) - 数字政府
+- 金融 (finance) - 金融科技
+- 制造业 (manufacturing) - 智能制造
+- 能源 (energy) - 智慧能源
+
+**关键特性**:
+- **时间过滤**: 每个查询模板指定 `semiyear`（最近180天）时间过滤
+- **动态加载**: 后端服务启动时从文件加载到内存缓存
+- **易于维护**: 修改模板文件无需改代码，重启服务即可生效
+
+**时间过滤说明**:
+- 默认使用 `search_recency_filter: "semiyear"` 参数
+- 只搜索最近 180 天内的内容
+- 确保信息的时效性和相关性
+
+---
+
+## 四、后端代码修改
+
+### 1. `skill-executor.service.ts` 扩展
+
+**修改位置**: `backend/src/modules/skills/skill-executor.service.ts`
+
+#### (1) 文件动态加载机制 **[关键改进]**
+
+**问题**: 之前的 `industry-trend` 查询模板硬编码在 TypeScript 代码中，不便于维护和修改。
+
+**解决方案**: 实现从 markdown 文件动态加载查询模板。
+
+```typescript
+// 新增：行业趋势查询缓存
+private industryTrendQueriesCache: Record<string, string> = {};
+
+// 新增：时间过滤配置
+private readonly industryTrendRecency = 'semiyear'; // 最近180天
+
+// 在构造函数中加载
+constructor(/* ... */) {
+  // ...
+  this.loadIndustryTrendQueries(); // 服务启动时加载
+}
+
+// 新增：从文件加载行业趋势查询模板
+private loadIndustryTrendQueries(): void {
+  const trendQueriesPath = path.join(
+    this.skillsDir,
+    'shared-frameworks/search/industry-trend-queries.md'
+  );
+
+  try {
+    const content = fs.readFileSync(trendQueriesPath, 'utf-8');
+    this.parseIndustryTrendQueries(content);
+    this.logger.log(
+      `✅ [SkillExecutor] 行业趋势查询模板加载成功，共 ${Object.keys(this.industryTrendQueriesCache).length} 个行业`
+    );
+  } catch (error) {
+    this.logger.error(
+      `❌ [SkillExecutor] 行业趋势查询模板加载失败: ${error.message}`
+    );
+  }
+}
+
+// 新增：解析 markdown 格式的查询模板
+private parseIndustryTrendQueries(content: string): void {
+  const lines = content.split('\n');
+  let currentIndustry = '';
+  let inCodeBlock = false;
+
+  for (const line of lines) {
+    // 识别行业标题 (## 教育行业)
+    const headingMatch = line.match(/^##\s+(.+)$/);
+    if (headingMatch && !line.includes('查询模板')) {
+      currentIndustry = this.mapIndustryName(headingMatch[1].trim());
+      continue;
+    }
+
+    // 识别代码块开始
+    if (line.trim() === '```') {
+      inCodeBlock = !inCodeBlock;
+      if (inCodeBlock) {
+        // 下一个非空行开始收集查询模板
+        continue;
+      }
+    }
+
+    // 收集查询模板内容
+    if (inCodeBlock && currentIndustry && line.trim()) {
+      if (!this.industryTrendQueriesCache[currentIndustry]) {
+        this.industryTrendQueriesCache[currentIndustry] = '';
+      }
+      this.industryTrendQueriesCache[currentIndustry] += line + '\n';
+    }
+  }
+
+  // 清理每个查询模板（移除多余的换行）
+  for (const key in this.industryTrendQueriesCache) {
+    this.industryTrendQueriesCache[key] = this.industryTrendQueriesCache[key].trim();
+  }
+}
+
+// 新增：行业名称映射
+private mapIndustryName(chineseName: string): string {
+  const map: Record<string, string> = {
+    '教育行业': 'education',
+    '医疗行业': 'medical',
+    '政府行业': 'government',
+    '金融行业': 'finance',
+    '制造业': 'manufacturing',
+    '能源行业': 'energy',
+  };
+  return map[chineseName] || 'enterprise';
+}
+```
+
+**优势**:
+1. **零代码修改**: 更新查询模板只需编辑 markdown 文件
+2. **即时生效**: 重启服务后自动加载最新模板
+3. **易于维护**: 非技术人员也能修改查询模板
+4. **版本控制**: markdown 文件可以纳入 git 版本管理
+
+#### (2) 时间过滤支持 **[关键新增]**
+
+在搜索调用中添加时间过滤参数：
+
+```typescript
+// 在 processBaiduSearchMarkers 方法中
+let recencyFilter: string | undefined;
+
+// 行业热点搜索自动应用时间过滤
+if (marker.type === 'industry-trend') {
+  const industryKey = query.toLowerCase();
+  const trendQuery = this.industryTrendQueriesCache[industryKey]
+    || this.industryTrendQueriesCache.enterprise;
+  finalQuery = trendQuery;
+  recencyFilter = this.industryTrendRecency; // 应用时间过滤
+}
+
+// 构建 API 调用参数
+const searchOptions: any = {
+  maxCompletionTokens: 4096,
+  topK: 20,
+  instruction,
+};
+
+// 添加时间过滤参数
+if (recencyFilter) {
+  searchOptions.search_recency_filter = recencyFilter;
+  this.logger.log(
+    `🕐 [BaiduSearch] 应用时间过滤: ${recencyFilter} (最近180天)`
+  );
+}
+
+// 调用百度智能搜索 API
+const searchResult = await this.aiService.baiduWebSearch(
+  finalQuery,
+  searchOptions
+);
+```
+
+**时间过滤参数**:
+| 参数值 | 时间范围 | 适用场景 |
+|--------|---------|---------|
+| `week` | 最近7天 | 极度时效性场景 |
+| `month` | 最近30天 | 月度热点分析 |
+| `semiyear` | 最近180天 | 行业热点（推荐） |
+| `year` | 最近365天 | 年度趋势分析 |
+
+#### (3) 扩展搜索查询模板
+
+```typescript
+// 添加 digital 查询模板
+private readonly searchQueriesByIndustry: Record<string, {
+  background: string;
+  decision: string;
+  cooperation: string;
+  digital: string;  // 新增
+}> = { ... };
+```
+
+#### (2) 新增专业查询模板
+
+```typescript
+// 新增：专业查询模板（非行业特定）
+private readonly specializedSearchQueries: Record<string, string> = {
+  bidding: '{{customer_name}}在办公软件...',
+  subsidiary: '{{customer_name}}的集团架构...',
+  'annual-report': '{{customer_name}}最近年度...',
+  'tech-stack': '{{customer_name}}的招聘JD...',
+};
+```
+
+#### (3) 扩展字段指令
+
+```typescript
+// 新增9种搜索类型的AI指令
+private readonly fieldInstructions: Record<string, (customerName: string, customerType: string) => string> = {
+  // 原有：background, decision, cooperation
+  // 新增：digital, bidding, subsidiary, annual-report, tech-stack,
+  //       industry-trend, competitor, case-study, custom
+};
+```
+
+#### (4) 更新搜索处理逻辑
+
+```typescript
+// 识别不同类型的搜索查询
+const isTemplateRef = ['background', 'decision', 'cooperation', 'digital'].includes(query);
+const isSpecializedQuery = ['bidding', 'subsidiary', 'annual-report', 'tech-stack'].includes(query);
+const isStandaloneQuery = ['industry-trend', 'competitor', 'case-study', 'custom'].includes(marker.type);
+
+// 特殊处理：行业趋势搜索从文件加载模板
+if (marker.type === 'industry-trend') {
+  const industryKey = query.toLowerCase();
+  const trendQuery = this.industryTrendQueriesCache[industryKey]
+    || this.industryTrendQueriesCache.enterprise;
+  finalQuery = trendQuery;
+  recencyFilter = this.industryTrendRecency; // 应用180天时间过滤
+
+  this.logger.log(
+    `🔍 [BaiduSearch] 行业趋势搜索 - ${query}，使用模板: ${industryKey}`
+  );
+}
+```
+
+**关键改进点**:
+1. 行业趋势查询不再硬编码，从 `industryTrendQueriesCache` 读取
+2. 自动应用时间过滤 `recencyFilter`
+3. 增加详细日志便于调试
+
+#### (5) 新增格式化函数
+
+```typescript
+// 为每种新搜索类型添加格式化函数
+private formatDigitalTransformation(dt: any): string
+private formatBiddingInfo(bidding: any): string
+private formatSubsidiaryInfo(subsidiary: any): string
+private formatAnnualReportInfo(report: any): string
+private formatTechStackInfo(tech: any): string
+private formatIndustryTrends(trends: any): string
+private formatCompetitorInfo(competitor: any): string
+private formatCaseReferences(caseRef: any): string
+private formatCustomSearchInfo(custom: any): string
+```
+
+---
+
+## 五、使用方式
+
+### 基础使用
+
+```markdown
+---
+slug: education-customer-research
+name: 教育行业客户深度研究
+---
+
+# 教育行业客户深度研究
+
+## 引用搜索框架
+@include shared-frameworks/search/baidu-web-search.md
+@include shared-frameworks/search/customer-search-queries.md
+
+## 执行搜索
+@baidu-search:background("{{customer_name}}", "education")
+@baidu-search:decision("{{customer_name}}", "education")
+@baidu-search:cooperation("{{customer_name}}")
+
+## 生成报告
+### 背景资料
+@search-result:background
+
+### 决策链分析
+@search-result:decision
+
+### 历史合作
+@search-result:cooperation
+```
+
+### 高级使用（全方位研究）
+
+```markdown
+---
+slug: comprehensive-finance-research
+name: 金融行业客户全方位研究
+---
+
+# 金融行业客户全方位研究
+
+## 引用框架
+@include shared-frameworks/search/baidu-web-search.md
+@include shared-frameworks/search/customer-search-queries.md
+@include shared-frameworks/search/bidding-queries.md
+@include shared-frameworks/search/tech-queries.md
+
+## 执行搜索
+@baidu-search:background("{{customer_name}}", "finance")
+@baidu-search:decision("{{customer_name}}", "finance")
+@baidu-search:digital("{{customer_name}}", "finance")
+@baidu-search:bidding("{{customer_name}}")
+@baidu-search:subsidiary("{{customer_name}}")
+@baidu-search:annual-report("{{customer_name}}")
+@baidu-search:tech-stack("{{customer_name}}")
+
+## 生成报告
+### 1. 客户背景
+@search-result:background
+
+### 2. 决策链分析
+@search-result:decision
+
+### 3. 数字化转型
+@search-result:digital
+
+### 4. 招投标情况
+@search-result:bidding
+
+### 5. 集团架构
+@search-result:subsidiary
+
+### 6. 年报/战略
+@search-result:annual-report
+
+### 7. 技术栈分析
+@search-result:tech-stack
+```
+
+### 竞品分析使用
+
+```markdown
+---
+slug: competitor-analysis
+name: 竞品分析
+---
+
+# 竞品分析
+
+## 引用框架
+@include shared-frameworks/search/baidu-web-search.md
+@include shared-frameworks/search/industry-queries.md
+
+## 执行搜索
+@baidu-search:competitor("钉钉")
+@baidu-search:competitor("企业微信")
+@baidu-search:competitor("飞书")
+
+## 生成报告
+### 钉钉分析
+@search-result:competitor
+
+### 企业微信分析
+@search-result:competitor
+
+### 飞书分析
+@search-result:competitor
+```
+
+---
+
+## 六、未来扩展指南
+
+### 6.1 添加新的搜索类型
+
+#### 步骤1: 更新框架文档
+
+在 `baidu-web-search.md` 中添加新搜索类型：
+
+```markdown
+| 新类型 | `@baidu-search:newtype` | 说明 | 适用技能 |
+```
+
+#### 步骤2: 添加查询模板
+
+根据搜索类型选择合适的模板文件：
+- **客户相关** → `customer-search-queries.md`
+- **行业相关** → `industry-queries.md`
+- **专业领域** → 创建新的专用模板文件
+
+#### 步骤3: 更新后端代码
+
+在 `skill-executor.service.ts` 中：
+
+```typescript
+// 1. 添加字段指令（fieldInstructions）
+private readonly fieldInstructions: Record<string, ...> = {
+  // ...existing types
+  newtype: (customerName, customerType) => `你是一个...指令...`,
+};
+
+// 2. 添加格式化函数
+private formatNewtype(data: any): string {
+  // 格式化逻辑
+}
+
+// 3. 更新 formatSearchResult 函数
+private formatSearchResult(type: string, content: string, references?: any[]): string {
+  const typeLabels: Record<string, string> = {
+    // ...existing labels
+    newtype: '新类型标签',
+  };
+
+  // ...在JSON解析部分添加
+  if (type === 'newtype' && data.newtype_info) {
+    formatted += this.formatNewtype(data.newtype_info);
+  }
+}
+```
+
+### 6.2 添加新的行业支持
+
+#### 步骤1: 更新行业映射
+
+```typescript
+// skill-executor.service.ts
+private readonly industryTypeMap: Record<string, ...> = {
+  // ...existing
+  'retail': 'retail',      // 零售
+  'manufacturing': 'manufacturing',  // 制造业
+};
+```
+
+#### 步骤2: 添加行业查询模板
+
+```typescript
+private readonly searchQueriesByIndustry: Record<string, ...> = {
+  // ...existing
+  retail: {
+    background: '零售行业背景资料查询模板...',
+    decision: '零售行业决策链查询模板...',
+    cooperation: '零售行业历史合作查询模板...',
+    digital: '零售行业数字化转型查询模板...',
+  },
+};
+```
+
+#### 步骤3: 更新框架文档
+
+在 `customer-search-queries.md` 中添加零售行业的查询模板。
+
+### 6.3 添加新的搜索框架
+
+如果需要完全不同的搜索能力（如：微博搜索、微信搜索）：
+
+#### 步骤1: 创建新的框架文件
+
+```
+skills/shared-frameworks/search/weibo-search.md
+```
+
+#### 步骤2: 定义标记语法
+
+```markdown
+---
+name: 微博搜索
+description: 使用微博搜索API获取信息
+version: 1.0.0
+---
+
+## 搜索类型
+
+| 类型 | 标记 |
+|------|------|
+| 热搜 | `@weibo-search:trending` |
+| 用户 | `@weibo-search:user` |
+
+## 使用方法
+
+@weibo-search:trending("教育")
+```
+
+#### 步骤3: 更新后端代码
+
+```typescript
+// 添加新的处理函数
+async processWeiboSearchMarkers(content: string, ...): Promise<...> {
+  // 实现微博搜索逻辑
+}
+
+// 在主执行流程中调用
+if (processedSystemPrompt.includes('@weibo-search:')) {
+  const { processedContent, searchResults } = await this.processWeiboSearchMarkers(...);
+}
+```
+
+### 6.4 扩展AI指令模板
+
+每种搜索类型都有对应的AI指令模板，用于结构化提取搜索结果。扩展时：
+
+```typescript
+// 在 fieldInstructions 中添加新指令
+newSearchType: (param1, param2) => `你是一个专业的...助手。
+
+要求：
+- 提取要点1
+- 提取要点2
+
+输出格式：必须是纯JSON
+{
+  "field_name": "提取的内容"
+}
+```
+
+### 6.5 添加自定义分析维度
+
+基于搜索结果进行深度分析，创建新的分析框架：
+
+```markdown
+---
+name: 采购偏好分析框架
+description: 基于招投标信息分析客户采购偏好
+---
+
+## 分析维度
+
+1. 采购方式偏好
+2. 合作模式偏好
+3. 产品类型偏好
+4. 服务模式偏好
+
+## 使用方法
+
+在Skill中引用：
+@include shared-frameworks/analysis/procurement-preference.md
+```
+
+---
+
+## 七、最佳实践
+
+### 7.1 框架设计原则
+
+1. **单一职责**: 每个框架文件专注一个领域
+2. **可复用性**: 框架应该能被多个Skills使用
+3. **可扩展性**: 预留扩展点，便于添加新功能
+4. **向后兼容**: 新功能不应破坏现有Skills
+
+### 7.2 命名规范
+
+- **框架文件**: `{domain}-{type}.md` (如: `customer-search-queries.md`)
+- **搜索标记**: `@{provider}-search:{type}` (如: `@baidu-search:background`)
+- **结果标记**: `@search-result:{type}` (如: `@search-result:background`)
+- **函数命名**: `format{TypeName}` (如: `formatDigitalTransformation`)
+
+### 7.3 版本管理
+
+框架文件应包含版本号：
+
+```markdown
+---
+name: 百度智能搜索
+version: 2.0.0
+---
+```
+
+更新时遵循语义化版本：
+- **主版本**: 不兼容的API变更
+- **次版本**: 向后兼容的功能新增
+- **修订号**: 向后兼容的问题修复
+
+### 7.4 文档要求
+
+每个框架文件应包含：
+1. 清晰的功能描述
+2. 完整的使用示例
+3. 参数说明
+4. 返回值格式
+5. 注意事项
+
+---
+
+## 八、技术架构图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Skill Markdown                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │ @include     │  │ @baidu-search│  │@search-result│     │
+│  │ 框架引用      │  │ 搜索标记      │  │ 结果引用      │     │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘     │
+└─────────┼──────────────────┼──────────────────┼─────────────┘
+          │                  │                  │
+          ▼                  ▼                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   skill-executor.service.ts                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │expandIncludes│  │processBaidu  │  │replaceSearch │     │
+│  │ 展开框架      │  │SearchMarkers │  │ResultMarkers │     │
+│  └──────────────┘  └──────┬───────┘  └──────────────┘     │
+│                           │                                  │
+│            ┌──────────────┼──────────────┐                  │
+│            ▼              ▼              ▼                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │
+│  │fieldInstructions│  │formatSearch  │  │AI Service    │       │
+│  │ AI指令模板    │  │Result        │  │ baiduWebSearch│       │
+│  └──────────────┘ └──────────────┘ └──────────────┘       │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Framework Files                         │
+│  ┌──────────────────┐  ┌──────────────────┐                │
+│  │baidu-web-search  │  │customer-search   │                │
+│  │     .md          │  │   -queries.md    │                │
+│  ├──────────────────┤  ├──────────────────┤                │
+│  │industry-queries  │  │bidding-queries   │                │
+│  │     .md          │  │     .md          │                │
+│  ├──────────────────┤  ├──────────────────┤                │
+│  │tech-queries      │  │   [future]       │                │
+│  │     .md          │  │                  │                │
+│  └──────────────────┘  └──────────────────┘                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 九、常见问题
+
+### Q1: 如何调试搜索框架？
+
+```bash
+# 查看后端日志
+tail -f backend/logs/app.log | grep BaiduSearch
+
+# 测试单个搜索类型
+# 在Skill中只保留一个 @baidu-search 标记，观察输出
+```
+
+### Q2: 搜索结果为空怎么办？
+
+检查以下几点：
+1. 百度智能搜索API是否正常工作
+2. 查询模板是否正确
+3. AI指令模板是否返回有效JSON
+4. 后端日志中的错误信息
+
+### Q3: 如何复用现有的搜索查询？
+
+在Skill中引用现有的查询模板文件：
+
+```markdown
+@include shared-frameworks/search/customer-search-queries.md
+
+# 使用模板中的查询
+@baidu-search:background("{{customer_name}}", "education")
+```
+
+### Q4: 能否组合多个搜索框架？
+
+可以，一个Skill可以引用多个框架：
+
+```markdown
+@include shared-frameworks/search/baidu-web-search.md
+@include shared-frameworks/search/industry-queries.md
+@include shared-frameworks/search/bidding-queries.md
+```
+
+---
+
+## 十、版本历史
+
+| 版本 | 日期 | 说明 |
+|------|------|------|
+| 2.0.0 | 2026-02-28 | 搜索框架扩展：3种→12种搜索类型，新增3个框架文件 |
+| 1.0.0 | 2026-02-XX | 初始版本：基础搜索框架 |
+
+---
+
+## 十一、相关文档
+
+- [Skills模块架构设计](./skills-architecture.md)
+- [AI服务集成指南](./ai-service-integration.md)
+- [Skill开发手册](./skill-development-guide.md)

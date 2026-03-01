@@ -429,6 +429,276 @@ export class LtcService {
     return this.customerProfileRepository.save(profile);
   }
 
+  /**
+   * 识别客户类型
+   * 结合客户名称和行业字段进行识别
+   * @returns 'education' | 'medical' | 'government' | 'enterprise'
+   */
+  private identifyCustomerType(
+    customerName: string,
+    industry?: string
+  ): 'education' | 'medical' | 'government' | 'enterprise' {
+    const name = customerName.toLowerCase();
+
+    // 🔍 优先级1: 行业字段判断（如果明确填写了行业）
+    if (industry) {
+      const industryLower = industry.toLowerCase();
+
+      // 教育行业关键词
+      if (/教育|学校|高校|大学|学院|培训|k12|学前教育/.test(industryLower)) {
+        return 'education';
+      }
+
+      // 医疗行业关键词
+      if (/医疗|医院|诊所|卫生|保健|健康|医药|生物/.test(industryLower)) {
+        return 'medical';
+      }
+
+      // 政府行业关键词
+      if (/政府|公共事业|行政|机关|非营利|ngo|事业单位/.test(industryLower)) {
+        return 'government';
+      }
+    }
+
+    // 🔍 优先级2: 客户名称关键词判断
+
+    // 教育类（优先级最高，因为教育局可能同时匹配政府关键词）
+    if (/学校|中学|小学|大学|学院|幼儿园/.test(name)) {
+      return 'education';
+    }
+    if (/教育局/.test(name)) {
+      return 'education';
+    }
+
+    // 医疗类
+    if (/医院|卫生院|诊所|卫生室/.test(name)) {
+      return 'medical';
+    }
+
+    // 政府类（排除教育局）
+    if (/政府|局|委|办|处|公安|税务|工商|民政/.test(name)) {
+      return 'government';
+    }
+
+    // 默认企业类
+    return 'enterprise';
+  }
+
+  /**
+   * 根据客户类型获取自然语言搜索问题
+   * 优化策略：使用自然语言问题而非关键词，AI更容易理解
+   */
+  private getSearchQueriesByType(customerName: string, customerType: 'education' | 'medical' | 'government' | 'enterprise') {
+    const queries = {
+      education: {
+        background: `${customerName}的办学规模、学生人数、师资力量、办学特色等基本情况是什么？请用数字说话，包括具体的学生人数、教职工数量、校区分布等量化数据。另外，${customerName}在教育信息化、数字化���型方面有哪些战略规划和建设重点？`,
+        decision: `${customerName}的校长、教务主任、信息化主任分别是哪些人？请重点搜索并总结他们关于教育信息化、数字化转型、智慧校园建设等方面的讲话、观点或相关政策。`,
+        cooperation: `${customerName}和金山办公WPS365在WPS 365、文档中心、文档中台、AI、云文档等方面有哪些合作项目、中标记录或签约情况？包括战略合作、联合研发、采购等形式。`,
+      },
+      medical: {
+        background: `${customerName}的医院等级（三甲/二甲/社区医院）、床位数、年门诊量、特色科室等基本情况是什么？请提供具体的数字数据。另外，${customerName}在医疗信息化、智慧医院建设、数字化转型方面有哪些战略规划和重点项目？`,
+        decision: `${customerName}的院长、信息科主任、设备科主任、采购负责人分别是哪些人？请重点搜索并总结他们关于医疗信息化、数字化转型、智慧医院建设等方面的观点或相关政策。`,
+        cooperation: `${customerName}和金山办公WPS365在WPS 365、文档中心、文档中台、AI、云文档等方面有哪些合作项目、中标记录或签约情况？`,
+      },
+      government: {
+        background: `${customerName}的部门职能、管辖范围、下属单位数量、服务对象等基本情况是什么？另外，${customerName}在数字政府建设、政务信息化、数字化转型方面有哪些战略规划或重点工程？`,
+        decision: `${customerName}的局长、处长、信息化负责人、采购负责人分别是哪些人？请重点搜索并总结他们关于数字政府建设、政务信息化、数字化转型等方面的观点或相关政策。`,
+        cooperation: `${customerName}和金山办公WPS365在WPS 365、文档中心、文档中台、AI、云文档等方面有哪些合作项目、框架协议或采购记录？`,
+      },
+      enterprise: {
+        background: `${customerName}的员工规模、年营收规模、主营业务产品、行业地位、上下游合作伙伴等基本情况是什么？请提供具体数字。另外，${customerName}在企业数字化转型、智能制造/产业数字化方面有哪些战略规划、重点工程或建设方向？`,
+        decision: `${customerName}的CEO/总经理、采购总监、CIO/CTO/信息化负责人分别是谁？请重点搜索并总结他们关于企业数字化转型、智能制造、产业数字化等方面的观点或相关战略。`,
+        cooperation: `${customerName}和金山办公WPS365在WPS 365、文档中心、文档中台、AI、云文档等方面有哪些合作项目、战略协议或采购记录？包括战略合作、联合研发等形式。`,
+      },
+    };
+
+    return queries[customerType];
+  }
+
+  /**
+   * 根据客户类型获取Prompt字段说明
+   */
+  private getPromptInstructionsByType(customerType: 'education' | 'medical' | 'government' | 'enterprise') {
+    const instructions = {
+      education: {
+        background: `**背景资料** (学校/教育局)：
+- 学校类型（大学/高中/初中/小学/幼儿园/教育局）
+- 学生人数、班级数量
+- 办学层次、师资力量
+- 服务范围（教育局）`,
+        decision: `**决策链**：
+- 高管层：校长/教育局局长
+- 管理层：教务主任/信息化主任
+- 采购层：采购负责人`,
+      },
+      medical: {
+        background: `**背景资料** (医院)：
+- 医院等级（三甲/二甲/社区医院）
+- 床位数、门诊量
+- 特色科室
+- 服务范围`,
+        decision: `**决策链**：
+- 高管层：院长
+- 科室层：信息科主任、设备科主任
+- 采购层：采购负责人`,
+      },
+      government: {
+        background: `**背景资料** (政府部门)：
+- 部门职能介绍
+- 下属单位数量
+- 服务范围
+- 管辖区域`,
+        decision: `**决策链**：
+- 高管层：局长/处长
+- 信息化层：信息化负责人
+- 采购层：采购负责人`,
+      },
+      enterprise: {
+        background: `**背景资料** (企业)：
+- 员工人数、公司规模
+- 年营收、注册资本
+- 主营业务、产品
+- 行业地位、上下游关系`,
+        decision: `**决策链**：
+- 高管层：CEO/总经理
+- 采购层：采购总监/经理
+- 信息化层：CTO/信息化负责人`,
+      },
+    };
+
+    return instructions[customerType];
+  }
+
+  /**
+   * 根据字段名称获取针对性的AI指令
+   * 优化策略：单字段instruction更聚焦，JSON提取更准确
+   */
+  private getFieldSpecificInstruction(fieldName: 'background' | 'decision' | 'cooperation', customerName: string, customerType: string): string {
+    const baseInstructions = {
+      background: `你是一个专业的企业信息分析助手。请根据搜索结果，提取客户背景资料。
+
+**客户名称**：${customerName}
+**客户类型**：${customerType}
+
+**要求**：
+- 优先提取**量化数据**（人数、规模、等级、营收等具体数字）
+- 重点提取**数字化转型相关内容**：战略规划、建设重点、重点项目等
+- 使用Markdown格式组织内容
+- 内容简洁专业，突出关键信息
+
+**输出格式**：必须是纯JSON，不要有任何额外的文字说明。
+{
+  "background_info": "客户背景（Markdown格式，包含数字化转型战略和规划）"
+}`,
+      decision: `你是一个专业的企业信息分析助手。请根据搜索结果，提取关键决策人信息。
+
+**客户名称**：${customerName}
+**客户类型**：${customerType}
+
+**要求**：
+- 提取关键决策人的姓名和职位
+- **重点搜索并总结**他们对数字化转型、信息化建设等方面的观点、讲话或相关政策
+- 按层级组织：高管层、管理层、采购层
+
+**输出格式**：必须是纯JSON，不要有任何额外的文字说明。
+{
+  "decision_chain": {"高管层": "姓名(职位) - 关于数字化转型的观点", "管理层": "姓名(职位) - 关于数字化转型的观点", "采购层": "姓名(职位)"}
+}
+
+**注意**：
+1. 如果某层级没有找到人物，该层返回null
+2. 如果搜索结果中有决策人关于数字化转型的观点、讲话或政策，请务必总结在职位后面
+3. 如果没有找到数字化转型相关观点，只返回姓名和职位`,
+      cooperation: `你是一个专业的企业信息分析助手。请根据搜索结果，提取与金山办公WPS365的合作信息。
+
+**客户名称**：${customerName}
+
+**要求**：
+- 合作产品：WPS 365、文档中心、文档中台、AI、云文档、其他（战略合作、联合研发等）
+- 合作形式：中标/采购/项目合作/框架协议/战略协议
+- 合作时间：具体年份
+- 合作状态：进行中/已完成/未知
+
+**输出格式**：
+1. **如果找到了合作信息**，返回纯JSON：
+{
+  "history_notes": "历史合作信息（Markdown格式）"
+}
+
+2. **如果没有找到任何合作信息**，直接返回空JSON对象：
+{}
+
+**重要**：只有在确认搜索结果中存在相关合作项目、中标记录、签约情况时，才输出history_notes字段。否则返回空对象{}。`,
+    };
+
+    return baseInstructions[fieldName];
+  }
+  /**
+   * 映射查询到对应的字段名称
+   */
+  private mapQueryToField(query: string, queries: { background: string; decision: string; cooperation: string }): 'background' | 'decision' | 'cooperation' {
+    if (query === queries.background) return 'background';
+    if (query === queries.decision) return 'decision';
+    if (query === queries.cooperation) return 'cooperation';
+    // 默认返回background
+    return 'background';
+  }
+
+  /**
+   * 合并多个查询结果
+   */
+  private mergeFieldResults(results: Array<{ field: string; content: string }>): any {
+    const profileData: any = {};
+
+    for (const result of results) {
+      try {
+        // Try to extract JSON from response
+        const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+        let fieldData: any;
+        if (jsonMatch) {
+          fieldData = JSON.parse(jsonMatch[0]);
+        } else {
+          fieldData = JSON.parse(result.content);
+        }
+
+        // Merge based on field type
+        if (result.field === 'background') {
+          profileData.background_info = fieldData.background_info;
+        } else if (result.field === 'decision') {
+          profileData.decision_chain = fieldData.decision_chain;
+        } else if (result.field === 'cooperation') {
+          // Only add history_notes if it exists and is not null
+          // AI will return empty object {} if no cooperation found
+          if (fieldData.history_notes && fieldData.history_notes !== null) {
+            profileData.history_notes = fieldData.history_notes;
+          } else {
+            this.logger.log('No cooperation history found, skipping history_notes field');
+          }
+        }
+      } catch (parseError) {
+        this.logger.warn(`Failed to parse ${result.field} result as JSON`);
+        // If parsing fails, store raw content (except for cooperation if it looks like "not found")
+        if (result.field === 'background') {
+          profileData.background_info = result.content;
+        } else if (result.field === 'decision') {
+          profileData.decision_chain = result.content;
+        } else if (result.field === 'cooperation') {
+          // Only store if it doesn't look like a "not found" response
+          if (result.content && 
+              !result.content.includes('未找到') && 
+              !result.content.includes('没有') && 
+              !result.content.includes('not found') &&
+              result.content.length > 20) {
+            profileData.history_notes = result.content;
+          } else {
+            this.logger.log('Cooperation response appears to be "not found", skipping');
+          }
+        }
+      }
+    }
+
+    return profileData;
+  }
   async autoFillCustomerProfile(
     teamId: string,
     customerId: string,
@@ -453,129 +723,108 @@ export class LtcService {
     const customerName = customer.name.trim();
     const searchGoal = dto.searchGoal;
 
-    // Build search queries based on goal
+    // 🔍 识别客户类型（结合名称和行业）
+    const customerType = this.identifyCustomerType(customerName, customer.industry);
+    this.logger.log(`🏢 Customer type identified: ${customerType} for "${customerName}" (industry: ${customer.industry || 'N/A'})`);
+
+    // 🎯 根据客户类型获取自然语言搜索问题
+    const queries = this.getSearchQueriesByType(customerName, customerType);
+
+    // Build search queries based on goal and customer type
     const searchQueries: string[] = [];
     const filledFields: string[] = [];
 
     if (searchGoal === 'background' || searchGoal === 'all') {
-      // 合并：公司简介、规模、上下游 → 综合查询
-      searchQueries.push(
-        `${customerName} 企业简介 公司规模 主营业务 上下游关系`
-      );
+      searchQueries.push(queries.background);
       filledFields.push('background_info');
     }
 
     if (searchGoal === 'decision_chain' || searchGoal === 'all') {
-      // 合并：CEO、CIO、数科公司 → 综合查询
-      searchQueries.push(
-        `${customerName} CEO CIO 数科公司 管理层 组织架构`
-      );
+      searchQueries.push(queries.decision);
       filledFields.push('decision_chain');
     }
 
     if (searchGoal === 'cooperation_history' || searchGoal === 'all') {
-      // 合并：WPS合作、金山办公案例 → 综合查询
-      searchQueries.push(
-        `${customerName} WPS 金山办公 合作 案例 中标`
-      );
+      searchQueries.push(queries.cooperation);
       filledFields.push('history_notes');
     }
 
-    this.logger.log(`🔍 Auto-filling customer profile for "${customerName}" with goal: ${searchGoal}`);
+    this.logger.log(`🔍 Auto-filling customer profile for "${customerName}" (${customerType}) with goal: ${searchGoal}`);
+    this.logger.log(`🔍 Will execute ${searchQueries.length} separate queries`);
 
-    // Get search engine from system config (default to search_std)
-    const searchEngine = (await this.getSystemConfig('web_search_engine')) || 'search_std';
-    this.logger.log(`⚙️ Using search engine: ${searchEngine}`);
+    // 优化策略：分别查询每个字段，而非合并查询
+    // 这样AI可以更聚焦地回答每个问题
+    const results: Array<{ field: string; content: string; query: string; references: any[] }> = [];
 
-    // Execute web searches (并行执行3个综合查询)
-    const searchResults = await this.aiService.webSearchMultiple(searchQueries, {
-      maxConcurrency: 3,  // 控制3个并发（对应3个综合查询）
-      count: 10,          // 增加到10条结果（原5条），提高信息丰富度
-      contentSize: 'medium',
-      searchEngine: searchEngine as any,
-    });
+    for (const query of searchQueries) {
+      const fieldName = this.mapQueryToField(query, queries);
+      const fieldTypeName = fieldName === 'background' ? '背景资料' : fieldName === 'decision' ? '决策链' : '历史合作';
 
-    this.logger.log(`📊 Found ${searchResults.length} search result groups`);
+      this.logger.log(`🔍 Executing query for ${fieldTypeName}: "${query}"`);
 
-    // Build AI prompt to generate structured profile
-    const searchContext = searchResults
-      .map(({ query, results }) => {
-        return `## 搜索关键词: ${query}\n${results.map(r => `- ${r.title}\n  ${r.content}`).join('\n')}`;
-      })
-      .join('\n\n');
+      // 获取针对该字段的AI指令
+      const fieldInstruction = this.getFieldSpecificInstruction(fieldName, customerName, customerType);
 
-    const systemPrompt = `你是一个专业的企业信息分析助手。
-根据综合搜索结果，提取并生成客户背景��料。
-
-**任务**：从搜索结果中提取以下维度的信息：
-1. background_info - 公司规模、行业地位、主营业务、上下游关系
-2. decision_chain - CEO、CIO、数科负责人等关键决策人信息
-3. history_notes - 与WPS/金山办公的合作项目、中标信息、合作状态
-
-**重要**：
-- 搜索词可能是综合的，需要从多条结果中分别提取各维度信息
-- 某个字段没有找到信息时，返回null
-- 使用Markdown格式，内容简洁专业
-
-输出格式必须是JSON，包含以下字段（根据搜索目标决定哪些字段）：
-- background_info: 客户背景（公司规模、行业地位、主要业务、上下游关系）
-- decision_chain: 决策链（关键决策人姓名、职位、联系方式如有）
-- history_notes: 历史合作（合作项目、合作时间、合作状态）`;
-
-    const userPrompt = `客户名称：${customerName}
-
-搜索结果：
-${searchContext}
-
-请分析上述搜索结果，生成客户背景资料JSON。只输出JSON，不要有其他内容。`;
-
-    try {
-      const aiResponse = await this.aiService.create({
-        messages: [{ role: 'user', content: userPrompt }],
-        system: systemPrompt,
-        temperature: 0.3,
-        maxTokens: 3000,
+      const searchResult = await this.aiService.baiduWebSearch(query, {
+        maxCompletionTokens: 4096,  // 单查询降低token
+        topK: 20,
+        enableDeepSearch: false,     // 关闭深度搜索
+        enableCornerMarkers: false,  // 去掉参考资料角标
+        instruction: fieldInstruction,
       });
 
-      this.logger.log(`🤖 AI response received for auto-fill`);
+      this.logger.log(`📊 Query completed for ${fieldTypeName}: ${searchResult.content.length} chars, ${searchResult.references?.length || 0} references`);
 
-      // Parse JSON response
-      let profileData: any = {};
-      try {
-        // Try to extract JSON from response (in case there's extra text)
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          profileData = JSON.parse(jsonMatch[0]);
-        } else {
-          profileData = JSON.parse(aiResponse);
-        }
-      } catch (parseError) {
-        this.logger.warn('Failed to parse AI response as JSON, using raw response');
-        // If parsing fails, use the raw response for background_info
-        if (searchGoal === 'background' || searchGoal === 'all') {
-          profileData.background_info = aiResponse;
-        } else if (searchGoal === 'decision_chain') {
-          profileData.decision_chain = aiResponse;
-        } else if (searchGoal === 'cooperation_history') {
-          profileData.history_notes = aiResponse;
-        }
-      }
+      results.push({
+        field: fieldName,
+        content: searchResult.content,
+        query: query,
+        references: searchResult.references || [],
+      });
+    }
+
+    try {
+      // 合并所有查询结果
+      const profileData = this.mergeFieldResults(results);
+
+      // Debug: log the parsed profile data
+      this.logger.log(`🔍 Profile data: ${JSON.stringify(profileData)}`);
 
       // Build update data with only requested fields
       const updateData: Partial<UpdateCustomerProfileDto> = {};
       const actualFilledFields: string[] = [];
 
-      if ((searchGoal === 'background' || searchGoal === 'all') && profileData.background_info) {
+      // Helper function to check if content has actual text (not null, undefined, or empty)
+      const hasContent = (value: any): boolean => {
+        // Handle null/undefined/empty
+        if (!value || value === null || value === undefined || value === '' || value === 'null') {
+          return false;
+        }
+        // If it's an object (including arrays)
+        if (typeof value === 'object') {
+          const keys = Object.keys(value);
+          if (keys.length === 0) return false;
+          // Check if any value is non-null and non-empty
+          return keys.some(k => value[k] && value[k] !== null && value[k] !== '' && value[k] !== 'null');
+        }
+        // For strings, check if not empty after trim
+        if (typeof value === 'string') {
+          return value.trim() !== '';
+        }
+        return true;
+      };
+
+      if ((searchGoal === 'background' || searchGoal === 'all') && hasContent(profileData.background_info)) {
         updateData.background_info = profileData.background_info;
         actualFilledFields.push('background_info');
       }
 
-      if ((searchGoal === 'decision_chain' || searchGoal === 'all') && profileData.decision_chain) {
+      if ((searchGoal === 'decision_chain' || searchGoal === 'all') && hasContent(profileData.decision_chain)) {
         updateData.decision_chain = profileData.decision_chain;
         actualFilledFields.push('decision_chain');
       }
 
-      if ((searchGoal === 'cooperation_history' || searchGoal === 'all') && profileData.history_notes) {
+      if ((searchGoal === 'cooperation_history' || searchGoal === 'all') && hasContent(profileData.history_notes)) {
         updateData.history_notes = profileData.history_notes;
         actualFilledFields.push('history_notes');
       }
@@ -601,9 +850,9 @@ ${searchContext}
       return {
         success: true,
         filledFields: actualFilledFields,
-        searchResults: searchResults.map(r => ({
+        searchResults: results.map(r => ({
           query: r.query,
-          resultCount: r.results.length,
+          resultCount: r.references.length,
         })),
         profile: savedProfile,
         message: actualFilledFields.length > 0

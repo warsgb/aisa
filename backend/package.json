@@ -23,7 +23,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start-all": "cd .. && ./start-all.sh",
     "stop-all": "cd .. && ./stop-all.sh",
-    "status-all": "cd .. && ./status.sh"
+    "status-all": "cd .. && ./status.sh",
+    "migrate:search-v2": "ts-node -r tsconfig-paths/register src/scripts/migrate-search-v2.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",

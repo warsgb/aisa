@@ -129,7 +129,8 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    timeoutMs: number = 60000  // 默认60秒超时
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
 
@@ -145,7 +146,25 @@ class ApiService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    let response = await fetch(url, { ...options, headers });
+    // 添加超时控制
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        throw new Error(`请求超时 (${timeoutMs / 1000}秒)，请稍后重试`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     // Try to refresh token if unauthorized
     const refreshToken = safeStorage.getItem('refresh_token');
@@ -796,6 +815,7 @@ class ApiService {
     profile: CustomerProfile;
     message: string;
   }> {
+    // AI自动填充需要更长时间，设置3分钟超时
     return this.request<{
       success: boolean;
       filledFields: string[];
@@ -805,7 +825,7 @@ class ApiService {
     }>(`/teams/${teamId}/customers/${customerId}/auto-fill-profile`, {
       method: 'POST',
       body: JSON.stringify({ searchGoal }),
-    });
+    }, 180000);  // 3分钟超时
   }
 
   // Team Member Preference (Iron Triangle Role)

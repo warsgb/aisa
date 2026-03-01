@@ -1,0 +1,361 @@
+---
+name: 技术栈搜索查询模板
+description: 技术架构、招聘JD的搜索查询模板
+version: 1.0.0
+---
+
+## 技术栈查询模板（通用）
+
+### 基础查询
+
+```
+{{customer_name}}的招聘JD、技术岗位要求中提到了哪些技术栈？请搜索前端、后端、数据库、中间件、DevOps等技术选型，重点搜索最近6个月的招聘信息。
+```
+
+**重点提取信息**：
+- 前端技术：React、Vue、Angular、HTML/CSS
+- 后端技术：Java、Python、Node.js、Go
+- 数据库：MySQL、PostgreSQL、MongoDB、Redis
+- 中间件：消息队列、缓存、搜索引擎
+- DevOps：Docker、Kubernetes、CI/CD
+
+### 教育行业技术栈查询
+
+```
+{{customer_name}}（学校/教育局）在信息化建设、智慧校园项目中的技术架构是什么？请搜索其技术选型、开发框架、数据库、中间件等技术栈信息。
+```
+
+**重点提取信息**：
+- 教学平台技术栈：在线教学、直播、录播
+- 数据中台技术：数据仓库、数据分析
+- 基础设施：云服务、服务器、网络
+
+### 金融行业技术栈查询
+
+```
+{{customer_name}}（银行/保险）在金融科技、数字化转型项目中的技术架构是什么？请搜索其核心技术、开发框架、数据库、中间件等技术栈信息。
+```
+
+**重点提取信息**：
+- 核心系统技术：交易系统、风控系统
+- 前端技术：移动银行、网上银行
+- 基础设施：私有云、混合云、高可用架构
+
+---
+
+## 招聘JD技术栈查询
+
+### 前端技术栈查询
+
+```
+{{customer_name}}的前端开发工程师、Web开发工程师招聘JD中要求哪些技术栈？请搜索React、Vue、Angular、TypeScript等技术要求。
+```
+
+**重点提取信息**：
+- 核心框架：React/Vue/Angular
+- 开发语言：JavaScript/TypeScript
+- UI框架：Ant Design/Element UI
+- 构建工具：Webpack/Vite
+- 移动端：React Native/Flutter/小程序
+
+### 后端技术栈查询
+
+```
+{{customer_name}}的后端开发工程师、Java开发工程师、Python开发工程师招聘JD中要求哪些技术栈？请搜索Spring Boot、Django、Node.js等技术要求。
+```
+
+**重点提取信息**：
+- 开发语言：Java/Python/Go/Node.js
+- 框架：Spring Boot/Django/Express
+- 数据库：MySQL/PostgreSQL/MongoDB
+- 中间件：Redis/RabbitMQ/Kafka
+- 微服务：Spring Cloud/Microservices
+
+### 数据库技术栈查询
+
+```
+{{customer_name}}的数据库管理员、数据工程师招聘JD中要求哪些数据库技术？请搜索MySQL、PostgreSQL、MongoDB、Redis等数据库技术要求。
+```
+
+**重点提取信息**：
+- 关系型数据库：MySQL/PostgreSQL/Oracle
+- NoSQL数据库：MongoDB/Redis/Elasticsearch
+- 大数据：Hadoop/Spark/Flink
+- 数据仓库：Hive/ClickHouse/Doris
+
+### DevOps技术栈查询
+
+```
+{{customer_name}}的DevOps工程师、运维工程师招聘JD中要求哪些技术栈？请搜索Docker、Kubernetes、CI/CD等技术要求。
+```
+
+**重点提取信息**：
+- 容器技术：Docker/Kubernetes
+- CI/CD：Jenkins/GitLab CI/GitHub Actions
+- 监控：Prometheus/Grafana/ELK
+- 云服务：阿里云/腾讯云/AWS
+
+---
+
+## 技术架构分析查询
+
+### 整体技术架构查询
+
+```
+{{customer_name}}的信息系统、数字化平台的技术架构是什么？请搜索其技术选型、系统架构、微服务架构、云平台等技术信息。
+```
+
+**重点提取信息**：
+- 系统架构：单体/微服务/Serverless
+- 云平台：公有云/私有云/混合云
+- 开发框架：前端/后端框架
+- 数据架构：数据湖/数据仓库/大数据平台
+
+### 移动应用技术栈查询
+
+```
+{{customer_name}}的移动应用（APP/小程序）使用什么技术栈开发？请搜索其技术选型、开发框架、跨平台技术等信息。
+```
+
+**重点提取信息**：
+- 原生开发：iOS(Swift)/Android(Kotlin)
+- 跨平台：React Native/Flutter/uni-app
+- 小程序：微信小程序/支付宝小程序
+- 后端API：RESTful/GraphQL
+
+### 大数据技术栈查询
+
+```
+{{customer_name}}的大数据平台、数据分析平台使用什么技术栈？请搜索Hadoop、Spark、Flink、数据仓库等技术选型。
+```
+
+**重点提取信息**：
+- 大数据框架：Hadoop/Spark/Flink
+- 数据仓库：Hive/ClickHouse/Doris
+- 实时计算：Flink/Storm/Kafka
+- 数据存储：HDFS/S3/OSS
+
+---
+
+## 技术决策分析查询
+
+### 技术选型原因查询
+
+```
+{{customer_name}}为什么选择{{technology}}技术栈？请搜索其技术选型原因、技术决策背景、架构演进历史。
+```
+
+**重点提取信息**：
+- 选型原因：性能/成本/生态/团队
+- 架构演进：从旧架构到新架构
+- 技术债务：历史遗留问题
+- 未来规划：技术发展方向
+
+### 技术合作伙伴查询
+
+```
+{{customer_name}}与哪些技术公司、云服务商有合作？请搜索其技术合作伙伴关系、云服务采购、技术外包等信息。
+```
+
+**重点提取信息**：
+- 云服务商：阿里云/腾讯云/AWS
+- 技术外包：软件开发外包公司
+- 技术合作伙伴：ISV/SI合作伙伴
+
+---
+
+## 使用示例
+
+### 在Skill中使用
+
+```markdown
+# 技术栈侦探
+
+## 引用框架
+@include shared-frameworks/search/baidu-web-search.md
+
+## 技术栈搜索
+# @baidu-search:tech-stack("{{customer_name}}")
+
+## 生成报告
+
+基于搜索结果，生成技术栈分析报告：
+
+### 技术栈分析
+@search-result:tech-stack
+
+### 技术架构图
+基于技术栈分析，绘制技术架构图。
+
+### 技术决策分析
+分析客户的技术选型原因和架构演进历史。
+
+### WPS集成建议
+基于客户技术栈，给出WPS产品集成的技术建议：
+1. 前端集成方式
+2. 后端API对接
+3. 数据同步方案
+4. 单点登录(SSO)集成
+```
+
+### 动态参数
+
+支持使用变量：
+
+```markdown
+# @baidu-search:tech-stack("{{customer_name}}")
+# @baidu-search:tech-stack("{{customer_name}} {{department}}")
+```
+
+---
+
+## AI指令模板
+
+### 技术栈提取指令
+
+```
+你是一个专业的技术栈分析助手。请根据搜索结果，提取客户技术栈信息。
+
+客户名称：{{customer_name}}
+
+要求：
+- 提取前端、后端、数据库、中间件、DevOps等技术栈
+- 重点关注办公协同相关的技术（文档管理、即时通讯、视频会议）
+- 识别技术架构模式（单体/微服务/Serverless）
+
+输出格式：必须是纯JSON
+{
+  "tech_stack": {
+    "frontend": {
+      "frameworks": ["React", "Vue", "Angular"],
+      "ui_libraries": ["Ant Design", "Element UI"],
+      "build_tools": ["Webpack", "Vite"]
+    },
+    "backend": {
+      "languages": ["Java", "Python", "Node.js"],
+      "frameworks": ["Spring Boot", "Django", "Express"],
+      "api_style": "RESTful/GraphQL"
+    },
+    "database": {
+      "relational": ["MySQL", "PostgreSQL"],
+      "nosql": ["MongoDB", "Redis"],
+      "search_engine": ["Elasticsearch"]
+    },
+    "middleware": {
+      "message_queue": ["RabbitMQ", "Kafka"],
+      "cache": ["Redis", "Memcached"]
+    },
+    "devops": {
+      "container": ["Docker", "Kubernetes"],
+      "cicd": ["Jenkins", "GitLab CI"],
+      "monitoring": ["Prometheus", "Grafana"]
+    },
+    "architecture": {
+      "pattern": "微服务/单体/Serverless",
+      "cloud_platform": "阿里云/腾讯云/AWS/私有云",
+      "integration_style": "API对接/SDK集成/单点登录"
+    }
+  }
+}
+
+注意：
+1. 如果某类技术没有找到，返回空数组
+2. 技术栈按使用频率或重要性排序
+3. 特别标注与办公协同相关的技术
+```
+
+---
+
+## 技术栈分析维度
+
+### 1. 前端技术分析
+
+**分析要点**：
+- 框架选择：React/Vue/Angular生态
+- UI组件库：Ant Design/Element UI
+- 移动端技术：React Native/Flutter/小程序
+
+**WPS集成建议**：
+```markdown
+### 前端集成建议
+
+- **React生态**：使用WPS Web Office SDK
+- **Vue生态**：使用WPS Vue组件
+- **小程序**：使用WPS小程序SDK
+- **移动应用**：使用WPS移动SDK
+```
+
+### 2. 后端技术分析
+
+**分析要点**：
+- 开发语言：Java/Python/Node.js
+- API风格：RESTful/GraphQL
+- 认证方式：OAuth2.0/JWT/SSO
+
+**WPS集成建议**：
+```markdown
+### 后端集成建议
+
+- **Java**：使用WPS Java SDK
+- **Python**：使用WPS Python SDK
+- **Node.js**：使用WPS Node.js SDK
+- **认证对接**：支持OAuth2.0/单点登录
+```
+
+### 3. 数据架构分析
+
+**分析要点**：
+- 数据库选型：关系型/NoSQL
+- 数据同步：实时同步/定时同步
+- 数据安全：加密存储/权限控制
+
+**WPS集成建议**：
+```markdown
+### 数据集成建议
+
+- **文档存储**：支持OSS/S3/本地存储
+- **数据同步**：支持Webhook回调
+- **权限对接**：支持RBAC权限模型
+```
+
+### 4. 基础设施分析
+
+**分析要点**：
+- 云平台：公有云/私有云/混合云
+- 容器化：Docker/Kubernetes
+- 网络架构：VPC/负载均衡/CDN
+
+**WPS集成建议**：
+```markdown
+### 部署建议
+
+- **云服务**：支持阿里云/腾讯云/AWS
+- **私有部署**：支持本地化部署
+- **容器化**：提供Docker镜像
+- **高可用**：支持负载均衡/集群部署
+```
+
+---
+
+## 技术栈与产品匹配
+
+### 标准技术栈匹配
+
+| 客户技术栈 | WPS产品 | 集成方式 |
+|-----------|---------|---------|
+| React + Ant Design | WPS Web Office | Web SDK |
+| Vue + Element UI | WPS Web Office | Vue组件 |
+| Java + Spring Boot | WPS 365企业版 | Java SDK + API |
+| Python + Django | WPS 365企业版 | Python SDK + API |
+| 微信小程序 | WPS小程序版 | 小程序SDK |
+| 私有云/本地部署 | WPS 365私有化 | 本地部署版 |
+
+### 特殊场景匹配
+
+| 场景 | 技术要求 | WPS方案 |
+|------|---------|---------|
+| 高并发文档编辑 | WebSocket + 实时同步 | WPS协同编辑 |
+| 大文件存储 | OSS/S3 + 分片上传 | WPS云存储 |
+| 移动办公 | iOS/Android/小程序 | WPS移动端 |
+| 数据安全 | 加密存储 + 权限控制 | WPS企业安全版 |
+| 国产化要求 | 信创适配 | WPS信创版 |

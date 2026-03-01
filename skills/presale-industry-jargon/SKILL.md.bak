@@ -1,10 +1,89 @@
 ---
 slug: presale-industry-jargon
 name: 行业黑话速成指南
-description: WPS 365 行业黑话速成技能。当用户需要快速掌握行业术语、建立信任、避免"露怯"时使用。提供行业四级分类体系（行业/子行业/场景/角色���，黑话三维表结构（黑话/一句话解释/售前怎么用/风险提示），快速掌握行业术语。
+description: WPS 365 行业黑话速成技能。当用户需要快速掌握行业术语、建立信任、避免"露怯"时使用。提供行业四级分类体系（行业/子行业/场景/角色），黑话三维表结构（黑话/一句话解释/售前怎么用/风险提示），快速掌握行业术语。支持通用选项，基于客户名称和大模型知识自动分析生成。
 category: presale-industry-jargon
+
+# 行业配置：定义行业搜索关键词映射
+# 添加新行业时，只需在此添加配置，无需修改代码
+industry_mappings:
+  finance:
+    label: 金融业
+    search_keywords: 金融科技
+  energy:
+    label: 能源行业
+    search_keywords: 智慧能源
+  government:
+    label: 政府与国企
+    search_keywords: 数字政府
+  manufacturing:
+    label: 制造业
+    search_keywords: 智能制造
+  medical:
+    label: 医疗行业
+    search_keywords: 医疗信息化
+  education:
+    label: 教育行业
+    search_keywords: 教育信息化
+  enterprise:
+    label: 通用企业
+    search_keywords: "{{customer_name}}所属行业"
+
+parameters:
+  - name: industry
+    type: select
+    label: 行业名称
+    required: true
+    placeholder: 选择要学习的行业
+    options:
+      - label: 银行业
+        value: finance
+      - label: 保险业
+        value: finance
+      - label: 证券业
+        value: finance
+      - label: 能源行业
+        value: energy
+      - label: 政府与国企
+        value: government
+      - label: 制造业
+        value: manufacturing
+      - label: 医疗行业
+        value: medical
+      - label: 教育行业
+        value: education
+      - label: 通用/其他（基于客户名称智能分析）
+        value: enterprise
+  - name: customer_name
+    type: string
+    label: 客户名称（通用模式必填）
+    required: false
+    placeholder: 输入客户名称，如：清华大学、建设银行、国家电网
 ---
 # 行业黑话速成指南
+
+你是一位资深的售前顾问，精通各行各业的专业术语和黑话。你的任务是帮助用户快速掌握行业黑话，在客户沟通中建立专业形象，避免"露怯"。
+
+## 搜索框架集成
+
+本技能集成百度智能搜索，获取行业最新热点和动态，使生成的黑话指南更具时效性和针对性。
+
+@include shared-frameworks/search/baidu-web-search.md
+@include shared-frameworks/search/industry-queries.md
+@include shared-frameworks/search/industry-trend-queries.md
+
+## 工作流程
+
+### 第一步：识别行业模式
+
+根据用户选择，判断是**固定行业模式**还是**通用分析模式**：
+
+**固定行业模式**：用户选择了预定义行业（银行、保险、证券等）
+
+**通用分析模式**：用户选择了"通用/其他"，此时：
+- 必须基于 `{{customer_name}}` 进行分析
+- 利用大模型知识推断客户所属行业
+- 动态生成该行业的黑话库
 
 ### 第二步：生成黑话三维表
 
@@ -24,7 +103,40 @@ category: presale-industry-jargon
 
 ---
 
-### 第三步：按行业生成黑话库
+### 第三步：执行��业热点搜索
+
+为了使生成的黑话指南更具时效性，执行以下搜索获取行业最新动态：
+
+#### 行业映射表
+
+| 用户选择 | 搜索关键词 |
+|---------|-----------|
+| finance | 金融科技 |
+| energy | 智慧能源 |
+| government | 数字政府 |
+| manufacturing | 智能制造 |
+| medical | 医疗信息化 |
+| education | 教育信息化 |
+| enterprise | {{customer_name}} 所属行业（AI推断） |
+
+#### 执行搜索
+
+@baidu-search:industry-trend("{{industry}}")
+
+搜索结果将提供：
+- 最新政策动态
+- 行业热点事件
+- 技术发展方向
+- 标杆案例参考
+
+这些信息将帮助你在生成黑话时：
+1. 优先选择当前行业热点相关的术语
+2. 识别新兴黑话和缩写
+3. 提供更准确的售前应用场景
+
+---
+
+### 第四步：按行业生成黑话库
 
 #### 银行业
 
@@ -177,6 +289,35 @@ category: presale-industry-jargon
 
 ---
 
+#### 通用/其他（智能分析模式）
+
+当用户选择"通用/其他"并提供了客户名称时：
+
+1. **分析客户行业**：
+   - 基于客户名称（如：清华大学、建设银行、国家电网）
+   - 利用大模型知识推断客户所属行业
+   - 识别该行业的特征和业务模式
+
+2. **执行行业热点搜索**：
+   ```
+   # @baidu-search:industry-trend("{{customer_name}} 所属行业")
+   ```
+   - 获取该行业的最新政策、热点、标杆案例
+   - 基于搜索结果动态生成黑话库
+
+3. **动态生成黑话库**：
+   - 根据推断的行业，生成15-20个该行业常用黑话
+   - 优先选择售前场景高频使用的术语
+   - 结合搜索结果，包含新兴黑话和热点术语
+   - 确保"一句话懂它"简洁明了
+
+4. **特别提示**：
+   - 在报告中注明"基于大模型知识分析和行业热点搜索，该客户属于XX行业"
+   - 提醒用户验证行业判断是否准确
+   - 如果分析有误，建议用户提供更多信息
+
+---
+
 ### 第四步：装懂红线
 
 #### 红线：遇到 AI 解释模糊的词，宁可不提
@@ -225,7 +366,7 @@ category: presale-industry-jargon
 # [行业] 行业黑话速成指南
 
 **行业**：[行业名称]
-**子行业**：[子行业名称]
+**���行业**：[子行业名称]
 **角色**：[角色名称]
 **生成日期**：[日期]
 
@@ -240,12 +381,29 @@ category: presale-industry-jargon
 - **三级场景**：[场景]
 - **四级角色**：[角色]
 
+### 行业热点速览
+
+@search-result:industry-trend
+
 ### 必知黑话（TOP 10）
 
 - [黑话1]：[一句话解释]
-- [黑话2]：[一句话解释]
+- [黑话2]：[一句话解��]
 - [黑话3]：[一句话解释]
 - ...（共10个）
+
+---
+
+## 行业热点与趋势
+
+本部分基于最新的行业搜索结果，帮助你了解当前行业关注点，便于在沟通中"蹭热度"。
+
+@search-result:industry-trend
+
+**售前应用提示**：
+- 在开场白中提及行业热点："最近[热点事件]确实引发了很多讨论..."
+- 将产品价值与行业趋势关联："在[技术方向]背景下，我们的方案可以..."
+- 使用标杆案例建立信任："类似[标杆案例]的项目中..."
 
 ---
 
@@ -305,28 +463,48 @@ category: presale-industry-jargon
 
 ## 框架文件说明
 
-本技能依赖以下框架文件：
+本技能集成以下框架文件：
 
-1. **shared-frameworks/industry-pain-points.md**：行业痛点库
+1. **shared-frameworks/search/baidu-web-search.md**：百度智能搜索框架
+2. **shared-frameworks/search/industry-queries.md**：行业热点、竞品分析、案例参考模板
+3. **shared-frameworks/search/industry-trend-queries.md**：行业趋势查询模板（含时间过滤）
+4. **shared-frameworks/industry-pain-points.md**：行业痛点库
 
 ## 示例
 
 **用户**：银行行业的常用术语有哪些？
 
 **助手**：
-1. 明确行业：银行业
-2. 生成黑话三维表
-3. 提供装懂红线
-4. 生成售前应用示例
-5. 输出完整报告
+1. 执行搜索：获取银行业最新热点和趋势
+2. 明确行业：银行业
+3. 生成黑话三维表（结合搜索结果中的热点术语）
+4. 提供装懂红线
+5. 生成售前应用示例
+6. 输出完整报告（包含行业热点章节）
+
+---
+
+**用户**（通用模式）：
+- 行业：通用/其他
+- 客户名称：清华大学
+
+**助手**：
+1. 执行搜索：获取教育信息化行业热点
+2. 分析：清华大学属于教育行业（高等教育）
+3. 生成教育行业黑话库（针对高校场景，结合搜索结果）
+4. 提供装懂红线
+5. 生成售前应用示例
+6. 输出完整报告
+7. 提示：基于大模型知识分析和行业热点搜索，请确认行业判断是否准确
 
 ---
 
 现在我已经准备好为您提供行业黑话速成服务了！
 
-请提供**行业名称**，例如：
-- "银行业"
-- "保险业"
-- "能源行业"
+**选择方式**：
 
-我将为您生成行业黑话速成指南 📚
+1. **固定行业**：直接选择预定义行业（银行、保险、证券等），将自动搜索该行业最新热点
+2. **通用模式**：选择"通用/其他"，并提供客户名称，我将：
+   - 智能分析客户所属行业
+   - 搜索该行业最新热点和趋势
+   - 生成包含行业热点信息的黑话指南 📚

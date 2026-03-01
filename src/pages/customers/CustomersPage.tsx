@@ -20,6 +20,39 @@ import {
   Check,
 } from 'lucide-react';
 
+// 辅助函数：将JSON对象转换为Markdown格式
+function jsonToMarkdown(obj: any): string {
+  if (!obj || typeof obj !== 'object') {
+    return '';
+  }
+
+  let markdown = '';
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === null || value === '' || value === 'null') {
+      continue; // 跳过空值
+    }
+
+    markdown += `**${key}**\n\n`;
+
+    if (typeof value === 'string') {
+      markdown += `${value}\n\n`;
+    } else if (typeof value === 'object') {
+      for (const [subKey, subValue] of Object.entries(value)) {
+        if (subValue === null || subValue === '' || subValue === 'null') {
+          continue;
+        }
+        markdown += `- ${subKey}: ${subValue}\n`;
+      }
+      markdown += '\n';
+    } else {
+      markdown += `${value}\n\n`;
+    }
+  }
+
+  return markdown;
+}
+
 export function CustomersPage() {
   const { team, user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -37,7 +70,7 @@ export function CustomersPage() {
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [autoFillProgress, setAutoFillProgress] = useState(0);
   const [autoFillStatus, setAutoFillStatus] = useState('');
-  const [autoFillStartTime, setAutoFillStartTime] = useState<number | null>(null);
+  // Note: autoFillStartTime is handled via local variable to avoid closure issues
 
   const [formData, setFormData] = useState<CreateCustomerDto>({
     name: '',
@@ -75,6 +108,36 @@ export function CustomersPage() {
     setIsLoadingProfile(true);
     try {
       const profile = await apiService.getCustomerProfile(team.id, customerId);
+      // 将JSON字符串转换为Markdown格式
+      if (profile) {
+        // 尝试解析JSON并转换为Markdown
+        try {
+          const parsed = JSON.parse(profile.background_info || '{}');
+          if (typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            profile.background_info = jsonToMarkdown(parsed);
+          }
+        } catch {
+          // 不是JSON，保持原样
+        }
+
+        try {
+          const parsed = JSON.parse(profile.decision_chain || '{}');
+          if (typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            profile.decision_chain = jsonToMarkdown(parsed);
+          }
+        } catch {
+          // 不是JSON，保持原样
+        }
+
+        try {
+          const parsed = JSON.parse(profile.history_notes || '{}');
+          if (typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            profile.history_notes = jsonToMarkdown(parsed);
+          }
+        } catch {
+          // 不是JSON，保持原样
+        }
+      }
       setCustomerProfile(profile);
     } catch {
       // Profile may not exist, create empty one
@@ -103,42 +166,41 @@ export function CustomersPage() {
         setIsAutoFilling(true);
         setAutoFillProgress(0);
         setAutoFillStatus('正在搜索客户信息...');
-        setAutoFillStartTime(Date.now());
 
-        // Time-based progress updates (similar to skill execution)
+        // Use local variable to track start time (not state, to avoid closure issue)
+        const startTime = Date.now();
+
+        // Time-based progress updates (根据AI分析时间调整)
         const progressInterval = setInterval(() => {
-          if (!autoFillStartTime) return;
-          const elapsed = (Date.now() - autoFillStartTime) / 1000; // seconds
-          // Progress: 0-30s = 0-66%, 30-45s = 66-100%, 45s+ = 100%
+          const elapsed = (Date.now() - startTime) / 1000; // seconds
+          // Progress: 0-60s = 0-66%, 60-120s = 66-100%, 120s+ = 100%
           let progress: number;
-          if (elapsed < 30) {
-            progress = (elapsed / 30) * 66;
+          if (elapsed < 60) {
+            progress = (elapsed / 60) * 66;
             setAutoFillStatus('正在搜索客户信息...');
-          } else if (elapsed < 45) {
-            progress = 66 + ((elapsed - 30) / 15) * 34;
-            setAutoFillStatus('AI 正在分析搜索结果...');
+          } else if (elapsed < 120) {
+            progress = 66 + ((elapsed - 60) / 60) * 34;
+            setAutoFillStatus('AI 正在分析搜索结果并生成背景资料...');
           } else {
-            progress = 100;
-            setAutoFillStatus('AI 正在奋力处理中...');
+            // 120秒后继续增加进度
+            progress = 100 + (elapsed - 120);
+            setAutoFillStatus('AI 正在奋力处理中，请稍候...');
           }
           setAutoFillProgress(Math.min(progress, 100));
         }, 500);
 
         try {
           await apiService.autoFillCustomerProfile(team!.id, createdCustomer.id, 'all');
+          // API 返回后才关闭模态窗口
           clearInterval(progressInterval);
           setAutoFillProgress(100);
           setAutoFillStatus('自动填充完成！');
-          setAutoFillStartTime(null);
-          setTimeout(() => {
-            setIsAutoFilling(false);
-            resetForm();
-            loadCustomers();
-          }, 1500);
+          setIsAutoFilling(false);
+          resetForm();
+          loadCustomers();
         } catch (error: any) {
           clearInterval(progressInterval);
           setIsAutoFilling(false);
-          setAutoFillStartTime(null);
           const errorMsg = error?.response?.data?.message || error?.message || '自动填充失败，请稍后重试';
           alert(`客户创建成功，但自动填充失败：${errorMsg}`);
           resetForm();
@@ -237,11 +299,47 @@ export function CustomersPage() {
       return;
     }
 
+    // 关闭其他已打开的模态窗口
+    setShowViewModal(false);
+    setShowEditModal(false);
+    setShowCreateModal(false);
+    setSelectedCustomer(null);
+
     try {
+      setIsAutoFilling(true);
+      setAutoFillProgress(0);
+      setAutoFillStatus('正在搜索客户信息...');
+
+      // Use local variable to track start time (not state, to avoid closure issue)
+      const startTime = Date.now();
+
+      // Time-based progress updates (根据AI分析时间调整)
+      const progressInterval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000; // seconds
+        // Progress: 0-60s = 0-66%, 60-120s = 66-100%, 120s+ = 100%
+        let progress: number;
+        if (elapsed < 60) {
+          progress = (elapsed / 60) * 66;
+          setAutoFillStatus('正在搜索客户信息...');
+        } else if (elapsed < 120) {
+          progress = 66 + ((elapsed - 60) / 60) * 34;
+          setAutoFillStatus('AI 正在分析搜索结果并生成背景资料...');
+        } else {
+          progress = 100 + (elapsed - 120);
+          setAutoFillStatus('AI 正在奋力处理中，请稍候...');
+        }
+        setAutoFillProgress(Math.min(progress, 100));
+      }, 500);
+
       const result = await apiService.autoFillCustomerProfile(team.id, customer.id, 'all');
-      alert(result.message || '自动填充成功');
+      // API 返回后才关闭模态窗口
+      clearInterval(progressInterval);
+      setAutoFillProgress(100);
+      setAutoFillStatus('自动填充完成！');
+      setIsAutoFilling(false);
       // Reload the customer data to show updated profile
       loadCustomers();
+      alert(result.message || '自动填充成功');
     } catch (error: any) {
       console.error('自动填充失败:', error);
       const errorMsg = error?.response?.data?.message || error?.message || '自动填充失败，请稍后重试';
@@ -430,10 +528,10 @@ export function CustomersPage() {
                 <span>{autoFillStatus}</span>
                 <span>
                   {autoFillProgress < 66
-                    ? `${Math.round(autoFillProgress / 66 * 30)}s`
+                    ? `${Math.round(autoFillProgress / 66 * 60)}s`
                     : autoFillProgress < 100
-                    ? `30s+${Math.round((autoFillProgress - 66) / 34 * 15)}s`
-                    : '45s+'}
+                    ? `60s+${Math.round((autoFillProgress - 66) / 34 * 60)}s`
+                    : '120s+'}
                 </span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -448,7 +546,7 @@ export function CustomersPage() {
               {autoFillProgress >= 100 ? (
                 <p className="text-xs text-red-500 mt-1 font-medium">🚀 AI 正在奋力执行中，辛苦等待啦！</p>
               ) : autoFillProgress >= 66 ? (
-                <p className="text-xs text-orange-500 mt-1">AI 正在分析搜索结果，请耐心等待...</p>
+                <p className="text-xs text-orange-500 mt-1">AI 正在分析搜索结果并生成背景资料，请耐心等待...</p>
               ) : null}
             </div>
 
@@ -473,6 +571,21 @@ export function CustomersPage() {
                 <span>整理历史合作信息</span>
               </div>
             </div>
+
+            {/* Run in Background Button */}
+            {autoFillProgress < 100 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setIsAutoFilling(false);
+                    alert('✅ 后台会继续运行，可以过几分钟查看客户资料');
+                  }}
+                  className="w-full px-4 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  后台运行
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -491,48 +604,15 @@ interface CustomerCardProps {
 }
 
 function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAutoFill }: CustomerCardProps) {
+  // 仅用于按钮的禁用状态，不显示独立的进度条模态窗口
   const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [autoFillProgress, setAutoFillProgress] = useState(0);
-  const [autoFillStatus, setAutoFillStatus] = useState('');
-  const [autoFillStartTime, setAutoFillStartTime] = useState<number | null>(null);
 
   const handleAutoFill = async () => {
     setIsAutoFilling(true);
-    setAutoFillProgress(0);
-    setAutoFillStatus('正在搜索客户信息...');
-    setAutoFillStartTime(Date.now());
-
-    // Time-based progress updates
-    const progressInterval = setInterval(() => {
-      if (!autoFillStartTime) return;
-      const elapsed = (Date.now() - autoFillStartTime) / 1000;
-      let progress: number;
-      if (elapsed < 30) {
-        progress = (elapsed / 30) * 66;
-        setAutoFillStatus('正在搜索客户信息...');
-      } else if (elapsed < 45) {
-        progress = 66 + ((elapsed - 30) / 15) * 34;
-        setAutoFillStatus('AI 正在分析搜索结果...');
-      } else {
-        progress = 100;
-        setAutoFillStatus('AI 正在奋力处理中...');
-      }
-      setAutoFillProgress(Math.min(progress, 100));
-    }, 500);
-
     try {
       await onAutoFill(customer);
-      clearInterval(progressInterval);
-      setAutoFillProgress(100);
-      setAutoFillStatus('自动填充完成！');
-      setAutoFillStartTime(null);
-      setTimeout(() => {
-        setIsAutoFilling(false);
-      }, 1500);
-    } catch (error: any) {
-      clearInterval(progressInterval);
+    } finally {
       setIsAutoFilling(false);
-      setAutoFillStartTime(null);
     }
   };
   return (
@@ -634,75 +714,6 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAut
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
-
-      {/* Auto-fill Progress Modal */}
-      {isAutoFilling && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70] animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="mb-4">
-              <div className="w-16 h-16 mx-auto mb-3 relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#1677FF]/20 to-[#4096FF]/20 rounded-full animate-pulse"></div>
-                <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
-                  {autoFillProgress < 100 ? (
-                    <Loader2 className="w-8 h-8 text-[#1677FF] animate-spin" />
-                  ) : (
-                    <Check className="w-8 h-8 text-green-500" />
-                  )}
-                </div>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">
-                {autoFillProgress < 100 ? 'AI 自动调研中...' : '调研完成！'}
-              </h3>
-              <p className="text-xs text-gray-500">{autoFillStatus}</p>
-            </div>
-
-            {/* Timer-based Progress Bar */}
-            <div className="mb-3">
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                <span>{autoFillStatus}</span>
-                <span>
-                  {autoFillProgress < 66
-                    ? `${Math.round(autoFillProgress / 66 * 30)}s`
-                    : autoFillProgress < 100
-                    ? `30s+${Math.round((autoFillProgress - 66) / 34 * 15)}s`
-                    : '45s+'}
-                </span>
-              </div>
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    autoFillProgress >= 100 ? 'bg-green-500' :
-                    autoFillProgress >= 66 ? 'bg-orange-500' : 'bg-[#1677FF]'
-                  }`}
-                  style={{ width: `${Math.min(autoFillProgress, 100)}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Progress Steps */}
-            <div className="space-y-1.5 text-left">
-              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 20 ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 20 ? 'bg-green-100' : 'bg-gray-100'}`}>
-                  {autoFillProgress >= 20 ? <Check className="w-3 h-3" /> : <span className="text-xs">1</span>}
-                </div>
-                <span>搜索客户背景资料</span>
-              </div>
-              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 60 ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 60 ? 'bg-green-100' : 'bg-gray-100'}`}>
-                  {autoFillProgress >= 60 ? <Check className="w-3 h-3" /> : <span className="text-xs">2</span>}
-                </div>
-                <span>分析决策链信息</span>
-              </div>
-              <div className={`flex items-center gap-2 text-xs ${autoFillProgress >= 90 ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${autoFillProgress >= 90 ? 'bg-green-100' : 'bg-gray-100'}`}>
-                  {autoFillProgress >= 90 ? <Check className="w-3 h-3" /> : <span className="text-xs">3</span>}
-                </div>
-                <span>整理历史合作信息</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1029,7 +1040,6 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAu
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [autoFillProgress, setAutoFillProgress] = useState(0);
   const [autoFillStatus, setAutoFillStatus] = useState('');
-  const [autoFillStartTime, setAutoFillStartTime] = useState<number | null>(null);
   const [searchGoal, setSearchGoal] = useState<'background' | 'decision_chain' | 'cooperation_history' | 'all'>('all');
 
   // 当 profile 变化时更新 state
@@ -1065,19 +1075,20 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAu
     setIsAutoFilling(true);
     setAutoFillProgress(0);
     setAutoFillStatus('正在搜索客户信息...');
-    setAutoFillStartTime(Date.now());
+
+    // Use local variable to track start time
+    const startTime = Date.now();
 
     // Time-based progress updates
     const progressInterval = setInterval(() => {
-      if (!autoFillStartTime) return;
-      const elapsed = (Date.now() - autoFillStartTime) / 1000;
+      const elapsed = (Date.now() - startTime) / 1000;
       let progress: number;
-      if (elapsed < 30) {
-        progress = (elapsed / 30) * 66;
+      if (elapsed < 60) {
+        progress = (elapsed / 60) * 66;
         setAutoFillStatus('正在搜索客户信息...');
-      } else if (elapsed < 45) {
-        progress = 66 + ((elapsed - 30) / 15) * 34;
-        setAutoFillStatus('AI 正在分析搜索结果...');
+      } else if (elapsed < 120) {
+        progress = 66 + ((elapsed - 60) / 60) * 34;
+        setAutoFillStatus('AI 正在分析搜索结果并生成背景资料...');
       } else {
         progress = 100;
         setAutoFillStatus('AI 正在奋力处理中...');
@@ -1088,23 +1099,26 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAu
     try {
       if (onAutoFill) {
         await onAutoFill(searchGoal);
+        // API 返回后才关闭模态窗口
         clearInterval(progressInterval);
         setAutoFillProgress(100);
         setAutoFillStatus('自动填充完成！');
-        setAutoFillStartTime(null);
         // Reload profile after auto-fill
         const updated = await apiService.getCustomerProfile(teamId, customer.id);
-        setBackgroundInfo(updated.background_info || '');
-        setDecisionChain(updated.decision_chain || '');
-        setHistoryNotes(updated.history_notes || '');
-        setTimeout(() => {
-          setIsAutoFilling(false);
-        }, 1500);
+        // 将JSON转换为Markdown格式
+        const backgroundMarkdown = jsonToMarkdown({
+          background_info: updated.background_info,
+          decision_chain: updated.decision_chain,
+          history_notes: updated.history_notes,
+        });
+        setBackgroundInfo(backgroundMarkdown);
+        setDecisionChain(decisionChain);
+        setHistoryNotes(historyNotes);
+        setIsAutoFilling(false);
       }
     } catch (error: any) {
       clearInterval(progressInterval);
       setIsAutoFilling(false);
-      setAutoFillStartTime(null);
       console.error('自动填充失败:', error);
       const errorMsg = error?.response?.data?.message || error?.message || '自动填充失败，请稍后重试';
       alert(errorMsg);
@@ -1238,16 +1252,16 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAu
                 <span>{autoFillStatus}</span>
                 <span>
                   {autoFillProgress < 66
-                    ? `${Math.round(autoFillProgress / 66 * 30)}s`
+                    ? `${Math.round(autoFillProgress / 66 * 60)}s`
                     : autoFillProgress < 100
-                    ? `30s+${Math.round((autoFillProgress - 66) / 34 * 15)}s`
-                    : '45s+'}
+                    ? `60s+${Math.round((autoFillProgress - 66) / 34 * 60)}s`
+                    : '120s+'}
                 </span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all duration-300 ${
-                    autoFillProgress >= 100 ? 'bg-green-500' :
+                    autoFillProgress >= 100 ? 'bg-red-500 animate-pulse' :
                     autoFillProgress >= 66 ? 'bg-orange-500' : 'bg-[#1677FF]'
                   }`}
                   style={{ width: `${Math.min(autoFillProgress, 100)}%` }}
@@ -1276,6 +1290,21 @@ function CustomerProfileModal({ customer, profile, teamId, onClose, onSave, onAu
                 <span>整理历史合作信息</span>
               </div>
             </div>
+
+            {/* Run in Background Button */}
+            {autoFillProgress < 100 && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setIsAutoFilling(false);
+                    alert('✅ 后台会继续运行，可以过几分钟查看客户资料');
+                  }}
+                  className="w-full px-3 py-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  后台运行
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

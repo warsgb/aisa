@@ -1,0 +1,539 @@
+---
+name: 百度智能搜索
+description: 使用百度智能搜索API获取信息并生成AI摘要
+version: 2.0.0
+---
+
+## 概述
+
+本框架提供百度智能搜索能力，允许Skills通过简单的标记调用搜索功能。
+
+## 搜索类型
+
+框架支持以下12种搜索类型：
+
+| 类型 | 标记 | 说明 | 适用技能 |
+|------|------|------|---------|
+| 背景资料 | `# @baidu-search:background("{{customer_name}}", "industry")` | 客户���本规模、行业地位 | 所有客户研究技能 |
+| 决策链 | `# @baidu-search:decision("{{customer_name}}", "industry")` | 关键决策人及观点 | 所有客户研究技能 |
+| 历史合作 | `# @baidu-search:cooperation("{{customer_name}}")` | 与WPS历史合作 | 所有客户研究技能 |
+| 数字化转型 | `# @baidu-search:digital("{{customer_name}}", "industry")` | 数字化转型战略/项目 | 金融、教育、行业研究 |
+| 招投标 | `# @baidu-search:bidding("{{customer_name}}")` | 招标/中标/采购记录 | 金融、国企、客户研究 |
+| 子公司 | `# @baidu-search:subsidiary("{{customer_name}}")` | 集团/子公司信息 | 金融、国企 |
+| 年报/战略 | `# @baidu-search:annual-report("{{customer_name}}")` | 年报、战略规划 | 财报解码、战略分析 |
+| 技术栈 | `# @baidu-search:tech-stack("{{customer_name}}")` | 技术架构、招聘JD | 技术栈侦探 |
+| 行业热点 | `# @baidu-search:industry-trend("{{industry}}")` | 行业政策、热点 | 破冰话题、竞品分析 |
+| 竞品信息 | `# @baidu-search:competitor("{{product_name}}")` | 竞品动态、功能对比 | 竞品分析 |
+| 案例参考 | `# @baidu-search:case-study("{{scenario}}")` | 行业成功案例 | 方案制作、需求发现 |
+| 通用搜索 | `# @baidu-search:custom("query")` | 自定义查询 | 任何场景 |
+
+## 使用方法
+
+### 1. 在Skill中引用框���
+
+在Skill的markdown文件中添加：
+
+```markdown
+```
+
+### 2. 使用搜索标记
+
+在Skill内容中使用搜索标记：
+
+```markdown
+# 客户基础搜索
+# @baidu-search:background("{{customer_name}}", "education")
+# @baidu-search:decision("{{customer_name}}", "education")
+# @baidu-search:cooperation("{{customer_name}}")
+
+# 进阶搜索
+# @baidu-search:digital("{{customer_name}}", "education")
+# @baidu-search:bidding("{{customer_name}}")
+# @baidu-search:subsidiary("{{customer_name}}")
+
+# 专项分析
+# @baidu-search:annual-report("{{customer_name}}")
+# @baidu-search:tech-stack("{{customer_name}}")
+# @baidu-search:industry-trend("教育信息化")
+
+# 竞品与案例
+# @baidu-search:competitor("钉钉")
+# @baidu-search:case-study("高校智慧办公建设")
+
+# 自定义查询
+# @baidu-search:custom("{{customer_name}} 数字化转型最新动态")
+```
+
+### 3. 使用搜索结果
+
+搜索完成后，使用以下标记引用结果：
+
+```markdown
+@search-result:background
+@search-result:decision
+@search-result:cooperation
+@search-result:digital
+@search-result:bidding
+@search-result:subsidiary
+@search-result:annual-report
+@search-result:tech-stack
+@search-result:industry-trend
+@search-result:competitor
+@search-result:case-study
+@search-result:custom
+```
+
+## 行业类型
+
+支持以下行业类型：
+
+| 行业 | 参数值 | 说明 |
+|------|--------|------|
+| 教育 | `education` | 学校、教育局、培训机构 |
+| 医疗 | `medical` | 医院、医疗机构 |
+| 政府 | `government` | 政府机关、事业单位 |
+| 企业 | `enterprise` | 各类企业 |
+| 金融 | `finance` | 银行、保险、证券 |
+
+## 搜索类型详解
+
+### 1. 背景资料搜索 (background)
+
+**用途**：获取客户基本规模、行业地位、量化数据
+
+**查询模板**（教育行业）：
+```
+{{customer_name}}的办学规模、学生人数、师资力量、办学特色等基本情况是什么？请用数字说话，包括具体的学生人数、教职工数量、校区分布等量化数据。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 背景资料]
+
+客户名称：xxx
+行业类型：xxx
+基本规模：
+- 学生人数：xxx
+- 教职工数量：xxx
+- 校区分布：xxx
+
+数字化转型战略：
+- 规划概述：xxx
+- 建设重点：xxx
+
+数据来源：百度智能搜索
+```
+
+### 2. 决策链搜索 (decision)
+
+**用途**：获取关键决策人信息及其数字化观点
+
+**查询模板**（教育行业）：
+```
+{{customer_name}}的校长、教务主任、信息化主任分别是谁？请重点搜索并总结他们关于教育信息化、数字化转型、智慧校园建设等方面的讲话、观点或相关政策。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 决策链]
+
+高管层：
+- 姓名(职位) - 关于数字化转型的观点
+
+管理层：
+- 姓名(职位) - 关于数字化转型的观点
+
+采购层：
+- 姓名(职位)
+
+数据来源：百度智能搜索
+```
+
+### 3. 历史合作搜索 (cooperation)
+
+**用途**：获取与WPS的历史合作信息
+
+**查询模板**：
+```
+{{customer_name}}和金山办公WPS365在WPS 365、文档中心、文档中台、AI、云文档等方面有哪些合作项目、中标记录或签约情况？包括战略合作、联合研发、采购等形式。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 历史合作]
+
+合作产品：WPS 365 / 文档中心 / 云文档
+合作形式：中标 / 采购 / 战略合作
+合作时间：xxxx年
+合作状态：进行中 / 已完成
+
+数据来源：百度智能搜索
+```
+
+### 4. 数字化转型搜索 (digital)
+
+**用途**：获取客户数字化转型战略和项目信息
+
+**查询模板**（教育行业）：
+```
+{{customer_name}}在教育信息化、数字化转型、智慧校园建设方面有哪些战略规划、重点项目、建设动态？请重点搜索最近2-3年的政策和项目。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 数字化转型]
+
+战略规划：
+- 总体目标：xxx
+- 重点方向：xxx
+
+重点项目：
+- 项目名称：xxx（时间、状态）
+- 项目名称：xxx（时间、状态）
+
+建设动态：
+- 最新进展：xxx
+
+数据来源：百度智能搜索
+```
+
+### 5. 招投标搜索 (bidding)
+
+**用途**：获取客户招标/中标/采购记录
+
+**查询模板**：
+```
+{{customer_name}}在办公软件、协同办公、文档管理、信息化建设等方面的招标、中标、采购记录有哪些？请重点搜索最近2年的公开信息。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 招投标]
+
+招标项目：
+- 项目名称：xxx（时间、金额、中标方）
+
+采购记录：
+- 采购内容：xxx（时间、供应商）
+
+数据来源：百度智能搜索
+```
+
+### 6. 子公司搜索 (subsidiary)
+
+**用途**：获取集团/子公司/分支机构信息
+
+**查询模板**：
+```
+{{customer_name}}的集团架构、子公司名单、分支机构分布是怎样的？请提供具体的组织结构信息。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 子公司信息]
+
+集团架构：
+- 母公司：xxx
+- 核心子公司：xxx
+
+分支机构：
+- 地区分布：xxx
+
+数据来源：百度智能搜索
+```
+
+### 7. 年报/战略搜索 (annual-report)
+
+**用途**：获取企业年报、战略规划信息
+
+**查询模板**：
+```
+{{customer_name}}最近年度的企业年报、年度战略规划、经营目标是什么？请重点搜索数字化转型相关内容。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 年报/战略]
+
+年度经营：
+- 营收规模：xxx
+- 增长情况：xxx
+
+战略规划：
+- 战略方向：xxx
+- 重点投入：xxx
+
+数字化转型：
+- 相关规划：xxx
+
+数据来源：百度智能搜索
+```
+
+### 8. 技术栈搜索 (tech-stack)
+
+**用途**：获取客户技术架构、招聘JD中的技术栈信息
+
+**查询模板**：
+```
+{{customer_name}}的招聘JD、技术岗位要求中提到了哪些技术栈？请搜索前端、后端、数据库、中间件等技术选型。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 技术栈]
+
+前端技术：
+- 技术栈：xxx
+- 应用场景：xxx
+
+后端技术：
+- 技术栈：xxx
+- 应用场景：xxx
+
+数据来源：百度智能搜索
+```
+
+### 9. 行业热点搜��� (industry-trend)
+
+**用途**：获取行业政策、热点动态
+
+**查询模板来源**：`industry-trend-queries.md`
+
+**时间过滤**：自动应用 `semiyear`（最近180天）过滤
+
+**支持的行业关键词**：
+- `education` - 教育信息化
+- `medical` - 医疗信息化
+- `government` - 数字政府
+- `finance` - 金融科技
+- `manufacturing` - 智能制造
+- `energy` - 智慧能源
+- 其他行业 - 使用通用模板
+
+**查询模板**（教育行业示例）：
+```
+教育信息化行业最近有哪些重要政策、热点事件、标杆案例？请重点搜索最近6个月（180天）教育部、各省市教育厅发布的教育信息化政策、智慧校园建设规范、教育数字化转型指导意见，以及知名高校的智慧校园建设案例。
+```
+
+**时间过滤说明**：
+- 自动使用 `search_recency_filter: semiyear` 参数
+- 只搜索最近 180 天内的内容
+- 确保信息的时效性和相关性
+
+**结果格式**：
+```markdown
+[搜索结果 - 行业热点]
+
+### 政策动态
+教育部2024年发布《教育数字化战略行动方案》...
+
+### 行业趋势
+AI+教育成为热点，智能辅导、个性化学习受到关注...
+
+### 标杆案例
+清华大学"智慧教学空间"项目投入使用...
+
+### 技术方向
+教育大模型应用、沉浸式学习（VR/AR）...
+
+数据来源：百度智能搜索（最近180天）
+```
+
+### 10. 竞品信息搜索 (competitor)
+
+**用途**：获取竞品动态、功能对比
+
+**查询模板**：
+```
+{{product_name}}的最新产品动态、功能更新、市场表现是什么？请重点搜索最近3个月的信息。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 竞品信息]
+
+产品动态：
+- 更新内容：xxx（时间）
+
+功能特点：
+- 核心功能：xxx
+
+市场表现：
+- 用户规模：xxx
+
+数据来源：百度智能搜索
+```
+
+### 11. 案例参考搜索 (case-study)
+
+**用途**：获取行业成功案例参考
+
+**查询模板**：
+```
+{{scenario}}的成功案例、最佳实践、标杆项目有哪些？请搜索具体的案例名称和实施效果。
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 案例参考]
+
+成功案例：
+- 案例名称：xxx（实施方、效果）
+
+最佳实践：
+- 实践方案：xxx
+
+数据来源：百度智能搜索
+```
+
+### 12. 通用搜索 (custom)
+
+**用途**：自定义任意查询
+
+**查询模板**：
+```
+{{query}}
+```
+
+**结果格式**：
+```markdown
+[搜索结果 - 自定义查询]
+
+搜索摘要：
+- 核心信息：xxx
+
+参考资料：
+- 资料链接：xxx
+
+数据来源：百度智能搜索
+```
+
+## 搜索结果引用
+
+在Skill中使用搜索结果：
+
+```markdown
+# 客户研究报告
+
+## 背景资料
+@search-result:background
+
+## 决策链分析
+@search-result:decision
+
+## 历史合作
+@search-result:cooperation
+
+## 数字化转型分析
+@search-result:digital
+
+## 招投标情况
+@search-result:bidding
+```
+
+## 完整使用示例
+
+```markdown
+---
+slug: comprehensive-customer-research
+name: 全方位客户研究
+category: customer-research
+parameters:
+  - name: customer_name
+    type: string
+    label: 客户名称
+    required: true
+  - name: industry
+    type: string
+    label: 行业类型
+    required: true
+---
+
+# 全方位客户研究
+
+## 引用搜索框架
+@include shared-frameworks/search/customer-search-queries.md
+
+## 执行搜索
+
+# （以下搜索标记已注释，避免被误执行）
+# @baidu-search:background("{{customer_name}}", "{{industry}}")
+# @baidu-search:decision("{{customer_name}}", "{{industry}}")
+# @baidu-search:cooperation("{{customer_name}}")
+# @baidu-search:digital("{{customer_name}}", "{{industry}}")
+# @baidu-search:bidding("{{customer_name}}")
+# @baidu-search:industry-trend("{{industry}}")
+
+## 生成报告
+
+基于以上搜索结果，生成包含以下内容的完整报告：
+
+### 1. 客户背景
+@search-result:background
+
+### 2. 决策链分析
+@search-result:decision
+
+### 3. 历史合作情况
+@search-result:cooperation
+
+### 4. 数字化转型分析
+@search-result:digital
+
+### 5. 招投标情况
+@search-result:bidding
+
+### 6. 行业热点参考
+@search-result:industry-trend
+```
+
+## 执行流程
+
+1. **加载Skill**：解析`@include`标记，展开框架内容
+2. **识别搜索**：识别`# @baidu-search:xxx`标记
+3. **执行搜索**：调用百度智能搜索API
+4. **替换结果**：将`@search-result:xxx`替换为实际搜索结果
+5. **执行主Skill**：将包含搜索结果的prompt发送给AI
+
+## 配置选项
+
+### 时间过滤（行业热点自动应用）
+
+**`industry-trend` 搜索自动应用时间过滤**：
+- 默认：`semiyear`（��近180天）
+- 在查询模板中已指定，无需手动配置
+
+**时间范围说明**：
+| 参数值 | 时间范围 | 适用场景 |
+|--------|---------|---------|
+| `week` | 最近7天 | 极度时效性场景 |
+| `month` | 最近30天 | 月度热点分析 |
+| `semiyear` | 最近180天 | 行业热点（推荐） |
+| `year` | 最近365天 | 年度趋势分析 |
+
+### 深度搜索
+```markdown
+# @baidu-search:background("{{customer_name}}", "education", {deepSearch: true})
+```
+
+### 自定义结果数量
+```markdown
+# @baidu-search:background("{{customer_name}}", "education", {maxResults: 10})
+```
+
+## 错误处理
+
+如果搜索失败，会返回以下默认内容：
+
+```markdown
+[搜索结果]
+搜索服务暂时不可用，请基于大模型知识填写相关信息。
+```
+
+## 与现有系统的关系
+
+本框架是对现有`ltc.service.ts`中`autoFillCustomerProfile`功能的抽象和复用：
+- 保留了相同的搜索查询逻辑
+- 保留了相同的AI指令模板
+- 提供了更简单的标记语法
+- 扩展了更多搜索类型

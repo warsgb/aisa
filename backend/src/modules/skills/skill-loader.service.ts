@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Skill } from '../../entities/skill.entity';
 import { IronTriangleRole } from '../../entities/team-member-preference.entity';
+import { SearchConfig } from '../../common/services/search.service';
 
 export interface SkillFile {
   name: string;
@@ -32,6 +33,8 @@ interface SkillFrontmatter {
   }>;
   supports_multi_turn?: boolean;
   role?: IronTriangleRole;
+  industry_mappings?: Record<string, { label: string; search_keywords: string }>;
+  search_configs?: SearchConfig[];
 }
 
 @Injectable()
@@ -124,6 +127,8 @@ export class SkillLoaderService {
         skill.system_prompt = markdown;
         skill.supports_multi_turn = frontmatter.supports_multi_turn || false;
         skill.iron_triangle_role = frontmatter.role || null;
+        skill.industry_mappings = frontmatter.industry_mappings || {};
+        skill.search_configs = frontmatter.search_configs || null;
         skill.source = 'file';
         skill.file_path = relativePath;
         skill.last_synced_at = new Date();
@@ -140,6 +145,8 @@ export class SkillLoaderService {
           supports_streaming: true,
           supports_multi_turn: frontmatter.supports_multi_turn || false,
           iron_triangle_role: frontmatter.role || null,
+          industry_mappings: frontmatter.industry_mappings || {},
+          search_configs: frontmatter.search_configs || null,
           source: 'file',
           file_path: relativePath,
           last_synced_at: new Date(),
@@ -166,6 +173,237 @@ export class SkillLoaderService {
     if (upperRole === 'SR') return IronTriangleRole.SR;
     if (upperRole === 'FR') return IronTriangleRole.FR;
     return undefined;
+  }
+
+  private parseIndustryMappings(yamlContent: string): Record<string, { label: string; search_keywords: string }> | undefined {
+    const industryMappingsStr = this.extractYamlField(yamlContent, 'industry_mappings');
+    if (!industryMappingsStr) return undefined;
+
+    try {
+      // Try JSON format first
+      try {
+        return JSON.parse(industryMappingsStr);
+      } catch {
+        // Parse YAML-like format
+        const mappings: Record<string, { label: string; search_keywords: string }> = {};
+        const lines = industryMappingsStr.split('\n');
+        let currentKey: string | null = null;
+        let currentMapping: { label?: string; search_keywords?: string } | null = null;
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          const indent = line.search(/\S/);
+
+          // Check if this is a new industry key (e.g., "finance:")
+          const keyMatch = trimmed.match(/^(\w+):\s*(.*)$/);
+          if (keyMatch && indent < 4) {
+            // Save previous mapping
+            if (currentKey && currentMapping?.label && currentMapping?.search_keywords) {
+              mappings[currentKey] = {
+                label: currentMapping.label,
+                search_keywords: currentMapping.search_keywords,
+              };
+            }
+
+            // Start new mapping
+            currentKey = keyMatch[1];
+            currentMapping = {};
+          } else if (currentMapping && currentKey) {
+            // Parse nested properties (label, search_keywords)
+            const propMatch = trimmed.match(/^(\w+):\s*(.*)$/);
+            if (propMatch) {
+              const propName = propMatch[1];
+              const propValue = propMatch[2] || '';
+              if (propName === 'label') {
+                currentMapping.label = propValue;
+              } else if (propName === 'search_keywords') {
+                currentMapping.search_keywords = propValue;
+              }
+            }
+          }
+        }
+
+        // Don't forget the last mapping
+        if (currentKey && currentMapping?.label && currentMapping?.search_keywords) {
+          mappings[currentKey] = {
+            label: currentMapping.label,
+            search_keywords: currentMapping.search_keywords,
+          };
+        }
+
+        return Object.keys(mappings).length > 0 ? mappings : undefined;
+      }
+    } catch (error) {
+      this.logger.warn(`[parseIndustryMappings] Failed to parse industry_mappings: ${error.message}`);
+      return undefined;
+    }
+  }
+
+  /**
+   * Parse search_configs from YAML frontmatter
+   * Supports declarative search configuration (v2)
+   */
+  private parseSearchConfigs(yamlContent: string): SearchConfig[] | undefined {
+    const searchesStr = this.extractYamlField(yamlContent, 'searches');
+    if (!searchesStr) {
+      this.logger.warn(`[parseSearchConfigs] 'searches' field not found or empty in YAML`);
+      return undefined;
+    }
+
+    this.logger.log(`[parseSearchConfigs] Found 'searches' field, length: ${searchesStr.length}`);
+    this.logger.log(`[parseSearchConfigs] First 200 chars:\n${searchesStr.substring(0, 200)}`);
+
+    try {
+      // Try JSON format first
+      try {
+        const parsed = JSON.parse(searchesStr);
+        if (Array.isArray(parsed)) {
+          return parsed.map(config => this.validateSearchConfig(config)).filter((c): c is SearchConfig => c !== null);
+        }
+        return undefined;
+      } catch {
+        // Parse YAML-like format
+        const configs: SearchConfig[] = [];
+        const lines = searchesStr.split('\n');
+        let currentConfig: Partial<SearchConfig> | null = null;
+        let configBaseIndent: number | null = null;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          const indent = line.search(/\S/);
+
+          // Auto-detect base indent for search config items
+          if (configBaseIndent === null) {
+            // Check for list format: "- name: xxx"
+            const isListItem = trimmed.match(/^-\s*name:\s*(.+)$/);
+            if (isListItem) {
+              configBaseIndent = indent;
+              currentConfig = {
+                name: isListItem[1].trim(),
+              };
+              continue;
+            }
+            // Skip lines until we know the indent
+            continue;
+          }
+
+          // Check if this is a new search config (at the base indent level)
+          if (indent === configBaseIndent) {
+            // Save previous config if exists
+            if (currentConfig && currentConfig.name) {
+              const validated = this.validateSearchConfig(currentConfig);
+              if (validated) {
+                configs.push(validated);
+              }
+            }
+
+            // Start new config - check for list format: "- name: xxx"
+            const listMatch = trimmed.match(/^-\s*name:\s*(.*)$/);
+            if (listMatch) {
+              currentConfig = {
+                name: listMatch[1].trim(),
+              };
+              continue;
+            }
+
+            // Clear currentConfig for non-matching lines
+            currentConfig = null;
+          } else if (currentConfig && indent > configBaseIndent) {
+            // Parse nested property
+            const keyMatch = trimmed.match(/^(\w+):\s*(.*)$/);
+            if (keyMatch) {
+              const key = keyMatch[1];
+              const value = keyMatch[2].trim();
+
+              this.updateSearchConfigProperty(currentConfig, key, value);
+            }
+          }
+        }
+
+        // Don't forget the last config
+        if (currentConfig && currentConfig.name) {
+          const validated = this.validateSearchConfig(currentConfig);
+          if (validated) {
+            configs.push(validated);
+          }
+        }
+
+        return configs.length > 0 ? configs : undefined;
+      }
+    } catch (error) {
+      this.logger.warn(`[parseSearchConfigs] Failed to parse search_configs: ${error.message}`);
+      return undefined;
+    }
+  }
+
+  /**
+   * Validate and normalize a search config
+   */
+  private validateSearchConfig(config: Partial<SearchConfig>): SearchConfig | null {
+    if (!config.name || !config.type || !config.inject_as) {
+      this.logger.warn(`[validateSearchConfig] Invalid search config: missing required fields`);
+      return null;
+    }
+
+    const validTypes = [
+      'background', 'decision', 'cooperation', 'digital',
+      'bidding', 'subsidiary', 'annual_report', 'tech_stack',
+      'industry_trend', 'competitor', 'case_study', 'custom'
+    ];
+
+    if (!validTypes.includes(config.type)) {
+      this.logger.warn(`[validateSearchConfig] Invalid search type: ${config.type}`);
+      return null;
+    }
+
+    return {
+      name: config.name,
+      type: config.type,
+      query_template: config.query_template || '',
+      inject_as: config.inject_as,
+      industry_type: config.industry_type,
+      on_error: config.on_error || 'skip',
+      deep_search: config.deep_search || false,
+      top_k: config.top_k || 20,
+      search_recency: config.search_recency,
+    };
+  }
+
+  /**
+   * Update a property of a search config during parsing
+   */
+  private updateSearchConfigProperty(config: Partial<SearchConfig>, key: string, value: string): void {
+    switch (key) {
+      case 'type':
+        config.type = value as SearchConfig['type'];
+        break;
+      case 'query_template':
+        config.query_template = value;
+        break;
+      case 'inject_as':
+        config.inject_as = value;
+        break;
+      case 'industry_type':
+        config.industry_type = value as SearchConfig['industry_type'];
+        break;
+      case 'on_error':
+        config.on_error = value as SearchConfig['on_error'];
+        break;
+      case 'deep_search':
+        config.deep_search = value === 'true';
+        break;
+      case 'top_k':
+        config.top_k = parseInt(value, 10) || 20;
+        break;
+      case 'search_recency':
+        config.search_recency = value as SearchConfig['search_recency'];
+        break;
+    }
   }
 
   public parseFrontmatter(content: string): {
@@ -203,6 +441,8 @@ export class SkillLoaderService {
       usage_hint: this.extractYamlField(yamlContent, 'usage_hint') || undefined,
       supports_multi_turn: this.extractYamlField(yamlContent, 'supports_multi_turn') === 'true',
       role: this.parseRole(this.extractYamlField(yamlContent, 'role')),
+      industry_mappings: this.parseIndustryMappings(yamlContent),
+      search_configs: this.parseSearchConfigs(yamlContent),
     };
 
     // Parse parameters - try both JSON and YAML formats

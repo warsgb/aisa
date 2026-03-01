@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AIService, Message } from '../../common/services/ai.service';
+import { SearchService, SearchResult } from '../../common/services/search.service';
 import { Skill } from '../../entities/skill.entity';
 import { SkillInteraction, InteractionStatus } from '../../entities/interaction.entity';
 import { InteractionMessage, MessageRole } from '../../entities/interaction-message.entity';
@@ -51,6 +52,7 @@ export class SkillExecutorService {
     @InjectRepository(CustomerProfile)
     private customerProfileRepository: Repository<CustomerProfile>,
     private aiService: AIService,
+    private searchService: SearchService,
   ) {}
 
   async executeSkill(options: ExecuteSkillOptions): Promise<void> {
@@ -149,9 +151,11 @@ export class SkillExecutorService {
 
       // Load customer and profile context
       let customerContext = '';
+      let customer: Customer | null = null;
+      let profile: CustomerProfile | null = null;
       if (customerId) {
         console.log('📋 [Skill Executor] Loading customer context for:', customerId);
-        const customer = await this.customerRepository.findOne({
+        customer = await this.customerRepository.findOne({
           where: { id: customerId },
         });
 
@@ -160,7 +164,7 @@ export class SkillExecutorService {
           console.log('✅ [Skill Executor] Found customer:', customer.name);
 
           // Load customer profile
-          const profile = await this.customerProfileRepository.findOne({
+          profile = await this.customerProfileRepository.findOne({
             where: { customer_id: customerId },
           });
 
@@ -207,11 +211,64 @@ export class SkillExecutorService {
       // Prepare AI messages
       const aiMessages: Message[] = [];
 
+      // Process system prompt - replace {{customer_background}} placeholder if profile exists
+      let processedSystemPrompt = skill.system_prompt || '';
+      if (profile && processedSystemPrompt.includes('{{customer_background}}')) {
+        console.log('🔄 [Skill Executor] Injecting customer background...');
+        let customerBackground = '';
+        if (profile.background_info) {
+          customerBackground += `## 客户背景资料\n\n${profile.background_info}\n\n`;
+        }
+        if (profile.decision_chain) {
+          customerBackground += `## 决策链信息\n\n${profile.decision_chain}\n\n`;
+        }
+        if (profile.history_notes) {
+          customerBackground += `## 历史合作笔记\n\n${profile.history_notes}\n\n`;
+        }
+        processedSystemPrompt = processedSystemPrompt.replaceAll('{{customer_background}}', customerBackground || '[客户背景资料暂无]');
+        console.log('✅ [Skill Executor] Customer background injected');
+      }
+
+      // Step 4.5: Execute declarative searches and inject results
+      if (skill.search_configs && Array.isArray(skill.search_configs) && skill.search_configs.length > 0) {
+        console.log('🔍 [Skill Executor] Executing declarative searches...');
+        try {
+          const industry = customer?.industry || parameters.industry || 'enterprise';
+          const searchResults = await this.searchService.executeDeclarativeSearches(
+            skill.search_configs,
+            {
+              customer_name: customer?.name || parameters.customer_name,
+              industry,
+              current_year: parameters.year || new Date().getFullYear(),
+              parameters: {
+                ...parameters,
+                company_name: customer?.name || parameters.company_name,
+              },
+            }
+          );
+
+          // Inject search results into system prompt
+          for (const [injectAs, result] of Object.entries(searchResults)) {
+            const placeholder = `{{${injectAs}}}`;
+            if (processedSystemPrompt.includes(placeholder)) {
+              console.log(`🔄 [Skill Executor] Injecting search result: ${injectAs}`);
+              const resultText = result.content || result.raw_content || JSON.stringify(result);
+              processedSystemPrompt = processedSystemPrompt.replaceAll(placeholder, resultText);
+              console.log(`✅ [Skill Executor] Search result injected: ${injectAs}`);
+            }
+          }
+          console.log(`✅ [Skill Executor] ${Object.keys(searchResults).length} search results processed`);
+        } catch (error) {
+          console.error('❌ [Skill Executor] Search execution failed:', error);
+          // Continue without search results
+        }
+      }
+
       // Add system prompt
-      if (skill.system_prompt) {
+      if (processedSystemPrompt) {
         aiMessages.push({
           role: 'system',
-          content: skill.system_prompt,
+          content: processedSystemPrompt,
         });
       }
 
@@ -250,7 +307,15 @@ export class SkillExecutorService {
         });
       }
 
-      // 执行WebSearch获取历史合作信息（仅针对教育行业客户研究技能）\n      // 如果客户已有历史笔记（通过AI自动填充收集），则跳过WebSearch，直接使用已有信息\n      let searchContext = '';\n      const hasExistingHistory = profile?.history_notes && profile.history_notes.trim().length > 0;\n\n      if (skill.slug === 'education-customer-research' && parameters.customer_name) {\n        // 如果已有历史笔记，直接使用，不再进行WebSearch\n        if (hasExistingHistory) {\n          console.log('✅ [Skill Executor] Using existing history_notes from customer profile, skipping WebSearch');\n          searchContext = `\n\n[已有历史合作信息 - 来自客户资料]\n${profile.history_notes}\n\n---\n请基于以上已收集的客户历史合作信息填写"历史合作情况"章节。如果信息完整，请直接整理使用。\n`;\n        } else {\n          try {\n            console.log('🔍 [Skill Executor] ====== WebSearch Started ======');\n          console.log(`   [Skill Executor] Customer: ${parameters.customer_name}`);\n          console.log(`   [Skill Executor] Department: ${parameters.department || 'N/A'}`);\n          \n          const customerName = parameters.customer_name;\n          const department = parameters.department || '';\n          \n          // 构建搜索查询\n          const searchQueries = [\n            `${customerName} WPS 合作`,\n            `${customerName} 金山办公 案例`,\n            `${customerName} WPS 365 中标`,\n            `${customerName} 金山办公 中标`,\n          ];\n          \n          console.log(`   [Skill Executor] Total queries: ${searchQueries.length}`);\n          \n          // 如果指定了部门，添加部门相关搜索\n          if (department) {\n            searchQueries.push(`${customerName} ${department} WPS`);\n          }\n          \n          console.log(`   [Skill Executor] Query list: ${searchQueries.join(' | ')}`);\n          \n          const searchResults = await this.aiService.webSearchMultiple(searchQueries, {\n            searchEngine: 'search_std',\n            count: 5,\n            contentSize: 'medium',\n          });\n          \n          // 统计结果\n          const totalResults = searchResults.reduce((sum, r) => sum + r.results.length, 0);\n          const queriesWithResults = searchResults.filter(r => r.results.length > 0).length;\n          console.log(`   [Skill Executor] Results: ${totalResults} items from ${queriesWithResults}/${searchQueries.length} queries`);\n          \n          // 格式化搜索结果\n          if (totalResults > 0) {\n            searchContext = '\\n\\n[网络搜索结果 - 历史合作信息]\\n\\n';\n            \n            for (const { query, results } of searchResults) {\n              if (results.length > 0) {\n                searchContext += `搜索关键词: "${query}"\\n`;\n                for (const result of results.slice(0, 3)) { // 每个查询取前3条\n                  searchContext += `- [${result.title}](${result.link}): ${result.content.substring(0, 150)}...\\n`;\n                }\n                searchContext += '\\n';\n              }\n            }\n            \n            searchContext += '---\\n请基于以上搜索结果，在"历史合作情况"章节准确填写合作信息。如果搜索结果中没有找到相关合作信息，请明确标注"未查询到公开的WPS合作信息"。\\n';\n            \n            console.log(`✅ [Skill Executor] ====== WebSearch Completed: ${totalResults} results ======`);\n          } else {\n            searchContext = '\\n\\n[网络搜索结果]\\n未查询到公开的WPS合作信息。请在"历史合作情况"章节标注"未查询到公开的WPS合作信息"，并提供市场切入点分析。\\n';\n            console.log('⚠️ [Skill Executor] ====== WebSearch Completed: No results ======');\n          }\n        } catch (error) {\n          console.error('❌ [Skill Executor] ====== WebSearch Failed ======');\n          console.error('   Error:', error);\n          searchContext = '\\n\\n[网络搜索结果]\\n搜索服务暂时不可用。请基于大模型知识填写"历史合作情况"章节，并标注"搜索服务暂不可用，信息基于模型知识"。\\n';\n        }\n      }\n\n      // Add customer and document context\n      if (customerContext || documentContext || searchContext) {\n        aiMessages.push({\n          role: 'user',\n          content: `${customerContext}${documentContext}${searchContext}\\n\\n请基于以上上下文信息回答问题。`,\n        });\n      }\n\n      console.log('🎯 [Skill Executor] Executing skill:', skillId);
+      // Add customer and document context
+      if (customerContext || documentContext) {
+        aiMessages.push({
+          role: 'user',
+          content: `${customerContext}${documentContext}\n\n请基于以上上下文信息回答问题。`,
+        });
+      }
+
+      console.log('🎯 [Skill Executor] Executing skill:', skillId);
       console.log('💬 [Skill Executor] Message count:', aiMessages.length);
 
       // Stream response from AI

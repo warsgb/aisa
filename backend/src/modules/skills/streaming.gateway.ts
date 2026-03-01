@@ -111,7 +111,7 @@ export class StreamingGateway implements OnGatewayConnection, OnGatewayDisconnec
         endConversation: data.endConversation,
         referenceDocumentId: data.referenceDocumentId,
         onChunk: (chunk: string) => {
-          console.log('📦 [Streaming Gateway] Sending chunk:', chunk.substring(0, 50) + '...');
+          // console.log('📦 [Streaming Gateway] Sending chunk:', chunk.substring(0, 50) + '...');
           client.emit('response:chunk', { chunk });
         },
         onStart: (interactionId: string) => {

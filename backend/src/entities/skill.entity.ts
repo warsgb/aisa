@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { IronTriangleRole } from './team-member-preference.entity';
+import { SearchConfig } from '../common/services/search.service';
 
 @Entity('skills')
 export class Skill {
@@ -42,12 +43,19 @@ export class Skill {
   @Column({ type: 'jsonb', nullable: true })
   metadata: any;
 
+  @Column({ type: 'jsonb', default: {} })
+  industry_mappings: Record<string, { label: string; search_keywords: string }>;
+
   @Column({
     type: 'enum',
     enum: IronTriangleRole,
     nullable: true,
   })
   iron_triangle_role: IronTriangleRole | null;
+
+  // Declarative search configuration
+  @Column({ type: 'jsonb', nullable: true })
+  search_configs: SearchConfig[] | null;
 
   // 文件管理字段
   @Column({ type: 'varchar', default: 'file' })

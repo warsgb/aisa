@@ -3,6 +3,25 @@ slug: presale-strategy-decoder
 name: 财报年报战略解码技能
 description: WPS 365 财报年报战略解码技能。当用户提供企业年报、战略规划文件、官网战略信息时使用。从客户年报/规划文件中提取销售机会，识别战略关键词，深度推理业务痛点，匹配 WPS 365 解决方案，生成破冰话术。
 category: presale-strategy-decoder
+searches:
+  - name: annual_report_search
+    type: background
+    query_template: "{company_name} {year} 年报 年度报告 战略规划"
+    inject_as: search_annual_report
+    on_error: skip
+    top_k: 10
+  - name: digital_strategy
+    type: industry_trend
+    query_template: "{company_name} 数字化转型 {year} 战略 信创 协同办公"
+    inject_as: search_digital_strategy
+    on_error: skip
+    top_k: 10
+  - name: company_news
+    type: industry_trend
+    query_template: "{company_name} 最新动态 信息化 CIO 办公系统"
+    inject_as: search_company_news
+    on_error: skip
+    top_k: 10
 parameters:
   - name: company_name
     type: string
@@ -83,11 +102,21 @@ parameters:
 - 公司官网：战略介绍、业务介绍、新闻动态
 - 使用 WebReader 工具获取
 
-#### 优先级4：WebSearch 补充
+#### 优先级4：自动搜索信息（已注入）
 
-- 搜索组合：`公司名称 + 2025 + 年报`
-- 搜索组合：`公司名称 + 数字化转型 + 2025`
-- 搜索组合：`公司名称 + 战略 + 2025`
+**以下信息已通过百度搜索自动获取并注入**：
+
+| 占位符 | 内容说明 | 使用位置 |
+|--------|----------|----------|
+| `{{search_annual_report}}` | 年报、年度报告、战略规划 | 战略关键词分析 |
+| `{{search_digital_strategy}}` | 数字化转型战略、信创、协同办公 | 战略分析 |
+| `{{search_company_news}}` | 最新动态、信息化、CIO观点 | 补充信息 |
+| `{{customer_background}}` | 客户档案中的背景资料 | 基础信息 |
+
+**使用要求**：
+- 当用户未提供年报内容时，自动使用 `{{search_annual_report}}` 的搜索结果
+- 在战略关键词分析中引用 `{{search_digital_strategy}}` 的信息
+- 标注数据来源为"百度搜索"
 
 ### 第二步：关键词提取与分类
 
@@ -239,27 +268,50 @@ parameters:
 
 ---
 
+## ⚠️ 自动注入信息（必须使用）
+
+以下信息已通过系统自动获取并注入，**必须在分析中使用**：
+
+### 客户背景资料（来自客户档案）
+{{customer_background}}
+
+### 百度搜索结果（实时获取）
+- `{{search_annual_report}}`：年报、年度报告、战略规划
+- `{{search_digital_strategy}}`：数字化转型战略、信创
+- `{{search_company_news}}`：最新动态、信息化、CIO观点
+
+**强制要求**：
+1. 当用户未提供年报内容时，必须使用 `{{search_annual_report}}` 的搜索结果
+2. 战略关键词分析必须引用 `{{search_digital_strategy}}` 的信息
+3. 标注每个信息点的数据来源
+
+---
+
 ## 核心摘要
 
-### 关键发现
+### 关���发现
 
-- [发现1：核心战略方向]
-- [发现2：主要业务挑战]
-- [发现3：IT投入情况]
-- [发现4：WPS 365 机会评估]
+- [发现1：核心战略方向 - 来源于年报/搜索结果]
+- [发现2：主要业务挑战 - 来源于年报/搜索结果]
+- [发现3：IT投入情况 - 来源于年报/搜索结果]
+- [发现4：WPS 365 机会评估 - 基于以上分析]
 
 ### 机会评估
 
 **机会评级**：⭐⭐⭐⭐⭐（五星级/四星级/三星级）
 
 **核心机会**：
-- [机会1：具体描述]
-- [机会2：具体描述]
-- [机会3：具体描述]
+- [机会1：具体描述 - 基于年报/搜索分析]
+- [机会2：具体描述 - 基于年报/搜索分析]
+- [机会3：具体描述 - 基于年报/搜索分析]
 
 ---
 
 ## 表格1：战略关键词分析表
+
+**⚠️ 必须基于**：已注入的年报搜索结果和战略搜索结果（来自百度搜索）
+
+基于以上自动注入的年报搜索结果，提取并分析战略关键词：
 
 [完整表格内容]
 
@@ -348,6 +400,28 @@ parameters:
 4. 匹配 WPS 365 解决方案：协同文档、金山协作、信创全栈支持
 5. 生成分析表格和三种话术
 6. 输出完整报告
+
+---
+
+## ⚠️ 输出格式要求
+
+**重要**：在生成最终报告时，请遵循以下规则：
+
+1. **不要包���"自动注入信息"部分**：开头的"⚠️ 自动注入信息（必须使用）"部分是输入数据说明，不要出现在最终报告中
+2. **报告从"关键摘要"开始**：最终报告的第一部分应该是"核心摘要"或直接进入报告内容
+3. **使用实际数据而非占位符**：
+   - 不要在输出中使用 `{{customer_background}}`、`{{search_*}}` 等占位符
+   - 直接使用注入的实际数据内容生成报告
+4. **数据引用**：在相应表格中引用注入的数据，并在数据来源栏标注
+
+**正确输出格式示例**：
+```markdown
+# [公司名称] 年报战略解码报告
+
+## 核心摘要
+...
+（直接开始内容，不包含"自动注入信息"部分）
+```
 
 ---
 

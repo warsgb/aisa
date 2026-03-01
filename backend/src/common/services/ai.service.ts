@@ -27,6 +27,8 @@ export class AIService {
   private readonly defaultModel: string;
   private readonly defaultMaxTokens: number;
   private readonly defaultTemperature: number;
+  private readonly baiduApiKey: string;
+  private readonly baiduEndpoint: string;
 
   constructor(private configService: ConfigService) {
     this.provider = this.configService.get<string>('AI_PROVIDER', 'zhipu');
@@ -51,7 +53,19 @@ export class AIService {
 
       this.logger.log(`AI Service initialized (Zhipu GLM) with model: ${this.defaultModel}`);
       this.logger.log(`Base URL: ${baseURL}`);
+    }
+
+    // 初始化百度API配置
+    this.baiduApiKey = this.configService.get<string>('BAIDU_API_KEY', '');
+    this.baiduEndpoint = this.configService.get<string>('BAIDU_ENDPOINT', 'https://qianfan.baidubce.com');
+
+    if (this.baiduApiKey) {
+      this.logger.log('Baidu API configured for web search');
     } else {
+      this.logger.warn('BAIDU_API_KEY not configured');
+    }
+
+    if (!this.client) {
       // Fallback to Anthropic (if needed in future)
       const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
       const baseURL = this.configService.get<string>('ANTHROPIC_BASE_URL');
@@ -175,6 +189,16 @@ export class AIService {
 
       this.logger.log(`📤 [AI Service] Sending ${allMessages.length} messages to ${this.provider} API`);
       this.logger.debug(`📨 Message preview:`, JSON.stringify(allMessages).substring(0, 200));
+
+      // 显示完整的请求消息（用于调试）
+      this.logger.log(`📦 [AI Service] Complete Request Body:\n${JSON.stringify({
+        model,
+        messages: allMessages,
+        max_tokens: maxTokens,
+        temperature,
+        stream: true,
+      }, null, 2)}\n`);
+
       this.logger.debug(`Messages: ${JSON.stringify(allMessages).substring(0, 200)}...`);
 
       if (onStart) {
@@ -207,7 +231,7 @@ export class AIService {
         chunkCount++;
 
         if (chunkCount % 10 === 0) {
-          console.log(`📊 [AI Service] Received ${chunkCount} chunks`);
+          // console.log(`📊 [AI Service] Received ${chunkCount} chunks`);
         }
 
         if (onChunk) {
@@ -491,6 +515,179 @@ export class AIService {
     }
 
     this.logger.log(`✅ [WebSearch] Completed all ${queries.length} searches in parallel`);
+    return allResults;
+  }
+
+  /**
+   * 执行百度智能搜索（百度千帆平台 AI 搜索）
+   * @param query 搜索查询
+   * @param options 搜索选项
+   * @returns 搜索结果（包含AI生成的回答和参考引用）
+   */
+  async baiduWebSearch(
+    query: string,
+    options?: {
+      model?: string;
+      maxCompletionTokens?: number;
+      topK?: number;
+      enableDeepSearch?: boolean;
+      enableCornerMarkers?: boolean;
+      instruction?: string;
+      stream?: boolean;
+    },
+  ): Promise<{
+    content: string;        // AI生成的回答
+    references?: any[];     // 参考引用
+    usage?: any;            // token使用量
+  }> {
+    const {
+      model = 'ernie-4.5-turbo-128k',
+      maxCompletionTokens = 8192,
+      topK = 20,
+      enableDeepSearch = false,
+      enableCornerMarkers = false,
+      instruction,
+      stream = false,
+    } = options || {};
+
+    this.logger.log(`🔍 [BaiduWebSearch] Starting search: "${query}"`);
+
+    try {
+      // Check if Baidu API key is configured
+      if (!this.baiduApiKey) {
+        this.logger.warn('[BaiduWebSearch] BAIDU_API_KEY not configured, returning mock response');
+        return {
+          content: `百度搜索功能未配置。请在环境变量中设置 BAIDU_API_KEY。\n\n搜索查询：${query}`,
+          references: [],
+        };
+      }
+
+      // 使用百度千帆平台的 AI 搜索 API
+      const url = `${this.baiduEndpoint}/v2/ai_search/chat/completions`;
+
+      this.logger.log(`🌐 [BaiduWebSearch] Calling Baidu API: ${url}`);
+
+      const requestBody: any = {
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: query,
+          },
+        ],
+        search_mode: 'auto',
+        search_source: 'baidu_search_v2',
+        resource_type_filter: [
+          {
+            type: 'web',
+            top_k: topK,
+          },
+        ],
+        max_completion_tokens: maxCompletionTokens,
+        enable_deep_search: enableDeepSearch,
+        enable_corner_markers: enableCornerMarkers,
+        stream,
+      };
+
+      // 添加人设指令（如果提供）
+      if (instruction) {
+        requestBody.instruction = instruction;
+      }
+
+      // 记录发送给百度的完整请求（用于调试）
+      this.logger.log(`📤 [BaiduWebSearch] Request Body:\n${JSON.stringify(requestBody, null, 2)}`);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.baiduApiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(`[BaiduWebSearch] API error: ${response.status} - ${errorText}`);
+        throw new Error(`Baidu API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      this.logger.log(`📥 [BaiduWebSearch] API Response received`);
+
+      // 记录完整的响应数据
+      this.logger.log(`📦 [BaiduWebSearch] Full Response Data:\n${JSON.stringify(data, null, 2)}`);
+
+      // 解析响应
+      const content = data.choices?.[0]?.message?.content || '';
+      const references = data.references || [];
+      const usage = data.usage;
+
+      this.logger.log(`✅ [BaiduWebSearch] Completed: "${query}" -> ${content.length} chars, ${references.length} references`);
+
+      // 记录百度返回的搜索内容（便于调试）
+      if (content) {
+        this.logger.log(`📝 [BaiduWebSearch] Search Result Content (first 500 chars):\n${content.substring(0, 500)}...`);
+      }
+
+      return {
+        content,
+        references,
+        usage,
+      };
+    } catch (error) {
+      this.logger.error(`❌ [BaiduWebSearch] Error for "${query}":`, error);
+      // 返回空内容而不是抛出错误，确保技能可以继续执行
+      return {
+        content: '',
+        references: [],
+      };
+    }
+  }
+
+  /**
+   * 执行多个百度搜索查询（并行执行）
+   * @param queries 搜索查询列表
+   * @param options 搜索选项
+   * @returns 搜索结果列表
+   */
+  async baiduWebSearchMultiple(
+    queries: string[],
+    options?: {
+      maxConcurrency?: number;
+      model?: string;
+      maxTokens?: number;
+    },
+  ): Promise<Array<{ query: string; content: string; references?: any[] }>> {
+    const { maxConcurrency = 5 } = options || {};
+    this.logger.log(`🔍 [BaiduWebSearch] Executing ${queries.length} search queries with maxConcurrency=${maxConcurrency}`);
+
+    const allResults: Array<{ query: string; content: string; references?: any[] }> = [];
+
+    // 分批并行执行
+    for (let i = 0; i < queries.length; i += maxConcurrency) {
+      const batch = queries.slice(i, i + maxConcurrency);
+      this.logger.log(`📦 [BaiduWebSearch] Processing batch ${Math.floor(i / maxConcurrency) + 1} with ${batch.length} queries`);
+
+      // 并行执行当前批次的所有搜索
+      const batchPromises = batch.map(q => this.baiduWebSearch(q, options));
+      const batchResults = await Promise.all(batchPromises);
+
+      // 收集批次结果
+      allResults.push(...batchResults.map((result, idx) => ({
+        query: batch[idx],
+        content: result.content,
+        references: result.references,
+      })));
+
+      // 批次间添加小延迟
+      if (i + maxConcurrency < queries.length) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+
+    this.logger.log(`✅ [BaiduWebSearch] Completed all ${queries.length} searches`);
     return allResults;
   }
 

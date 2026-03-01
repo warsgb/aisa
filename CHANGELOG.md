@@ -29,8 +29,98 @@
   - 支持教育行业参数名 `school_name`、`学校名称`、`客户名称` 自动填充当前客户
 
 - **数据准确性**
-  - 技能文档新增数据准确性原则，禁止编造招投标等信息
+  - 技能文档新增数据准��性原则，禁止编造招投标等信息
   - 无法获取的数据需标注"待确认"
+
+### Added
+
+- **声明式搜索框架 (Declarative Search Framework)**
+  - 实现基于YAML配置的声明式搜索服务，彻底解决提示词污染问题
+  - 新增 `SearchService` 统一搜索服务，支���百度智能搜索API集成
+  - 技能通过YAML frontmatter声明搜索需求，自动执行并注入结果
+  - 搜索结果通过 `{{search_variable}}` 占位符注入到提示词中
+
+- **三大核心技能升级**
+  - **教育行业客户深度研究 (education-customer-research)**
+    - 配置2项声明式搜索：WPS合作历史、教育数字化转型
+    - ��复8处占位符引用问题，优化报告输出格式
+    - 添加输出格式要求，确保报告从核心摘要开始
+
+  - **金融与国企客户深度研究 (financial-customer-research)**
+    - 配置2项声明式搜索：数字化转型、招标采购信息
+    - 修复4处占位符引用问题，优化报告输出格式
+    - 添加输出格式要求，确保报告从关键摘要洞察开始
+
+  - **财报年报战略���码 (presale-strategy-decoder)**
+    - 配置3项声明式搜索：年报信息、数字化转型战略、公司新闻
+    - 修复1处占位符引用问题，优化报告输出格式
+    - 添加输出格式要求，确保报告从核心摘要开始
+
+### Changed
+
+- **后端服务**
+  - `AI Service`: 新增百度WebSearch工具调用支持，支持联网搜索
+  - `SkillExecutorService`: 集成声明式搜索执行流程
+  - `SkillLoaderService`: 解析YAML frontmatter中的searches配置
+  - `Skill Entity`: 新增search_configs字段（jsonb类型）存储搜索配置
+
+- **前端优化**
+  - 客户维护页面：新增参数自动填充功能
+  - API Service: 扩展技能执行接口支持搜索配置
+
+### Fixed
+
+- **占位符处理与输出格式**
+  - 修复报告开头显示"⚠️ 自动注入信息"的问题
+  - 修复数据来源中占位符（如`{{search_*}}`）直接显示的问题
+  - 统一三大核心技能的报告输出格式，确保从核心内容开始
+  - 文档化注入点与描述性文本的区别（见skill-design-update260228.md第十章）
+
+- **搜索配置同步**
+  - 修复技能配置后未同步到数据库的问题
+  - 新增数据库迁移脚本支持search_configs字段
+
+### Technical Highlights
+
+- **YAML配置示例**:
+  ```yaml
+  searches:
+    - name: industry_trend
+      type: industry_trend
+      query_template: "{industry}信息化最新政策热点"
+      inject_as: search_industry_trend
+      on_error: skip
+      top_k: 20
+  ```
+
+- **搜索类型支持**:
+  - `background`: 历史信息、合作案例、招投标信息
+  - `industry_trend`: 行业动态、趋势分析、战略方向
+
+- **错误处理策略**: `fail`（中断执行） | `skip`（跳过，默认） | `placeholder`（注入占位符）
+
+- **变量替换支持**:
+  - `{customer_name}` - 客户名称
+  - `{industry}` - 行业名称
+  - `{current_year}` - 当前年份
+  - `{company_name}` - 公司名称
+  - `{year}` - 年份参数
+
+- **18个文件修改**: 1707行新增，372行删除
+  - 后端核心服务：SearchService, AI Service, SkillExecutor
+  - 技能配置：3个核心技能SKILL.md
+  - 数据库：实体扩展、迁移脚本
+  - 文档：设计文档更新（skill-design-update260228.md）
+  - 前端：客户管理页面优化
+
+### Testing & Verification
+
+- ✅ 教育行业客户深度研究：搜索配置验证通过
+- ✅ 金融与国企客户深度研究：搜索配置验证通过
+- ✅ 财报年报战略解码：搜索配置验证通过
+- ✅ 搜索结果注入功能：后端日志验证通过
+- ✅ 报告输出格式：占位符问题修复验证通过
+- ✅ 数据库迁移：search_configs字段添加成功
 
 ---
 
