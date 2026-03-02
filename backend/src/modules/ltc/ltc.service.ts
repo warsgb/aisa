@@ -665,7 +665,33 @@ export class LtcService {
         if (result.field === 'background') {
           profileData.background_info = fieldData.background_info;
         } else if (result.field === 'decision') {
-          profileData.decision_chain = fieldData.decision_chain;
+          // Clean decision_chain: filter out null/"null" values and convert to Markdown
+          const decisionChain = fieldData.decision_chain;
+          if (decisionChain && typeof decisionChain === 'object') {
+            const cleanedDecisionChain: any = {};
+
+            // Filter out null/"null" values
+            for (const [key, value] of Object.entries(decisionChain)) {
+              if (value && value !== null && value !== 'null' && value !== 'undefined' && value !== '') {
+                cleanedDecisionChain[key] = value;
+              }
+            }
+
+            // Convert to Markdown format if there are valid entries
+            const validKeys = Object.keys(cleanedDecisionChain);
+            if (validKeys.length > 0) {
+              const markdownLines = validKeys.map(key => {
+                const people = cleanedDecisionChain[key];
+                return `## ${key}\n${people}`;
+              });
+              profileData.decision_chain = markdownLines.join('\n\n');
+            } else {
+              // All values are null, don't add this field
+              this.logger.log('All decision chain entries are null/empty, skipping decision_chain field');
+            }
+          } else {
+            profileData.decision_chain = decisionChain;
+          }
         } else if (result.field === 'cooperation') {
           // Only add history_notes if it exists and is not null
           // AI will return empty object {} if no cooperation found
@@ -684,9 +710,9 @@ export class LtcService {
           profileData.decision_chain = result.content;
         } else if (result.field === 'cooperation') {
           // Only store if it doesn't look like a "not found" response
-          if (result.content && 
-              !result.content.includes('未找到') && 
-              !result.content.includes('没有') && 
+          if (result.content &&
+              !result.content.includes('未找到') &&
+              !result.content.includes('没有') &&
               !result.content.includes('not found') &&
               result.content.length > 20) {
             profileData.history_notes = result.content;
@@ -805,7 +831,11 @@ export class LtcService {
           const keys = Object.keys(value);
           if (keys.length === 0) return false;
           // Check if any value is non-null and non-empty
-          return keys.some(k => value[k] && value[k] !== null && value[k] !== '' && value[k] !== 'null');
+          // Filter out string "null" as well (AI sometimes returns "null" instead of null)
+          return keys.some(k => {
+            const v = value[k];
+            return v && v !== null && v !== '' && v !== 'null' && v !== 'undefined';
+          });
         }
         // For strings, check if not empty after trim
         if (typeof value === 'string') {

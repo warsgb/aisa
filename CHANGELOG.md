@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Security
+
+- **API密钥安全修复**
+  - 从版本控制中移除 `backend/.env` 文件，防止API密钥泄露
+  - 更新 `.env.example` 添加百度API配置模板
+  - 历史提交中仍包含敏感信息，需立即更换已泄露的API密钥
+
+### Fixed
+
+- **客户背景资料AI填充**
+  - 修复决策链数据中出现 `"null"` 字符串值的问题
+  - 修复决策链数据格式错误，从JSON对象转换为Markdown格式输出
+  - 优化数据清洗逻辑，过滤无效的null/undefined值
+  - 改进 `hasContent` 检查函数，正确识别空数据
+
+- **数据库迁移**
+  - 修复 `industry_mappings` 和 `search_configs` 列缺失问题
+  - 手动执行数据库迁移，添加技能表新字段
+
 ### Added
 
 - **教育行业客户研究技能 (education-customer-research)**
