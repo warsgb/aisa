@@ -815,7 +815,7 @@ class ApiService {
     profile: CustomerProfile;
     message: string;
   }> {
-    // AI自动填充需要更长时间，设置3分钟超时
+    // AI自动填充需要更长时间，设置5分钟超���
     return this.request<{
       success: boolean;
       filledFields: string[];
@@ -825,7 +825,7 @@ class ApiService {
     }>(`/teams/${teamId}/customers/${customerId}/auto-fill-profile`, {
       method: 'POST',
       body: JSON.stringify({ searchGoal }),
-    }, 180000);  // 3分钟超时
+    }, 300000);  // 5分钟超时
   }
 
   // Team Member Preference (Iron Triangle Role)
