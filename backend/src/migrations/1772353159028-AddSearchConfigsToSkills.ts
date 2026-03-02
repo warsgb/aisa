@@ -9,18 +9,6 @@ export class AddSearchConfigsToSkills1772353159028 implements MigrationInterface
             ADD COLUMN IF NOT EXISTS search_configs jsonb;
         `);
 
-        // Add search_version column with default 'legacy'
-        await queryRunner.query(`
-            ALTER TABLE skills
-            ADD COLUMN IF NOT EXISTS search_version VARCHAR DEFAULT 'legacy';
-        `);
-
-        // Create index for search_version for faster lookups
-        await queryRunner.query(`
-            CREATE INDEX IF NOT EXISTS IDX_skills_search_version
-            ON skills (search_version);
-        `);
-
         // Create GIN index for search_configs (useful for jsonb queries)
         await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS IDX_skills_search_configs
@@ -30,9 +18,7 @@ export class AddSearchConfigsToSkills1772353159028 implements MigrationInterface
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`DROP INDEX IF EXISTS IDX_skills_search_configs`);
-        await queryRunner.query(`DROP INDEX IF EXISTS IDX_skills_search_version`);
         await queryRunner.query(`ALTER TABLE skills DROP COLUMN IF EXISTS search_configs`);
-        await queryRunner.query(`ALTER TABLE skills DROP COLUMN IF EXISTS search_version`);
     }
 
 }
