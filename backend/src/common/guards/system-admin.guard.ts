@@ -7,8 +7,8 @@ export class SystemAdminGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (!user || user.role !== UserRole.SYSTEM_ADMIN) {
-      throw new ForbiddenException('System admin access required');
+    if (!user || (user.role !== UserRole.SYSTEM_ADMIN && user.role !== UserRole.ADMIN)) {
+      throw new ForbiddenException('Admin access required');
     }
     return true;
   }
