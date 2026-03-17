@@ -55,7 +55,7 @@ function SystemAdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role !== 'SYSTEM_ADMIN') {
+  if (user.role !== 'SYSTEM_ADMIN' && user.role !== 'ADMIN') {
     return <Navigate to="/" replace />;
   }
 
