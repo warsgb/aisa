@@ -38,6 +38,9 @@ export class User {
   @Column({ default: true })
   is_active: boolean;
 
+  @Column({ nullable: true, unique: true })
+  api_token?: string;
+
   @CreateDateColumn()
   created_at: Date;
 

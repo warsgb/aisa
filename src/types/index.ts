@@ -287,6 +287,7 @@ export interface SystemUser {
   full_name: string;
   role: 'SYSTEM_ADMIN' | 'ADMIN' | 'MEMBER';
   is_active: boolean;
+  api_token?: string;
   created_at: string;
   updated_at: string;
   teams: Array<{

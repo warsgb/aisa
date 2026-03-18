@@ -4,11 +4,29 @@
 
 ### Added
 
-- **系统管理页面增强**
-  - 用户列表新增 API Token 管理功能（生成Token、撤销Token、显示脱敏Token）
-  - 团队列表新增团队ID列及一键复制按钮，方便用户快速获取团队ID
+- **API Token 管理系统**
+  - 后端：新增 `api_token` 字段到 User 实体
+  - 后端：新增 `ApiTokenService` 生成和撤销 API Token
+  - 后端：新增 System API 端点（生成Token、撤销Token）
+  - 前端：用户列表新增 API Token 列，显示脱敏Token
+  - 前端：用户操作新增"生成Token"和"撤销Token"按钮
+  - 前端：新增API Token显示弹窗，包含完整Token和复制功能
+  - 数据库：新增 `add-api-token-field.sql` 迁移脚本
 
-### Security
+- **MCP (Model Context Protocol) 支持**
+  - 新增 MCP Module (`backend/src/modules/mcp/`)
+  - 实现团队、客户、文档查询接口
+  - 支持通过 API Token 认证访问
+  - 提供创建客户和执行技能的写操作接口
+
+- **winai 外部技能**
+  - 新增 winai 技能包，用于查询和管理 AISA 客户文档资料
+  - 支持团队列表、客户列表、LTC技能列表、文档列表查询
+  - 支持创建客户并触发AI自动调研
+  - 支持对客户执行LTC技能（异步）
+
+- **系统管理页面增强**
+  - 团队列表新增团队ID列及一键复制按钮，方便用户快速获取团队ID
 
 - **API密钥安全修复**
   - 从版本控制中移除 `backend/.env` 文件，防止API密钥泄露

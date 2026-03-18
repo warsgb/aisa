@@ -1,0 +1,18 @@
+# AISA API 配置
+#
+# 使用说明：
+# 1. 修改 AISA_API_URL 为你的 AISA 系统地址
+# 2. AISA_API_TOKEN：暂不需要（API 暂未启用认证）
+# 3. 可选：设置 AISA_TEAM_ID 作为默认团队
+
+# AISA 系统 API 地址
+AISA_API_URL: "http://localhost:3001"
+
+# API 认证 Token（暂未启用，可留空）
+AISA_API_TOKEN: "a747d110ae8a990afbe8d09c2332023e6838b5f095a06efb33237f873ebbd71a"
+
+# 默认团队 ID（可选）
+# 留空：每次手动指定团队ID
+# 具体团队ID：使用该团队作为默认值
+# "fullteam"：默认查询所有团队
+AISA_TEAM_ID: "a1b17a2c-5fa1-41bb-94eb-5b1b0aaba4e2"

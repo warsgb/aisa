@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SystemController } from './system.controller';
 import { SystemService } from './system.service';
+import { ApiTokenService } from '../../common/services/api-token.service';
 import { User } from '../../entities/user.entity';
 import { Team } from '../../entities/team.entity';
 import { TeamMember } from '../../entities/team-member.entity';
@@ -24,7 +25,7 @@ import { SystemConfig } from '../../entities/system-config.entity';
     SystemLtcNode, SystemRoleSkillConfig, LtcNode, TeamRoleSkillConfig, NodeSkillBinding, SystemConfig
   ])],
   controllers: [SystemController],
-  providers: [SystemService],
+  providers: [SystemService, ApiTokenService],
   exports: [SystemService],
 })
 export class SystemModule {}

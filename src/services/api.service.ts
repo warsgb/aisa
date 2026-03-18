@@ -554,6 +554,18 @@ class ApiService {
     });
   }
 
+  async generateApiToken(id: string): Promise<{ api_token: string }> {
+    return this.request<{ api_token: string }>(`/system/users/${id}/api-token`, {
+      method: 'POST',
+    });
+  }
+
+  async revokeApiToken(id: string): Promise<void> {
+    return this.request<void>(`/system/users/${id}/api-token`, {
+      method: 'DELETE',
+    });
+  }
+
   async getAllSystemTeams(page: number = 1, pageSize: number = 20, search?: string): Promise<PaginatedResponse<SystemTeam>> {
     const params = new URLSearchParams({
       page: page.toString(),

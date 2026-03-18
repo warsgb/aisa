@@ -59,6 +59,16 @@ export class SystemController {
     return this.systemService.updateUserStatus(id, dto.is_active);
   }
 
+  @Post('users/:id/api-token')
+  async generateApiToken(@Param('id') id: string) {
+    return this.systemService.generateApiToken(id);
+  }
+
+  @Delete('users/:id/api-token')
+  async revokeApiToken(@Param('id') id: string) {
+    return this.systemService.revokeApiToken(id);
+  }
+
   @Post('users/:id/reset-password')
   async resetUserPassword(
     @Param('id') id: string,

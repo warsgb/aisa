@@ -1,0 +1,14 @@
+# AISA API 配置模板
+# 复制此文件为 config.yml 并填写实际值
+
+# AISA 系统 API 地址（必填）
+AISA_API_URL: "http://localhost:3001"
+
+# API 认证 Token（必填，请联系系统管理员获取）
+AISA_API_TOKEN: "your-api-token-here"
+
+# 默认团队 ID（可选）
+# 留空：每次手动指定团队ID
+# 具体团队ID：使用该团队作为默认值
+# "fullteam"：默认查询所有团队
+AISA_TEAM_ID: ""

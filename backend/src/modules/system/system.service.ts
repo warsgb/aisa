@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../../entities/user.entity';
+import { ApiTokenService } from '../../common/services/api-token.service';
 import { Team } from '../../entities/team.entity';
 import { TeamMember, TeamRole } from '../../entities/team-member.entity';
 import { Customer } from '../../entities/customer.entity';
@@ -99,6 +100,7 @@ export class SystemService {
     private nodeSkillBindingRepository: Repository<NodeSkillBinding>,
     @InjectRepository(SystemConfig)
     private systemConfigRepository: Repository<SystemConfig>,
+    private apiTokenService: ApiTokenService,
   ) {}
 
   // ========== System Config Management ==========
@@ -167,6 +169,7 @@ export class SystemService {
           full_name: user.full_name,
           role: user.role,
           is_active: user.is_active,
+          api_token: user.api_token,
           created_at: user.created_at,
           updated_at: user.updated_at,
           teams: teamMembers.map(tm => ({
@@ -255,6 +258,32 @@ export class SystemService {
       id: user.id,
       email: user.email,
       message: 'Password reset successfully',
+    };
+  }
+
+  async generateApiToken(userId: string) {
+    const token = await this.apiTokenService.generateToken(userId);
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'email', 'full_name', 'api_token'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      api_token: token, // 返回完整的token，不是mask后的
+    };
+  }
+
+  async revokeApiToken(userId: string) {
+    await this.apiTokenService.revokeToken(userId);
+    return {
+      message: 'API Token revoked successfully',
     };
   }
 

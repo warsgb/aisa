@@ -13,6 +13,7 @@ import { ReferencesModule } from './modules/references/references.module';
 import { FrameworksModule } from './modules/frameworks/frameworks.module';
 import { SystemModule } from './modules/system/system.module';
 import { LtcModule } from './modules/ltc/ltc.module';
+import { McpModule } from './modules/mcp/mcp.module';
 import * as path from 'path';
 
 @Module({
@@ -52,6 +53,7 @@ import * as path from 'path';
     FrameworksModule,
     SystemModule,
     LtcModule,
+    McpModule,
   ],
   controllers: [AppController],
   providers: [AppService],
