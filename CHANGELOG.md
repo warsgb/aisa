@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- **系统管理页面增强**
+  - 用户列表新增 API Token 管理功能（生成Token、撤销Token、显示脱敏Token）
+  - 团队列表新增团队ID列及一键复制按钮，方便用户快速获取团队ID
+
 ### Security
 
 - **API密钥安全修复**

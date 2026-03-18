@@ -24,9 +24,11 @@ export default function SystemPage() {
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showChangeOwnerModal, setShowChangeOwnerModal] = useState(false);
+  const [showApiTokenModal, setShowApiTokenModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<SystemTeam | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<TeamApplication | null>(null);
+  const [generatedToken, setGeneratedToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [allUsersForSelection, setAllUsersForSelection] = useState<SystemUser[]>([]);
@@ -150,6 +152,53 @@ export default function SystemPage() {
       console.error('重置密码失败:', error);
       alert('重置密码失败');
     }
+  };
+
+  const handleGenerateApiToken = async (userId: string) => {
+    if (!confirm('确定要为此用户生成新的 API Token ��？现有的 Token 将失效。')) return;
+
+    try {
+      const result = await apiService.generateApiToken(userId);
+      setGeneratedToken(result.api_token);
+      setShowApiTokenModal(true);
+      loadData();
+    } catch (error) {
+      console.error('生成 API Token 失败:', error);
+      alert('生成 API Token 失败');
+    }
+  };
+
+  const copyTokenToClipboard = () => {
+    navigator.clipboard.writeText(generatedToken);
+    alert('Token 已复制到剪贴板');
+  };
+
+  const copyTeamIdToClipboard = (teamId: string) => {
+    navigator.clipboard.writeText(teamId);
+    alert('团队ID已复制到剪贴板');
+  };
+
+  const closeApiTokenModal = () => {
+    setShowApiTokenModal(false);
+    setGeneratedToken('');
+  };
+
+  const handleRevokeApiToken = async (userId: string) => {
+    if (!confirm('确定要撤销此用户的 API Token 吗？撤销后需要重新生成才能使用。')) return;
+
+    try {
+      await apiService.revokeApiToken(userId);
+      alert('API Token 已撤销');
+      loadData();
+    } catch (error) {
+      console.error('撤销 API Token 失败:', error);
+      alert('撤销 API Token 失败');
+    }
+  };
+
+  const maskApiToken = (token?: string): string => {
+    if (!token) return '未设置';
+    return `${token.slice(0, 8)}${'*'.repeat(24)}...`;
   };
 
   const handleDeleteTeam = async (teamId: string, teamName: string) => {
@@ -518,6 +567,7 @@ export default function SystemPage() {
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">邮箱</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">角色</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">状态</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">API Token</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">团队</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">注册时间</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">操作</th>
@@ -539,6 +589,9 @@ export default function SystemPage() {
                           }`}>
                             {userItem.is_active ? '活跃' : '已禁用'}
                           </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-500 font-mono">
+                          {maskApiToken(userItem.api_token)}
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-600">
                           {userItem.teams.map(t => t.name).join(', ') || '-'}
@@ -571,6 +624,20 @@ export default function SystemPage() {
                             >
                               重置密码
                             </button>
+                            <button
+                              onClick={() => handleGenerateApiToken(userItem.id)}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              生成Token
+                            </button>
+                            {userItem.api_token && (
+                              <button
+                                onClick={() => handleRevokeApiToken(userItem.id)}
+                                className="text-orange-600 hover:text-orange-700"
+                              >
+                                撤销Token
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -616,6 +683,7 @@ export default function SystemPage() {
                 <table className="min-w-full">
                   <thead>
                     <tr className="border-b">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">团队ID</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">团队名称</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">描述</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">所有者</th>
@@ -627,6 +695,20 @@ export default function SystemPage() {
                   <tbody>
                     {teams.map((team) => (
                       <tr key={team.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <code className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-600">
+                              {team.id}
+                            </code>
+                            <button
+                              onClick={() => copyTeamIdToClipboard(team.id)}
+                              className="text-blue-600 hover:text-blue-700 text-xs"
+                              title="复制团队ID"
+                            >
+                              复制
+                            </button>
+                          </div>
+                        </td>
                         <td className="py-3 px-4 text-sm text-gray-900">{team.name}</td>
                         <td className="py-3 px-4 text-sm text-gray-600">{team.description || '-'}</td>
                         <td className="py-3 px-4 text-sm text-gray-900">
@@ -813,6 +895,59 @@ export default function SystemPage() {
                 className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 确认重置
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* API Token 显示弹窗 */}
+      {showApiTokenModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">API Token 生成成功</h2>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-yellow-800 font-medium mb-2">⚠️ 重要提示</p>
+              <ul className="text-xs text-yellow-700 space-y-1">
+                <li>• 请立即复制并妥善保管此 Token</li>
+                <li>• 关闭此窗口后，将无法再次查看完整的 Token</li>
+                <li>• 如 Token 泄露，请立即撤销并重新生成</li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">API Token</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={generatedToken}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"
+                  />
+                  <button
+                    onClick={copyTokenToClipboard}
+                    className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF] flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    复制
+                  </button>
+                </div>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-700">
+                  <strong>使用方法：</strong>在 HTTP 请求头中添加<br/>
+                  <code className="bg-blue-100 px-2 py-1 rounded mt-1 inline-block">Authorization: Bearer {generatedToken.slice(0, 16)}...</code>
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={closeApiTokenModal}
+                className="px-4 py-2 bg-[#1677FF] text-white rounded-lg hover:bg-[#4096FF]"
+              >
+                我已复制，关闭
               </button>
             </div>
           </div>
