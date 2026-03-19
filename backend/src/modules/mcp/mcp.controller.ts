@@ -5,7 +5,7 @@ import { QueryTeamsDto } from './dto/query-teams.dto';
 import { CreateCustomerMcpDto } from './dto/create-customer-mcp.dto';
 import { ExecuteSkillMcpDto } from './dto/execute-skill-mcp.dto';
 
-@Controller('api/mcp')
+@Controller('mcp')
 @UseGuards(ApiTokenGuard)
 export class McpController {
   constructor(private readonly mcpService: McpService) {}
