@@ -535,4 +535,98 @@ export class McpService {
     this.logger.log(`Found ${skills.length} team-isolated skills for customer ${customerId}`);
     return skills;
   }
+
+  /**
+   * 更新客户档案
+   */
+  async updateCustomerProfile(
+    userId: string,
+    customerId: string,
+    dto: {
+      name?: string;
+      industry?: string;
+      company_size?: string;
+      description?: string;
+      contact_info?: string;
+      background_info?: string;
+      decision_chain?: string;
+      history_notes?: string;
+    }
+  ) {
+    // 1. Verify customer exists and user has access
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    // 2. Verify user is member of the customer's team
+    const teamMember = await this.teamMemberRepository.findOne({
+      where: { user_id: userId, team_id: customer.team_id },
+    });
+
+    if (!teamMember) {
+      throw new ForbiddenException('User is not a member of this team');
+    }
+
+    // 3. Parse contact_info if provided as string
+    let contactInfo = customer.contact_info;
+    if (dto.contact_info) {
+      try {
+        contactInfo = typeof dto.contact_info === 'string'
+          ? JSON.parse(dto.contact_info)
+          : dto.contact_info;
+      } catch (e) {
+        throw new Error('Invalid contact_info JSON format');
+      }
+    }
+
+    // 4. Prepare update data
+    const updateData: any = {};
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.industry !== undefined) updateData.industry = dto.industry;
+    if (dto.company_size !== undefined) updateData.company_size = dto.company_size;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.contact_info !== undefined) updateData.contact_info = contactInfo;
+
+    // Add profile fields to ltc_context
+    const ltcContext = customer.ltc_context || {};
+    if (dto.background_info !== undefined) ltcContext.background_info = dto.background_info;
+    if (dto.decision_chain !== undefined) ltcContext.decision_chain = dto.decision_chain;
+    if (dto.history_notes !== undefined) ltcContext.history_notes = dto.history_notes;
+    updateData.ltc_context = ltcContext;
+
+    // 5. Update customer
+    await this.customerRepository.update(customerId, {
+      ...updateData,
+      updated_at: new Date(),
+    });
+
+    // 6. Fetch and return updated customer
+    const updatedCustomer = await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!updatedCustomer) {
+      throw new NotFoundException('Failed to fetch updated customer');
+    }
+
+    this.logger.log(`Customer ${customerId} updated by user ${userId}`);
+
+    return {
+      success: true,
+      customer: {
+        id: updatedCustomer.id,
+        name: updatedCustomer.name,
+        industry: updatedCustomer.industry,
+        company_size: updatedCustomer.company_size,
+        description: updatedCustomer.description,
+        contact_info: updatedCustomer.contact_info,
+        ltc_context: updatedCustomer.ltc_context,
+        updated_at: updatedCustomer.updated_at,
+      },
+    };
+  }
 }

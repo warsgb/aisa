@@ -69,6 +69,8 @@ winai客户销售管理系统的  技能，提供以下核心功能：
 | 脚本 | 用法 | 说明 |
 |------|------|------|
 | `create-customer.sh <team_id> '<json>'` | JSON: `{"name":"公司","industry":"行业"}` | 创建客户并触发AI调研（异步） |
+| `get-customer-info.sh <customer_id>` | — | 获取客户详细信息和背景资料 |
+| `update-customer-profile.sh <customer_id> <字段> <内容>` | 字段: background/decision/history | 增量更新客户背景资料 |
 | `execute-skill.sh <customer_id> <skill_id> ['<json>']` | 可选JSON参数，如 `{"message":"提示"}` | 执行LTC技能（异步） |
 | `get-latest-doc.sh <customer_id> <skill_id>` | — | 获取技能产出的最新文档 |
 
@@ -101,6 +103,60 @@ bash scripts/get-latest-doc.sh "customer-uuid" "skill-uuid"
    - 创建客户和执行技能都是异步操作
    - 立即返回结果，但实际执行在后台进行
    - 需要等待 30 秒到数分钟后使用 `get-latest-doc.sh` 获取结果
+
+## 客户背景资料管理
+
+### 查看客户背景资料
+```bash
+# 获取客户完整信息（包含背景资料）
+bash scripts/get-customer-info.sh "customer-uuid"
+```
+
+### 更新客户背景资料（增量更新）
+
+支持三个字段的独立更新：
+
+#### 1. 更新客户背景资料
+```bash
+bash scripts/update-customer-profile.sh "customer-uuid" background "新的背景内容"
+```
+
+#### 2. 更新决策链
+```bash
+bash scripts/update-customer-profile.sh "customer-uuid" decision "新的决策链信息"
+```
+
+#### 3. 更新历史合作记录
+```bash
+bash scripts/update-customer-profile.sh "customer-uuid" history "新的历史记录"
+```
+
+### 工作流程示例
+
+```bash
+# 1. 查看客户当前背景资料
+bash scripts/get-customer-info.sh "customer-uuid"
+
+# 2. 更新客户背景（保留原有内容，追加新内容）
+bash scripts/update-customer-profile.sh "customer-uuid" background "
+## 新增背景信息
+- 最近动态：完成了A轮融资
+- 扩展计划：计划开拓华南市场
+"
+
+# 3. 更新决策链
+bash scripts/update-customer-profile.sh "customer-uuid" decision "
+## 新增决策人
+3. **财务总监** - 王五
+   - 负责预算审批
+   - 关注投资回报率
+"
+
+# 4. 验证更新
+bash scripts/get-customer-info.sh "customer-uuid"
+```
+
+**注意**：每次更新都会保留其他字段的内容，只更新指定的字段。
 
 ## 注意
 

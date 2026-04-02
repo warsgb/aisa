@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Query, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiTokenGuard } from '../../common/guards/api-token.guard';
 import { McpService } from './mcp.service';
 import { QueryTeamsDto } from './dto/query-teams.dto';
 import { CreateCustomerMcpDto } from './dto/create-customer-mcp.dto';
 import { ExecuteSkillMcpDto } from './dto/execute-skill-mcp.dto';
+import { UpdateCustomerMcpDto } from './dto/update-customer-mcp.dto';
 
 @Controller('mcp')
 @UseGuards(ApiTokenGuard)
@@ -119,5 +120,18 @@ export class McpController {
       return [];
     }
     return this.mcpService.querySkillsForCustomer(userId, customerId);
+  }
+
+  @Put('customers/:customerId')
+  async updateCustomerProfile(
+    @Param('customerId') customerId: string,
+    @Body() dto: UpdateCustomerMcpDto,
+    @Request() req?: any,
+  ) {
+    const userId = req?.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    return this.mcpService.updateCustomerProfile(userId, customerId, dto);
   }
 }
