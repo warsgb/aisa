@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **环境配置兼容性问题**
+  - 后端恢复全局 `/api` 前缀，兼容生产环境部署
+  - 前端 Vite 代理不再去掉 `/api` 前缀
+  - 新增环境配置文档 `DEPLOYMENT_ENV_CONFIG.md`
+  - 更新 `.env.example` 说明开发/生产环境配置差异
+
 ### Added
 
 - **API Token 管理系统**

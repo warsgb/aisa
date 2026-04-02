@@ -46,7 +46,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true, // Proxy WebSocket
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        // Note: Don't rewrite path - backend has global /api prefix
       },
       '/ws': {
         target: process.env.VITE_WS_URL ? process.env.VITE_WS_URL.replace('http://', 'ws://').replace('https://', 'wss://') : 'ws://localhost:3001',
