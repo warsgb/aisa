@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { AIService, Message } from '../../common/services/ai.service';
 import { SearchService, SearchResult } from '../../common/services/search.service';
 import { Skill } from '../../entities/skill.entity';
@@ -20,7 +20,8 @@ interface ExecuteSkillOptions {
   message?: string;
   interactionId?: string;
   endConversation?: boolean; // New flag to signal conversation end
-  referenceDocumentId?: string; // Document to reference for context
+  referenceDocumentId?: string; // Document to reference for context (deprecated, use referenceDocumentIds)
+  referenceDocumentIds?: string[]; // Multiple documents to reference
   onChunk?: (chunk: string) => void;
   onStart?: (interactionId: string) => void;
   onComplete?: (result: {
@@ -65,7 +66,7 @@ export class SkillExecutorService {
       message,
       interactionId: actionId,
       endConversation = false,
-      referenceDocumentId,
+      referenceDocumentIds,
       onChunk,
       onStart,
       onComplete,
@@ -192,19 +193,20 @@ export class SkillExecutorService {
         console.log('ℹ️ [Skill Executor] No customerId provided');
       }
 
-      // Load reference document
+      // Load reference documents (support multiple)
       let documentContext = '';
-      if (referenceDocumentId) {
-        console.log('📄 [Skill Executor] Loading reference document:', referenceDocumentId);
-        const document = await this.documentRepository.findOne({
-          where: { id: referenceDocumentId },
+      const docIds = referenceDocumentIds || [];
+      if (docIds.length > 0) {
+        console.log(`📄 [Skill Executor] Loading ${docIds.length} reference document(s)...`);
+        const documents = await this.documentRepository.find({
+          where: { id: In(docIds) },
         });
 
-        if (document) {
-          console.log('✅ [Skill Executor] Found reference document:', document.title);
-          documentContext = `\n\n[参考文档]\n标题: ${document.title}\n内容:\n${document.content}\n`;
+        if (documents.length > 0) {
+          console.log(`✅ [Skill Executor] Found ${documents.length} reference document(s)`);
+          documentContext = `\n\n[参考文档]\n${documents.map((doc, index) => `${index + 1}. ${doc.title}\n内容:\n${doc.content}\n`).join('\n---\n')}\n`;
         } else {
-          console.log('⚠️ [Skill Executor] Reference document not found');
+          console.log('⚠️ [Skill Executor] No reference documents found');
         }
       }
 

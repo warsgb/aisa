@@ -21,6 +21,7 @@ interface ExecuteSkillDto {
   interactionId?: string;
   endConversation?: boolean;
   referenceDocumentId?: string;
+  referenceDocumentIds?: string[];
 }
 
 @WebSocketGateway({
@@ -109,7 +110,8 @@ export class StreamingGateway implements OnGatewayConnection, OnGatewayDisconnec
         message: data.message,
         interactionId: data.interactionId,
         endConversation: data.endConversation,
-        referenceDocumentId: data.referenceDocumentId,
+        referenceDocumentId: data.referenceDocumentId || data.referenceDocumentIds?.[0], // 兼容旧版，取第一个
+        referenceDocumentIds: data.referenceDocumentIds || (data.referenceDocumentId ? [data.referenceDocumentId] : undefined),
         onChunk: (chunk: string) => {
           // console.log('📦 [Streaming Gateway] Sending chunk:', chunk.substring(0, 50) + '...');
           client.emit('response:chunk', { chunk });

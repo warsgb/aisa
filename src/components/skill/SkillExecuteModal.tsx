@@ -32,7 +32,7 @@ export function SkillExecuteModal({
 
   // State
   const [parameters, setParameters] = useState<Record<string, ParameterValue>>({});
-  const [referenceDocumentId, setReferenceDocumentId] = useState<string>('');
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [availableDocuments, setAvailableDocuments] = useState<Document[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -116,7 +116,7 @@ export function SkillExecuteModal({
     } else {
       setParameters({});
     }
-    setReferenceDocumentId('');
+    setSelectedDocumentIds([]);
     setStreamOutput('');
     streamContentRef.current = '';
     setCurrentInteractionId(null);
@@ -244,7 +244,7 @@ export function SkillExecuteModal({
         teamId: team.id,
         customerId: currentCustomer?.id,
         parameters: paramValues,
-        referenceDocumentId: referenceDocumentId || undefined,
+        referenceDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
       },
       {
         onStart: (data) => {
@@ -284,7 +284,7 @@ export function SkillExecuteModal({
         },
       }
     );
-  }, [skill, team?.id, currentCustomer?.id, nodeId, parameters, referenceDocumentId, conversationMode]);
+  }, [skill, team?.id, currentCustomer?.id, nodeId, parameters, selectedDocumentIds, conversationMode]);
 
   const handleCancel = useCallback(() => {
     if (currentInteractionId) {
@@ -326,7 +326,7 @@ export function SkillExecuteModal({
         customerId: currentCustomer?.id,
         interactionId: currentInteractionId,
         message: message,
-        referenceDocumentId: referenceDocumentId || undefined,
+        referenceDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
       },
       {
         onStart: () => {
@@ -561,28 +561,42 @@ export function SkillExecuteModal({
 
             {/* Reference document selection */}
             <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">引用历史文档</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">引用历史文档（可多选）</h3>
               {isLoadingDocs ? (
                 <div className="text-sm text-gray-400">加载文档...</div>
               ) : availableDocuments.length === 0 ? (
                 <div className="text-sm text-gray-400">暂无可用文档</div>
               ) : (
-                <select
-                  value={referenceDocumentId}
-                  onChange={(e) => setReferenceDocumentId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#1677FF]"
-                >
-                  <option value="">不引用文档</option>
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2">
                   {availableDocuments.map((doc) => (
-                    <option key={doc.id} value={doc.id}>
-                      {doc.title}
-                    </option>
+                    <label key={doc.id} className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                      <input
+                        type="checkbox"
+                        checked={selectedDocumentIds.includes(doc.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedDocumentIds([...selectedDocumentIds, doc.id]);
+                          } else {
+                            setSelectedDocumentIds(selectedDocumentIds.filter(id => id !== doc.id));
+                          }
+                        }}
+                        className="mt-0.5 w-4 h-4 text-[#1677FF] border-gray-300 rounded focus:ring-[#1677FF]"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-700 truncate">{doc.title}</div>
+                        <div className="text-xs text-gray-400 truncate">
+                          {doc.document_type === 'customer_profile' ? '客户背景资料' :
+                           doc.document_type === 'skill_output' ? '技能输出' :
+                           doc.document_type}
+                        </div>
+                      </div>
+                    </label>
                   ))}
-                </select>
+                </div>
               )}
-              {referenceDocumentId && (
-                <p className="mt-1 text-xs text-[#1677FF]">
-                  已选择引用文档，AI将参考此文档内容
+              {selectedDocumentIds.length > 0 && (
+                <p className="mt-2 text-xs text-[#1677FF]">
+                  已选择 {selectedDocumentIds.length} 个文档，AI将参考这些文档内容
                 </p>
               )}
             </div>
