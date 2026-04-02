@@ -63,6 +63,7 @@ class WebSocketService {
       interactionId?: string;
       endConversation?: boolean;
       referenceDocumentId?: string;
+      referenceDocumentIds?: string[];
     },
     handlers: EventHandlers
   ) {
