@@ -357,12 +357,7 @@ export function CustomersPage() {
     }
 
     try {
-      const result = await apiService.generateCustomer360(team.id, customer.id);
-      // Open preview URL in new tab - use direct static file path
-      const customerId = customer.id;
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const baseUrl = backendUrl.replace(/\/api$/, ''); // Remove /api suffix if present
-
+      await apiService.generateCustomer360(team.id, customer.id);
       alert('360报告生成成功');
     } catch (error: any) {
       console.error('生成360报告失败:', error);
@@ -631,7 +626,7 @@ interface CustomerCardProps {
   teamId: string;
 }
 
-function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAutoFill, onGenerate360, teamId }: CustomerCardProps) {
+function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAutoFill, onGenerate360, teamId: _teamId }: CustomerCardProps) {
   // 仅用于按钮的禁用状态，不显示独立的进度条模态窗口
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [isGenerating360, setIsGenerating360] = useState(false);

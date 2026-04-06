@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { exec } from 'child_process';
+import * as path from 'path';
 import { promisify } from 'util';
 import { AIService } from '../../common/services/ai.service';
 
@@ -8,7 +9,7 @@ const execAsync = promisify(exec);
 @Injectable()
 export class KuaichaService {
   private readonly logger = new Logger(KuaichaService.name);
-  private readonly scriptPath = '/Users/leo/home/aisa/skills/kuaicha-search/scripts/kuaicha_tool.mjs';
+  private readonly scriptPath = path.join(process.cwd(), '../skills/kuaicha-search/scripts/kuaicha_tool.mjs');
   private readonly maxCalls = 12;
 
   constructor(private aiService: AIService) {}
