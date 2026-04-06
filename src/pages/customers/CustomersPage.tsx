@@ -650,14 +650,8 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAut
   };
 
   const handleView360 = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || '/api';
-    // 从 API URL 提取后端基础地址
-    let backendUrl = apiUrl.replace(/\/api$/, '');
-    // 如果替换后为空（VITE_API_URL = '/api'），使用默认后端地址
-    if (!backendUrl || backendUrl === '/') {
-      backendUrl = 'http://localhost:3001';
-    }
-    window.open(`${backendUrl}/customer360/${customer.id}.html`, '_blank');
+    // 通过 nginx 代理访问，无需端口号
+    window.open(`/customer360/${customer.id}.html`, '_blank');
   };
   return (
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-[#1677FF]/20 overflow-hidden">
@@ -733,24 +727,24 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAut
       <div className="flex items-center gap-2 px-5 pb-2">
         <button
           onClick={onView}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#1677FF] bg-[#1677FF]/5 rounded-xl hover:bg-[#1677FF]/10 transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs sm:text-sm sm:gap-2 sm:px-4 font-medium text-[#1677FF] bg-[#1677FF]/5 rounded-xl hover:bg-[#1677FF]/10 transition-colors"
         >
           <Eye className="w-4 h-4" />
-          查看
+          <span className="hidden sm:inline">查看</span>
         </button>
         <button
           onClick={onEditProfile}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs sm:text-sm sm:gap-2 sm:px-4 font-medium text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
         >
           <FileText className="w-4 h-4" />
-          背景资料
+          <span className="hidden sm:inline">背景资料</span>
         </button>
         <button
           onClick={onEdit}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs sm:text-sm sm:gap-2 sm:px-4 font-medium text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
         >
           <Edit className="w-4 h-4" />
-          编辑
+          <span className="hidden sm:inline">编辑</span>
         </button>
       </div>
 
@@ -759,33 +753,33 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAut
         <button
           onClick={handleGenerate360}
           disabled={isGenerating360 || !customer.name}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#1677FF] bg-[#1677FF]/5 rounded-xl hover:bg-[#1677FF]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs sm:text-sm sm:gap-2 sm:px-4 font-medium text-[#1677FF] bg-[#1677FF]/5 rounded-xl hover:bg-[#1677FF]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isGenerating360 ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              生成中...
+              <span className="hidden sm:inline">生成中...</span>
             </>
           ) : (
             <>
               <FileText className="w-4 h-4" />
-              生成360
+              <span className="hidden sm:inline">生成360</span>
             </>
           )}
         </button>
         <button
           onClick={handleView360}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs sm:text-sm sm:gap-2 sm:px-4 font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] transition-colors"
         >
           <Eye className="w-4 h-4" />
-          查看360
+          <span className="hidden sm:inline">查看360</span>
         </button>
         <button
           onClick={onDelete}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs sm:text-sm sm:gap-2 sm:px-4 font-medium text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
-          删除
+          <span className="hidden sm:inline">删除</span>
         </button>
       </div>
     </div>

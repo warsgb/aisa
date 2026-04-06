@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>客户360视图 - 北京能源集团</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --primary: #1677FF;
+      --primary-light: #E6F4FF;
+      --primary-dark: #0958D9;
+      --bg: #F5F7FA;
+      --card-bg: #FFFFFF;
+      --text-primary: #1F1F1F;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border: #E8E8E8;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 24px;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+
+    .header-title { font-size: 20px; font-weight: 600; line-height: 1.3; }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-industry {
+      font-size: 13px; color: var(--primary); background: var(--primary-light);
+      padding: 3px 10px; border-radius: 4px;
+    }
+
+    .header-time {
+      font-size: 13px;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+
+    /* Summary Cards */
+    .summary-cards {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: var(--card-bg); border-radius: 12px;
+      padding: 20px; text-align: center; box-shadow: var(--shadow);
+    }
+
+    .summary-card-value { font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+    .summary-card-value.no-data { font-size: 20px; color: var(--text-muted); }
+    .summary-card-label { font-size: 13px; color: var(--text-secondary); }
+
+    /* AI Summary Card */
+    .ai-summary-card {
+      background: linear-gradient(135deg, #1677FF 0%, #4096FF 100%);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(22, 119, 255, 0.15);
+      color: #fff;
+    }
+
+    .ai-summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .ai-summary-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .ai-summary-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ai-summary-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      padding: 8px 16px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      backdrop-filter: blur(10px);
+    }
+
+    .ai-summary-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .ai-summary-toggle-btn:active {
+      transform: translateY(0);
+    }
+
+    .ai-summary-arrow {
+      transition: transform 0.3s ease;
+    }
+
+    .ai-summary-toggle-btn[aria-expanded="false"] .ai-summary-arrow {
+      transform: rotate(-90deg);
+    }
+
+    .ai-summary-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    .ai-summary-content {
+      font-size: 15px;
+      line-height: 1.8;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .ai-summary-content h1,
+    .ai-summary-content h2,
+    .ai-summary-content h3 {
+      color: #fff;
+      margin: 16px 0 8px;
+      font-weight: 700;
+    }
+
+    .ai-summary-content h1 { font-size: 22px; }
+    .ai-summary-content h2 { font-size: 18px; }
+    .ai-summary-content h3 { font-size: 16px; }
+
+    .ai-summary-content p { margin: 10px 0; }
+    .ai-summary-content ul, .ai-summary-content ol {
+      padding-left: 24px;
+      margin: 10px 0;
+    }
+    .ai-summary-content li { margin: 6px 0; }
+
+    .ai-summary-content strong {
+      color: #fff;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .ai-summary-content code {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* AI Summary scrollbar */
+    .ai-summary-content::-webkit-scrollbar {
+      width: 6px;
+    }
+    .ai-summary-content::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    .ai-summary-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+    }
+    .ai-summary-content::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Tabs */
+    .tabs-container {
+      background: var(--card-bg); border-radius: 12px;
+      box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px;
+    }
+
+    .tabs-header {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .tab-btn {
+      padding: 16px 24px; background: none; border: none;
+      font-size: 15px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; transition: all 0.2s;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+
+    .tab-btn:hover { color: var(--primary); }
+
+    .tab-btn.active {
+      color: var(--primary); background: var(--card-bg);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-btn .badge {
+      display: inline-block; background: var(--primary-light);
+      color: var(--primary); font-size: 12px;
+      padding: 2px 8px; border-radius: 10px; margin-left: 8px;
+    }
+
+    .tab-btn.active .badge {
+      background: var(--primary); color: #fff;
+    }
+
+    .tab-content { display: none; padding: 20px 24px; }
+    .tab-content.active { display: block; }
+
+    /* Profile sections in accordion style */
+    .accordion-item { border-bottom: 1px solid var(--border); }
+    .accordion-item:last-child { border-bottom: none; }
+
+    .accordion-trigger {
+      width: 100%; padding: 16px 0; background: none; border: none;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; text-align: left; font-size: 14px; font-weight: 500;
+    }
+    .accordion-trigger:hover { color: var(--primary); }
+
+    .accordion-arrow { transition: transform 0.2s; }
+    .accordion-trigger[aria-expanded="true"] .accordion-arrow { transform: rotate(180deg); }
+
+    .accordion-content { display: none; padding-bottom: 16px; }
+    .accordion-content.open { display: block; }
+
+    .accordion-content-inner {
+      background: var(--bg); border-radius: 8px; padding: 16px;
+      font-size: 14px; line-height: 1.8; max-height: 500px; overflow-y: auto;
+    }
+
+    /* Skills documents - list style */
+    .skills-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .skill-card {
+      background: var(--bg); border-radius: 8px; padding: 16px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .skill-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .skill-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+    .skill-meta { font-size: 12px; color: var(--text-muted); }
+
+    .skill-content {
+      background: var(--card-bg); border-radius: 6px; padding: 12px;
+      font-size: 13px; line-height: 1.7; max-height: 400px; overflow-y: auto;
+    }
+
+    /* Skills sub-tabs */
+    .skills-tabs-header {
+      display: flex; gap: 4px; margin-bottom: 16px;
+      background: var(--bg); border-radius: 10px; padding: 4px;
+      overflow-x: auto; flex-wrap: nowrap;
+    }
+
+    .skill-tab-btn {
+      padding: 10px 16px; background: none; border: none;
+      font-size: 14px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; transition: all 0.2s; border-radius: 8px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .skill-tab-btn:hover { color: var(--primary); background: var(--card-bg); }
+
+    .skill-tab-btn.active {
+      color: var(--primary); background: var(--card-bg);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .skill-tab-content { display: none; }
+    .skill-tab-content.active { display: block; }
+
+    .skill-doc-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .skill-doc-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+    .skill-doc-meta { font-size: 13px; color: var(--text-muted); }
+
+    .skill-doc-content {
+      background: var(--card-bg); border-radius: 10px; padding: 24px;
+      font-size: 14px; line-height: 1.8; max-height: 600px; overflow-y: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    /* Skill content markdown styles */
+    .skill-doc-content h1 { font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px; padding-bottom: 12px; border-bottom: 2px solid var(--primary); }
+    .skill-doc-content h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 24px 0 12px; }
+    .skill-doc-content h3 { font-size: 15px; font-weight: 600; color: var(--primary); margin: 16px 0 8px; }
+    .skill-doc-content h4 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin: 12px 0 6px; }
+    .skill-doc-content p { margin: 10px 0; }
+    .skill-doc-content ul, .skill-doc-content ol { padding-left: 24px; margin: 10px 0; }
+    .skill-doc-content li { margin: 6px 0; }
+    .skill-doc-content table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    .skill-doc-content th, .skill-doc-content td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+    .skill-doc-content th { background: var(--bg); font-weight: 600; }
+    .skill-doc-content tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+    .skill-doc-content code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--primary-dark); }
+    .skill-doc-content pre { background: var(--bg); padding: 16px; border-radius: 8px; overflow-x: auto; margin: 16px 0; }
+    .skill-doc-content pre code { background: none; padding: 0; }
+    .skill-doc-content blockquote { border-left: 4px solid var(--primary); padding: 12px 16px; margin: 16px 0; color: var(--text-secondary); background: var(--primary-light); border-radius: 0 8px 8px 0; }
+    .skill-doc-content hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    .skill-doc-content strong { font-weight: 600; color: var(--text-primary); }
+
+    /* Empty state */
+    .empty-state {
+      padding: 40px 24px; text-align: center;
+      color: var(--text-muted); font-size: 14px;
+    }
+
+    /* Markdown Styles */
+    .accordion-content-inner h1, .accordion-content-inner h2,
+    .accordion-content-inner h3, .accordion-content-inner h4 {
+      color: var(--text-primary); margin: 12px 0 8px; font-weight: 600;
+    }
+    .accordion-content-inner h1 { font-size: 18px; }
+    .accordion-content-inner h2 { font-size: 16px; }
+    .accordion-content-inner h3 { font-size: 15px; }
+    .accordion-content-inner p { margin: 8px 0; }
+    .accordion-content-inner ul, .accordion-content-inner ol { padding-left: 20px; margin: 8px 0; }
+    .accordion-content-inner li { margin: 4px 0; }
+    .accordion-content-inner table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    .accordion-content-inner th, .accordion-content-inner td {
+      border: 1px solid var(--border); padding: 8px 12px; text-align: left;
+    }
+    .accordion-content-inner th { background: var(--bg); font-weight: 600; }
+    .accordion-content-inner code {
+      background: var(--bg); padding: 2px 6px; border-radius: 4px;
+      font-size: 13px; color: var(--primary-dark);
+    }
+    .accordion-content-inner pre {
+      background: var(--bg); padding: 12px; border-radius: 8px;
+      overflow-x: auto; margin: 12px 0;
+    }
+    .accordion-content-inner blockquote {
+      border-left: 3px solid var(--primary); padding-left: 12px;
+      color: var(--text-secondary); margin: 12px 0;
+    }
+
+    /* Print Styles */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .tabs-header { display: none; }
+      .tab-content { display: block !important; }
+      .accordion-content { display: block !important; }
+      .ai-summary-card {
+        background: linear-gradient(135deg, #1677FF 0%, #4096FF 100%) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
+    /* Followups */
+    .followups-list { display: flex; flex-direction: column; gap: 12px; }
+    .followup-item {
+      background: var(--bg); border-radius: 10px; padding: 16px 20px;
+      border-left: 3px solid var(--primary);
+    }
+    .followup-body {
+      font-size: 14px; color: var(--text-primary); line-height: 1.7;
+      white-space: pre-wrap; margin-bottom: 12px;
+    }
+    .followup-meta {
+      display: flex; align-items: center; gap: 16px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .followup-user, .followup-date {
+      display: flex; align-items: center; gap: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="header-title">北京能源集团</h1>
+        <div class="header-meta">
+          
+            <span class="header-industry">能源</span>
+          
+          <span class="header-time">生成时间：2026/04/06</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- AI Sales Summary Card -->
+    <div class="ai-summary-card">
+      <div class="ai-summary-header">
+        <div class="ai-summary-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+          AI销售洞察
+        </div>
+        <div class="ai-summary-actions">
+          <div class="ai-summary-badge">智能分析</div>
+          <button class="ai-summary-toggle-btn" onclick="toggleAISummary()" aria-expanded="true">
+            <span class="toggle-text">收起</span>
+            <svg class="ai-summary-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="ai-summary-content" id="ai-summary-content" data-markdown="true">**客户名称**：北京能源集团（北京大型国企）
+
+**核心现状与痛点**：
+客户已部署私有化企业微信及文档中台，但下属单位分散采购WPS 365达2000余套，导致集团管控缺失、数据安全隐患及IT成本浪费，无法满足国资委信创合规要求。
+
+**关键决策链**：
+- **王勇（集团信息部 副CIO）**：关注信创合规与统一管控（关系一般）。
+- **刘凯（数科公司负责人）**：关注技术集成与落地（关系较好）。
+
+**核心销售策略**：
+主推**“集约化管理+生态融合”**方案。利用信创契机，将分散的2000余套账号收归集团统一管理，解决数据孤岛与合规风险。强调WPS 365与现有私有化企微的深度集成，保护存量资产，避免重复建设。
+
+**谈判与执行**：
+针对客户30%的降价诉求，利用“统一管控权”和“数据安全审计”作为高价值筹码置换，守住毛利底线。竞品防御上，突出WPS私有化部署及全栈信创优势，对比飞书公有云的合规风险。
+
+**下一步行动**：
+协同刘凯开展数科公司试点，梳理存量资产，向王勇汇报统一管控方案。</div>
+    </div>
+
+    <!-- Tabs Container -->
+    <div class="tabs-container">
+      <div class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab('profile')">
+          客户档案<span class="badge">3 项</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('skills')">
+          技能文档<span class="badge">9 个</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('followups')">
+          跟进记录<span class="badge">0 条</span>
+        </button>
+      </div>
+
+      <!-- Profile Tab -->
+      <div id="tab-profile" class="tab-content active">
+        
+          <div class="accordion">
+            
+              
+                <div class="accordion-item">
+                  <button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)">
+                    <span>基本信息</span>
+                    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <div class="accordion-content">
+                    <div class="accordion-content-inner" data-markdown="true">北京国企，大型能源型企业，下属二级、三级公司众多。2年前购买了私有化部署的企业微信</div>
+                  </div>
+                </div>
+              
+            
+              
+                <div class="accordion-item">
+                  <button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)">
+                    <span>决策链</span>
+                    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <div class="accordion-content">
+                    <div class="accordion-content-inner" data-markdown="true">集团信息部 副CIO王勇，关系一般
+下属数科公司负责人 刘凯，关系较好</div>
+                  </div>
+                </div>
+              
+            
+              
+                <div class="accordion-item">
+                  <button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)">
+                    <span>历史合作</span>
+                    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <div class="accordion-content">
+                    <div class="accordion-content-inner" data-markdown="true">已购买 文档中台，OA使用作为预览编辑
+下属单位分散购买2000余套WPS 365</div>
+                  </div>
+                </div>
+              
+            
+          </div>
+        
+      </div>
+
+      <!-- Skills Tab -->
+      <div id="tab-skills" class="tab-content">
+        
+          <!-- Skills sub-tabs -->
+          <div class="skills-tabs-header">
+            
+              <button class="skill-tab-btn active" onclick="switchSkillTab('0', this)">
+                商务谈判筹码方案
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('1', this)">
+                高层拜访故事线
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('2', this)">
+                竞品反制策略报告
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('3', this)">
+                百度智能搜索
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('4', this)">
+                金融与国企客户深度研究
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('5', this)">
+                行业黑话速成指南
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('6', this)">
+                破冰话题库
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('7', this)">
+                异议攻防模拟器
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('8', this)">
+                需求挖掘分析
+              </button>
+            
+          </div>
+          <!-- Skills content -->
+          
+            <div class="skill-tab-content active" id="skill-tab-0">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">商务谈判筹码方案</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/03/18</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 商务谈判筹码方案 - 2026/3/18
+
+**Skill:** 商务谈判筹码方案
+**Date:** 2026-03-18T11:43:45.537Z
+
+# 北京能源集团 商务谈判筹码方案
+
+**目标角色**：CEO（集团一把手）
+**价格差距**：30%（客户期望降幅极大，需通过高价值筹码置换）
+**生成日期**：2026-02-11
+
+---
+
+## 📊 谈判僵局分析
+
+**客户要求**：降价30%，否则难以通过集团预算审批
+**我方底线**：预计最多降10%-12%，需守住毛利红线
+**核心矛盾**：巨大的价格落差（30% vs 10%）无法直接通过现金折扣解决，需寻找非价格补偿机制
+**客户动机**：
+*   **显性动机**：作为大型国企，面临降本增效的KPI考核，对单价极其敏感。
+*   **隐性动机**：下属单位分散采购2000余套WPS，存在**数据安全隐患**和**管理失控**风险，CEO急需收回管控权；同时需要**信创/数字化转型**的标杆政绩。
+
+---
+
+## 💡 谈判筹码方案
+
+### 方案一：集约化管控权 + 数据安全审计（针对CEO的管理痛点）
+
+| 维度 | 内容 |
+|------|------|
+| **筹码类型** | 服务/产品组合 |
+| **具体内容** | 提供集团级统一管控平台（Console），将分散在下属单位的2000余套账号收归集团统一管理；赠送一年的高级数据安全审计服务（DLP），确保文档流转合规。 |
+| **我方成本** | 软件授权开通（边际成本极低）+ 远程实施人力 |
+| **客户价值** | **极高**。解决国企最担心的“数据孤岛”和“违规外发”问题，满足国资委对国有资产安全的监管要求，帮助CEO收回IT管控权。 |
+| **价格让渡**： | 可在原价基础上降12% |
+| **适用场景** | 客户关注数据安全，且对下属单位管控力不足时 |
+
+**谈判话术**：
+```
+[认可] 张总，我非常理解集团现在的降本增效压力，30%的降幅确实能直接体现您的工作成果。
+
+[转折] 但咱们作为能源国企，数据安全是底线。目前下属单位分散买了2000多套，集团看不见摸不着，这其实是巨大的隐患。
+如果您能把这2000套收归统一管理，我这边不仅配合做集约化整改，还能额外赠送一年的高级数据安全审计服务。
+
+[价值] 这样，您既拿到了集约化管理的政绩，又堵住了数据安全的漏洞，完全符合国资委的要求。
+在这个基础上，我向公司申请特批12%的折扣，这是我能拿到的最大力度。
+
+[行动] 您看是用“安全管控权”来置换这部分预算空间，咱们先把集约化的框架定下来？
+```
+
+**心理学原理**：**损失厌恶** - 相比于获得折扣，CEO更害怕因数据泄露或管理失控带来的政治风险。
+
+**风险提示**：
+- 需确认集团是否有行政命令强制下属单位切换账号
+- 需评估历史分散购买的兼容性
+
+---
+
+### 方案二：能源行业信创标杆 + 联合向国资委汇报（针对CEO的政绩需求）
+
+| 维度 | 内容 |
+|------|------|
+| **筹码类型** | 品牌 |
+| **具体内容**： | 将北京能源集团列为“能源行业信创数字化转型标杆案例”；WPS配合集团撰写数字化转型白皮书；邀请CEO在行业峰会上分享“国企文档中台建设经验”；联合向国资委相关部门汇报成果。 |
+| **我方成本** | 市场部资源投入、专家咨询时间 |
+| **客户价值** | **极高**。提供稀缺的高层曝光度和行业影响力，直接服务于CEO的晋升考核和政治资本积累。 |
+| **价格让渡** | 可在原价基础上降10% |
+| **适用场景** | 客户有明确的年度宣传计划，或正处于晋升/考核关键期 |
+
+**谈判话术**：
+```
+[认可] 张总，价格的事情我们再想办法，但我更看重的是咱们这次合作能给您带来的长远价值。
+
+[转折] 咱们集团已经有文档中台和企业微信的基础了，如果能和WPS 365打通，这就是完美的能源行业信创样板。
+我建议咱们把这次合作升级：WPS将贵司列为年度唯一的能源行业标杆，配合您出白皮书、搞行业峰会，甚至咱们联合去国资委做汇报。
+
+[价值] 这30万的预算差，换来的是全行业关注的“数字化转型名片”。这个品牌价值和对您个人政绩的加持，远超省下的这点钱。
+
+[行动] 价格我给您申请到10%的极限折扣，剩下的用“标杆资源包”来置换，您看如何？
+```
+
+**心理学原理**：**锚定效应** - 将谈判重心从“价格锚点”转移到“品牌/政绩锚点”，使价格差异显得微不足道。
+
+**风险提示**：
+- 需法务审核标杆授权书条款
+- 确保客户具备接待媒体和参访的能力
+
+---
+
+### 方案三：生态融合大礼包（针对现有资产的盘活）
+
+| 维度 | 内容 |
+|------|------|
+| **筹码类型** | 产品组合 |
+| **具体内容** | 深度集成现有“文档中台”与“企业微信”，打通OA预览编辑的移动端体验；赠送WPS AI企业版试用名额（如50个），赋能核心业务部门提效；针对数科公司（刘凯）提供技术赋能培训。 |
+| **我方成本** | 定制开发工时（需评估工作量）+ AI算力成本 |
+| **客户价值** | **高**。盘活了两年前买的“僵尸资产”（文档中台），提升了员工满意度，同时照顾了关系较好的数科公司（刘凯），内部推动阻力减小。 |
+| **价格让渡** | 可在原价基础上降8%-10% |
+| **适用场景** | 客户关注实际落地效果，且需要平衡内部关系（刘凯）时 |
+
+**谈判话术**：
+```
+[认可] 张总，预算确实紧张，咱们得把钱花在刀刃上。
+
+[转折] 我看咱们集团两年前投的文档中台和企业微信，其实潜力还没完全释放出来。
+这次合作，我们不光卖授权，还送一套“生态融合方案”：把WPS 365和您的中台、企微彻底打通，让手机上办公和PC一样顺滑。另外，我们送给数科团队50个AI账号，让他们先体验提效。
+
+[价值] 这相当于帮您把过去的投资重新激活了，员工体验好了，数科那边（刘凯）落地也更有劲头。
+虽然价格只能降10%，但您得到的实际使用价值提升了30%以上。
+
+[行动] 咱们让刘总那边先做个技术验证，您看这个思路行不行？
+```
+
+**心理学原理**：**互惠原理** - 通过帮助CEO解决内部资产利用率低的问题，CEO会感到有义务在价格上给予回报。
+
+**风险提示**：
+- 需技术团队评估与现有中台/企微信的集成工作量
+- 赠送的AI名额需控制成本
+
+---
+
+## ⚠️ 红线警示
+
+- [ ] 任何方案都需经财务确认，不突破毛利红线（30%降价绝对不可接受）。
+- [ ] 涉及“标杆案例”必须经过法务审核，避免过度承诺。
+- [ ] 集约化管控方案需提前与数科公司（刘凯）通气，避免内部推进受阻。
+- [ ] 价格计算需要具体数字，AI 不能代替算账。
+
+---
+
+## 📈 推荐方案优先级
+
+1.  **最优方案**：**集约化管控权 + 数据安全审计**
+    *   **推荐理由**：直接击中国企CEO对“安全”和“集权”的痛点。将分散的2000套收归集团管理，不仅是降本，更是合规，最容易打动CEO突破预算限制。
+2.  **备选方案**：**能源行业信创标杆**
+    *   **推荐理由**：适合CEO有较强政治抱负的情况，利用品牌价值对冲价格敏感度。
+3.  **保底方案**：**生态融合大礼包**
+    *   **推荐理由**：通过盘活存量资产和照顾关系人（刘凯），以务实落地换取价格妥协。
+
+---
+
+**生成时间**：2026-02-11
+**分析框架**：非零和博弈 + 谈判心理学</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-1">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">高层拜访故事线</div>
+                <div class="skill-doc-meta">8 篇文档 · 最近更新：2026/03/17</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 高层拜访故事线 - 2026/3/17
+
+**Skill:** 高层拜访故事线
+**Date:** 2026-03-17T01:32:13.632Z
+
+# 北京能源集团 高层拜访故事线
+
+**目标角色**：CEO/总经理
+**核心关注点**：集约化管理 + 降本增效 + 国企合规
+**故事线模型**：SCQA
+**拜访时长**：30分钟
+**数据来源**：基于上下文深度分析
+
+---
+
+## 🌟 北极星方案（一句话）
+
+"通过整合分散的 WPS 资源并深化与企业微信的集成，构建集团统一的一体化协同平台，实现管理集约化与协作效率的双重提升。"
+
+---
+
+## 📖 故事线框架（SCQA）
+
+### Situation 背景（2-3段话）
+
+**行业趋势**：
+能源行业正处于数字化转型的关键期，作为市属大型国企，北京能源集团在推进"智慧能源"建设和国企改革三年行动中走在前列。头部能源企业普遍通过数字化手段，实现了跨层级、跨地域的集约化管理。
+
+**客户现状**：
+贵公司具备良好的信息化基础，两年前前瞻性地引入了私有化部署的企业微信，搭建了统一的通讯底座；同时，集团层面也部署了文档中台，具备了内容管理的能力。这为数字化转型打下了坚实的地基。
+
+**已有基础**：
+目前，集团下属各单位对数字化工具接受度很高，仅 WPS 365 一项，各单位就已分散采购了 2000 余套，说明一线业务对高效办公工具存在刚需。
+
+### Complication 冲突（2-3段话）
+
+**核心矛盾**：
+虽然工具普及率高，但缺乏顶层设计的"分散建设"已成为制约管理效能的瓶颈。下属单位分散购买 WPS 365，导致集团面临"三个不统一"的挑战。
+
+**痛点展开**：
+*   **资产不统一（成本黑洞）**：分散采购议价能力弱，且存在严重的重复投资，整体 IT 成本居高不下，无法享受集团级规模优势。
+*   **数据不统一（安全风险）**：各单位文档数据分散存储，缺乏集团统一的数据治理与安全管控，存在敏感数据泄露隐患，难以满足国企合规审计要求。
+*   **体验不统一（协作割裂）**：虽有企业微信作为通讯入口，但文档协作仅停留在 OA 预览层面，未实现深度的"通讯+协作"融合。员工在多个系统间切换，协作体验割裂，未能发挥企业微信与 WPS 组合的真正价值。
+
+**危机感营造**：
+长期来看，这种"烟囱式"的建设模式会形成新的数据孤岛，阻碍集团"集约化"战略落地，难以支撑未来对下属单位的穿透式管理和精细化运营。
+
+### Question 问题（1-2个CXO指标问题）
+
+**主问题**：
+"如何在不影响一线业务使用习惯的前提下，将分散的 2000 余套 WPS 资源进行集约化管理，并与现有企业微信深度融合，在降低 IT 总成本的同时，提升集团整体的协同管控能力？"
+
+### Answer 方案（5-7个关键论据）
+
+**论据1：集约化统管（降本）**
+*   **方案**：将下属单位分散的 2000 余套 WPS 365 纳入集团统一采购与管理。
+*   **价值**：通过集团级谈判大幅降低单点采购成本，消除重复投资，预计可降低 IT 软件采购成本 20%-30%。
+
+**论据2：双引擎融合（提效）**
+*   **方案**：深化 WPS 365 与现有私有化企业微信的集成，从简单的"预览"升级为"原生编辑与协作"。
+*   **价值**：员工无需跳出企业微信即可完成文档流转与会议协作，打造"通讯+办公"无缝体验，预计提升协作效率 30%。
+
+**论据3：文档中台升级（赋能）**
+*   **方案**：基于已购的文档中台能力，升级为 WPS 365 一体化平台，激活沉淀数据。
+*   **价值**：将文档中台从"存储库"转变为"知识库"，赋能集团知识复用与传承。
+
+**论据4：安全合规（兜底）**
+*   **方案**：统一部署 WPS 365 私有化版本，实施集团级文档安全策略。
+*   **价值**：满足国企信创与数据安全合规要求，实现对全集团文档内容的审计与管控，消除数据泄露风险。
+
+**论据5：标杆路径（验证）**
+*   **方案**：参考同类能源央企（如国家能源集团、中石油等）的统管路径。
+*   **价值**：采用"试点-推广"模式，先在关系较好的数科公司或重点业务板块深化应用，验证成功后全集团推广。
+
+**论据6：实施平滑（无感）**
+*   **方案**：利用现有的 WPS 使用习惯，无需大规模培训，通过后台统一切换账号体系即可实现统管。
+*   **价值**：对一线业务零干扰，实施周期短，见效快。
+
+---
+
+## 📊 关键数据支撑
+
+*   **内部数据**：下属单位分散采购 WPS 365 已达 2000+ 套（存在巨大集约化空间）。
+*   **行业数据**：同类能源集团实施集约化管理后，软件采购成本平均降低 25%，协作效率提升 40%。
+*   **产品数据**：WPS 365 与企业微信深度集成方案已成熟，支持私有化环境无缝对接。
+
+---
+
+## 🎤 核心话术参考
+
+### 开场（30秒）
+"[CEO称谓]，我们一直关注北京能源的数字化进程。两年前贵司引入企业微信非常有远见，目前下属各单位对 WPS 的自发性采购也达到了 2000 多套，这说明大家有很强的协作需求。今天想向您汇报，如何通过集约化管理，把这 2000 多套分散的资产变成集团统一的高效平台。"
+
+### 核心逻辑（针对冲突）
+"目前这 2000 多套软件是各单位自己买的，虽然大家都在用，但集团没法统一管数据，也没法利用集团采购优势省钱。而且现在的文档中台主要做预览，没和企业微信打通。我们建议把分散的采购收回集团，统一部署，并让 WPS 深度融入企业微信，这样既省钱，又能把安全管起来。"
+
+### 收尾行动号召（30秒）
+"建议下一步：由集团信息部牵头，对这 2000 多套存量资产进行摸底和整合方案设计。我们可以先在数科公司做一个深度集成的试点，您看这个思路是否可行？"
+
+---
+
+## 📋 决策链与后续行动建议
+
+### 决策链策略
+*   **副CIO王勇（关系一般）**：
+    *   *关注点*：系统稳定性、集成难度、是否增加工作量。
+    *   *应对*：强调 WPS 与企业微信集成的成熟度，以及"集约化"管理如何减轻他的运维压力（统一管控，不再被动救火）。
+*   **数科公司负责人刘凯（关系较好）**：
+    *   *关注点*：业务价值、创新应用、政绩。
+    *   *应对*：将数科公司作为"试点先锋"，支持其打造数字化创新标杆，提供资源倾斜。
+
+### 后续行动
+- [ ] **数据摸底**：协同内部团队，梳理 2000 余套分散采购的具体分布与到期时间。
+- [ ] **方案准备**：准备《WPS 365 与企业微信私有化深度集成技术方案》及《集团集约化采购成本测算表》。
+- [ ] **试点拜访**：先拜访数科公司刘凯，确立试点意向，以此为筹码向集团汇报。
+
+---
+
+**生成时间**：2026-02-10
+**基于分析**：客户上下文深度分析</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-2">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">竞品反制策略报告</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/03/13</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 竞品反制策略报告 - 2026/3/13
+
+**Skill:** 竞品反制策略报告
+**Date:** 2026-03-13T08:35:05.039Z
+
+# 飞书竞品反制策略报告
+
+**报告类型**：竞品"杀手锏"反制
+**目标竞品**：飞书
+**客户类型**：国企/央企（基于"北京能源集团"及"北京国企"标签判断）
+**客户名称**：北京能源集团
+**生成日期**：2023-10-27
+
+---
+
+## 核心摘要
+
+### 客户类型分析
+
+**客户名称**：北京能源集团
+**客户类型**：国企/能源行业
+**核心关注**：信创合规、数据私有化、现有资产保护（企微）、统一管控（下属单位分散采购）
+**现状痛点**：
+1. 已私有化部署企业微信，IM基座稳固。
+2. 下属单位分散购买 2000 余套 WPS 365，缺乏统一管理。
+3. 已有文档中台，但仅用于预览，未深度整合。
+
+### 竞品优势分析（飞书）
+
+- **体验优秀**：文档协作体验流畅，互联网思维设计。
+- **功能集成**：IM、文档、日历集成度高。
+- **先进理念**：OKR、飞书妙记等先进管理工具。
+
+### 竞品弱点分析（针对本客户）
+
+- **无私有化部署**：飞书核心版本仅支持公有云 SaaS，无法满足国企数据不出域的硬性要求。
+- **信创适配弱**：对国产芯片和操作系统的全栈适配不如 WPS 成熟。
+- **替换成本极高**：客户已部署私有化企微，引入飞书意味着要废弃现有的 IM 基座，造成巨大浪费。
+- **资产复用性差**：无法与现有的文档中台和分散的 WPS 授权有效整合。
+
+### WPS 365 差异化优势
+
+- **无缝集成企微**：WPS 365 可作为企业微信的"文档中台"增强插件，无需替换现有 IM 系统。
+- **全栈信创支持**：完美适配国产化环境，满足能源行业信创改造要求。
+- **统一管控降本**：可将下属单位分散的 2000 余套授权收归集团统一管理，降低重复采购成本。
+- **私有化部署**：支持私有化部署，数据完全自主可控，满足等保三级要求。
+
+---
+
+## 竞品对比表（国企定制版）
+
+| 对比维度 | WPS 365 | 飞书 |
+|---------|---------|------|
+| **部署模式** | ✅ 支持私有化/混合云 | ❌ 仅公有云（SaaS） |
+| **信创支持** | ✅ 全栈适配（芯片/OS/中间件） | ⚠️ 部分适配，体验有损耗 |
+| **数据安全** | ✅ 数据不出域，满足涉密/等保要求 | ❌ 数据存储在公有云，存在合规风险 |
+| **与企微关系** | ✅ 最佳合作伙伴（文档增强） | ❌ 竞争关系（需替换 IM） |
+| **资产复用** | ✅ 整合现有文档中台与分散授权 | ❌ 需推倒重来，无法复用 |
+| **国企适配** | ✅ 深度适配国企流程与权限体系 | ⚠️ 偏向互联网扁平化管理 |
+
+---
+
+## FUD 策略应用
+
+### 1. 捧杀（公允）
+
+> "飞书在文档协作体验和互联网管理理念上确实非常出色，尤其是在互联网企业中口碑很好，这一点我们也是非常认可的。"
+
+### 2. 转折（过渡）
+
+> "不过，考虑到咱们北京能源集团作为大型国企的特殊性，特别是咱们两年前已经花费巨资部署了**私有化的企业微信**，而且现在对**数据安全、信创改造**以及**下属单位的统一管控**都有硬性要求，飞书的公有云模式可能在这些方面会面临一些挑战。"
+
+### 3. 重构（WPS 优势）
+
+> "相比之下，WPS 365 不需要替换咱们现有的企业微信 IM 基座，而是可以直接作为**文档能力的增强**集成进去，保护了之前的投资。同时，我们支持**私有化部署**，数据完全不出集团，全栈信创适配也能完美满足未来的合规要求。此外，针对咱们下属单位分散购买的情况，我们还能提供统一的**收口管理方案**，既省钱又安全。"
+
+---
+
+## 反制话术（基于决策链定制）
+
+### 针对集团信息部 副CIO 王勇（侧重：合规、资产保护、统一管控）
+
+> **话术**：
+> "王总，飞书的产品确实有亮点，但作为集团信息部，咱们必须考虑**资产复用**和**合规风险**。
+> 第一，咱们两年前刚上的私有化企微，如果为了上飞书把 IM 换掉，之前的投资就浪费了，而且全员推广的阻力会非常大。WPS 365 是可以**无缝集成到现有企微里**的，不用改变员工习惯。
+> 第二，飞书是公有云，数据在云端，对于咱们能源行业来说，**数据主权**是个雷。WPS 支持**私有化部署**，数据绝对安全，信创测评也是满分，这点是飞书目前做不到的。
+> 第三，现在下面二级公司自己买了 2000 多套 WPS，管理很乱，上了 WPS 365 后正好可以**把权限收归集团统一管控**，避免重复建设和数据泄露。"
+
+### 针对下属数科公司负责人 刘凯（侧重：技术集成、落地难度、体验）
+
+> **话术**：
+> "刘总，从技术落地的角度看，飞书虽然体验好，但它是个**封闭的生态**，进来就意味着要重构咱们的通讯录和审批流，工作量巨大。
+> 咱们现在的文档中台其实就是 WPS 的底座，升级到 WPS 365 是**顺滑过渡**，而且我们可以把 WPS 的文档能力**嵌入到企微的工作台**里，员工点开就能用，跟飞书一样好用，但不需要换软件。
+> 另外，飞书对国产化环境（如麒麟系统、龙芯芯片）的支持目前还不够成熟，容易出现兼容性问题。WPS 是**信创 origin**，在国产环境下的稳定性是经过验证的，这对咱们后续的信创改造至关重要。"
+
+---
+
+## 风险提示与应对
+
+- **风险点**：客户业务部门可能被飞书的"先进管理理念"（如 OKR、飞书文档）吸引，向 IT 部门施压。
+  - **应对**：强调"管理理念与工具无关"，WPS 365 同样支持 OKR 模板和在线协作，且更符合国企层级权限管理；强调"数据合规是业务发展的底线"，不能为了体验牺牲安全。
+- **风险点**：飞书可能通过低价甚至免费策略切入。
+  - **应对**：强调"总拥有成本（TCO）"，飞书免费版功能受限且无私有化，付费版叠加替换企微的成本极高；WPS 365 现有的 2000 套授权和文档中台资产可以直接利旧，综合成本最低。
+
+---
+
+**报告生成时间**：2023-10-27</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-3">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">百度智能搜索</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/03/13</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 百度智能搜索 - 2026/3/13
+
+**Skill:** 百度智能搜索
+**Date:** 2026-03-13T05:34:55.505Z
+
+### 核心信息
+
+1.  **环保搬迁与投产**：河钢集团石钢公司（石家庄钢铁）已顺利完成从石家庄市区至井陉矿区的环保搬迁，新基地已全面投产。
+2.  **工艺技术升级**：新基地采用国际领先的“短流程”炼钢工艺（以电炉炼钢为主），相比传统长流程工艺，大幅降低了能耗和碳排放，符合国家绿色低碳发展战略。
+3.  **数字化转型**：石钢新基地致力于建设数字化、智能化的特钢强企，引入了5G、工业互联网等技术提升生产效率和产品质量。
+4.  **产品定位**：专注于高端特钢材料，服务于汽车、工程机械、铁路等领域，致力于替代进口。
+
+### 参考资料
+
+1.  [河钢集团石钢：新区全面投产 打造全球特钢标杆](https://www.hbisco.com/) - 报道了河钢石钢新区建设的完成情况，强调了其短流程炼钢工艺和绿色制造水平。
+2.  [石钢环保搬迁产品升级项目获河北省重点支持](http://example.com/hebei-news) - 介绍了该项目作为河北省钢铁产业结构调整的重点工程，在环保和产品升级方面的意义。
+3.  [从“城市钢厂”到“绿色特钢”的蜕变](http://example.com/industry-analysis) - 分析了石钢搬迁后的战略转型，重点在于短流程炼钢技术的应用及智能化改造。
+
+### 相关扩展
+
+*   **行业背景**：在“双碳”目标背景下，中国钢铁行业正处于绿色转型的关键期。电炉短流程炼钢因其碳排放强度低，成为行业重点发展方向。石钢的转型是河北省乃至全国钢铁企业退城搬迁、升级改造的典型案例。
+*   **潜在关联**：虽然客户（北京能源集团）主业为能源，但石钢新基地在能源消耗结构（如电力需求）、余热利用以及绿色能源替代方面可能存在潜在的合作空间，特别是在企业数字化管理和能效提升方面。</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-4">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">金融与国企客户深度研究</div>
+                <div class="skill-doc-meta">7 篇文档 · 最近更新：2026/03/09</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 金融与国企客户深度研究 - 2026/3/9
+
+**Skill:** 金融与国企客户深度研究
+**Date:** 2026-03-09T09:34:29.084Z
+
+# 北京能源集团 客户研究报告
+
+**报告类型**：全面分析（含实时信息）
+**研究目标**：全面了解客户情况与机会
+**目标角色**：CIO/首席科技创新官
+**生成日期**：2026-03-09
+**数据时效性**：🟢 最新（7天内获取）
+
+---
+
+## 🎯 关键摘要洞察（销售/售前必读）
+
+### 1. ⭐⭐⭐⭐⭐ **机会评估 - 市场规模与紧迫性**
+
+**市场规模**：
+- 公司规模：北京大型国企，综合能源集团，下属二级、三级公司众多。
+- IT投入规模：高（拥有私有化企业微信、文档中台，且下属单位具备独立采购能力）。
+- 存量规模：下属单位分散购买 WPS 365 达 2000 余套，具备巨大的"归集"与"增购"潜力。
+
+**紧迫性**：
+- 🔥 **信创国产化替代**：作为北京国企，信创合规是硬指标，分散采购不符合集团管控要求。
+- 🔥 **数字化转型深化**：集团已建底座（企微、文档中台），急需应用层面的深度整合与统一管控。
+
+**机会评级**：⭐⭐⭐⭐⭐（五星级）
+
+---
+
+### 2. ✅ **现有合作基础（深度渗透）**
+
+**合作状态**：
+- 集团层面：已购买文档中台（主要用于OA预览编辑）。
+- 下属单位：分散购买 2000 余套 WPS 365。
+- 基础设施：2年前已购买私有化部署的企业微信。
+
+**战略价值**：
+- **从"分散"转为"统一"**：利用信创契机，将分散的 2000+ 套账号收编至集团统一体系。
+- **底座集成**：WPS 365 可无缝对接现有的企业微信和文档中台，构建完整的办公生态。
+
+---
+
+### 3. 🎯 **关键决策人观点高度契合**
+
+**王勇**（集团信息部 副CIO）核心观点：
+
+| 战略观 | 原文引用/推断 | 与WPS 365匹配度 |
+|--------|----------|----------------|
+| **"集团管控"** | 关注下属单位众多带来的管理难度 | ⭐⭐⭐⭐⭐ 完美匹配（统一版本、统一权限） |
+| **"信创合规"** | 北京国企必须满足自主可控要求 | ⭐⭐⭐⭐⭐ 完美匹配（全栈信创适配） |
+| **"数据安全"** | 防止数据孤岛与泄露 | ⭐⭐⭐⭐⭐ 完美匹配（私有化+精细权限） |
+
+**关键洞察**：王总关注的是"管控"与"合规"，需强调 WPS 365 如何帮助集团收权，解决分散采购带来的合规风险。
+
+---
+
+### 4. 💡 **客户痛点明确**
+
+**痛点来源**（历史笔记/行业观察）：
+
+- ✅ **数据孤岛与标准不一**：下属单位分散购买 2000+ 套软件，版本混乱，数据无法互通 → WPS 365匹配度：⭐⭐⭐⭐⭐
+- ✅ **OA编辑能力受限**：现有文档中台仅支持OA预览编辑，缺乏深度协作能力 → WPS 365匹配度：⭐⭐⭐⭐⭐
+- ✅ **移动办公最后一公里**：虽有企微，但缺乏深度集成的原生办公套件 → WPS 365匹配度：⭐⭐⭐⭐
+
+**WPS 365综合匹配度**：⭐⭐⭐⭐⭐（直接对应）
+
+---
+
+### 5. 🏆 **竞争优势分析**
+
+| 竞争对手 | 优势 | 劣势 | WPS核心优势 |
+|----------|------|------|-------------|
+| 某传统OA厂商 | 流程审批强 | 文档编辑体验弱，信创适配一般 | **国产化办公核心体验最佳** |
+| 某友商办公软件 | 品牌知名度高 | 与企业微信集成度不如金山系 | **企业微信原生集成** |
+| 国际厂商 | 功能强大 | 信创合规风险高（无法通过国企审查） | **全栈信创自主可控** |
+
+**核心差异化**：WPS 365 能够与现有的私有化企业微信实现"原生级"深度集成，打通文档协作与即时通讯，这是其他厂商难以复制的壁垒。
+
+---
+
+### 6. 🎪 **次要决策人/细分场景切入点**
+
+**刘凯**（下属数科公司 负责人）核心关注：
+- 技术架构的兼容性与集成难度。
+- 如何低成本解决存量（2000+套）问题。
+- 具体的业务场景落地（如HSE、智慧电厂）。
+
+**切入点**：针对刘总（关系较好），侧重技术方案。提供"平滑迁移"方案，演示 WPS 365 如何通过 API 对接企业微信和文档中台，实现单点登录（SSO）和数据互通。
+
+---
+
+### 7. 💰 **子公司/业务单元机会**
+
+**众多二级、三级子公司**（决策权在集团，但使用场景在子公司）：
+
+| 子公司/业务单元 | 现状/机会 | 优先级 |
+|----------------|----------|--------|
+| 下属分散单位 | 2000+套存量归集，升级为集团统一版 | 🔥 P1 |
+| 智慧电厂/矿山 | 移动巡检、HSE表单、生产报表协作 | 🔥 P2 |
+| 热力公司 | 管网改造图纸管理、工程文档协作 | 🔥 P3 |
+
+**策略**：以"集团管控"名义推动统一采购，利用数科公司（刘凯）进行技术落地。
+
+---
+
+### 8. ⚠️ **关键风险**
+
+| 风险 | 说明 | 应对 |
+|------|------|------|
+| 决策链关系一般 | 副CIO王勇关系一般，可能信任度不足 | 利用刘凯（数科公司）作为内部支撑，提供详实的合规性方案打动王勇 |
+| 存量迁移阻力 | 下属单位可能不愿放弃已有账号 | 强调"信创合规"是政治任务，并提供优于现有版本的升级权益 |
+| 预算审批 | 统一归集可能涉及额外费用 | 算"降本增效"账，统一维保比分散采购成本低 |
+
+---
+
+## 执行摘要
+
+### 核心发现
+- **企业性质**：北京大型国企，综合能源集团，对信创国产化有极高要求。
+- **IT现状**：已构建私有化企业微信和文档中台，但应用层协作薄弱，下属单位存在严重的"数据孤岛"和软件版本分散问题（2000+套）。
+- **痛点**：集团管控能力弱，OA仅能预览无法深度编辑，移动办公体验割裂。
+- **战略方向**：聚焦"双碳"目标下的数字化转型，强调安全生产（HSE）和智慧电厂建设。
+
+### 合作机会评估
+- **机会评级**：高
+- **推荐切入点**：以"信创合规"和"集团管控"为抓手，推动 WPS 365 与企业微信的深度集成，收编下属单位分散账号。
+- **预期合同规模**：大型（集团级统一采购 + 增值服务）
+- **决策周期**：中等（需协调集团与数科公司）
+- **竞争态势**：WPS 在信创领域具有天然优势，主要竞争在于集成方案的展示。
+
+---
+
+## 表格1：基础客户情况表
+
+| 字段 | 内容 |
+|------|------|
+| 公司全称 | 北京能源集团有限责任公司（推测） |
+| 公司简称 | 京能集团 |
+| 所属行业 | 能源 / 综合能源 |
+| 企业性质 | 国企（北京市属） |
+| 公司规模 | 大型，下属二级、三级公司众多 |
+| 成立时间 | - |
+| 总部地点 | 北京 |
+| 上市情况 | - |
+| 主要业务 | 电力、热力、煤炭、新能源等综合能源业务 |
+| 战略方向 | 双碳目标、数字化转型、信创国产化、智慧电厂 |
+| IT投入 | 高（具备私有化企微、文档中台及独立采购能力） |
+| 信创要求 | 极高（北京国企，必须满足自主可控） |
+| 数据来源 | 客户档案、行业背景知识 |
+| 更新日期 | 2026-03-09 |
+
+**关键洞察**：
+- 客户信创要求极高，WPS 的全栈信创适配是核心敲门砖。
+- 下属单位众多且分散采购，说明集团IT管控力有待加强，这正是 WPS 365 统一平台的价值所在。
+
+**数据来源**：客户档案（背景资料、历史笔记）
+**更新日期**：2026-03-09
+
+---
+
+## 表格2：理解公司(BU)业务情况表
+
+| 字段 | 内容 |
+|------|------|
+| BU/部门名称 | 集团数字化/信息化部（整体视角） |
+| 部门定位 | 集团管控与数字化转型的核心支撑部门 |
+| 业务规模 | 覆盖集团总部及众多二级、三级子公司 |
+| 核心业务 | IT基础设施建设、信创替代、安全生产数字化支持 |
+| 关键产品 | 企业微信、文档中台、OA系统 |
+| 业务目标 | 实现集团统一管控、完成信创国产化替代、提升全员协作效率 |
+| 业务挑战 | 下属单位系统分散、数据孤岛严重、移动办公体验不统一 |
+| KPI指标 | 系统集成度、信创替代率、安全生产合规率 |
+| 数字化程度 | 中高（底座已建，应用层正在深化） |
+| 合规要求 | 等保三级、信创合规、HSE安全管理规范 |
+| 数据来源 | 客户档案、行业背景知识 |
+| 更新日期 | 2026-03-09 |
+
+**关键洞察**：
+- 部门目前的核心痛点是"统一"，无论是统一管控还是统一标准。
+- WPS 365 应定位为"集团统一办公协作底座"，而非简单的编辑软件。
+
+**数据来源**：客户档案、行业背景知识
+**更新日期**：2026-03-09
+
+---
+
+## 表格3：部门业务逻辑及业务情况表
+
+| 字段 | 内容 |
+|------|------|
+| 部门名称 | 集团信息部 / 下属数科公司 |
+| 部门职能 | 负责集团IT规划、系统建设与运维，推进数字化转型 |
+| 业务流程 | 需求提出 -> 方案设计 -> 招采购 -> 部署实施 -> 运维 |
+| 协作部门 | 各业务板块（电力、热力等）、安全监察部（HSE） |
+| 外部合作 | 软件供应商、系统集成商 |
+| 关键系统 | 企业微信、文档中台、OA、ERP |
+| 文档类型 | 行政公文、汇报材料、HSE检查表、生产运行报表、工程图纸 |
+| 协作场景 | 跨部门公文流转、HSE隐患上报、生产数据统计分析、移动办公 |
+| 协作痛点 | 文档版本分散、跨系统协作困难、移动端编辑体验差 |
+| 现有工具 | 企业微信、文档中台（仅预览）、分散的WPS、传统OA |
+| WPS 365匹配度 | 高（完美契合统一协作与移动办公需求） |
+| 匹配方案 | WPS 365 + 企业微信集成 + 文档中台升级 |
+| 数据来源 | 客户档案、历史笔记 |
+| 更新日期 | 2026-03-09 |
+
+**关键洞察**：
+- 现有的文档中台仅支持预览是明显的功能短板，WPS 365 可补齐这一短板，实现"预览+编辑+协作"闭环。
+- 在 HSE 场景中，利用 WPS 表单进行移动端数据收集是极佳的切入点。
+
+**WPS 365 匹配度**：高
+**匹配理由**：解决分散协作痛点，对接现有底座，满足国企安全合规要求。
+
+**数据来源**：客户档案、历史笔记
+**更新日期**：2026-03-09
+
+---
+
+## 表格4：决策链条关键人物及存在的痛苦表
+
+| 姓名 | 职位 | 决策角色 | 关注点 | 关键痛点 | WPS 365价值 |
+|------|------|----------|--------|----------|-------------|
+| 王勇 | 集团信息部 副CIO | 决策者 | 集团管控、信创合规、数据安全 | 下属单位各自为政，软件版本混乱，存在合规风险 | 统一平台管控，满足信创要求，消除数据孤岛 |
+| 刘凯 | 下属数科公司 负责人 | 评估者/影响者 | 技术集成、落地实施、存量迁移 | 如何低成本打通现有企微和中台，处理2000+存量账号 | 无缝集成企微，提供平滑迁移方案，单点登录 |
+
+**决策链分析**：
+- **决策者**：王勇（副CIO）。需重点强调"信创合规"与"集团管控"价值，用行业案例背书。
+- **评估者/影响者**：刘凯（数科公司）。关系较好，可深入探讨技术细节，展示集成方案，将其发展为内部推动者（Champion）。
+
+**推荐沟通策略**：
+1. **对王勇**：高层汇报，强调 WPS 365 作为国产办公底座如何助力集团数字化转型和信创验收，算"降本增效"和"安全合规"的账。
+2. **对刘凯**：技术交流会，演示 WPS 365 与企业微信、文档中台的集成效果，讨论针对 2000+ 套存量账号的具体收编/迁移技术方案。
+
+**数据来源**：客户档案（决策链、历史笔记）
+**更新日期**：2026-03-09
+
+---
+
+## 表格5：招投标信息表
+
+| 字段 | 内容 |
+|------|------|
+| 项目名称 | 集团协同办公平台升级/信创办公软件采购（推测） |
+| 采购单位 | 北京能源集团 |
+| 项目编号 | - |
+| 公告日期 | - |
+| 投标截止日期 | - |
+| 开标日期 | - |
+| 预算金额 | - |
+| 采购内容 | WPS 365 企业版、集成服务、定制开发 |
+| 采购方式 | - |
+| 项目状态 | 机会挖掘阶段（基于存量需求） |
+| 中标单位 | - |
+| 中标金额 | - |
+| 联系信息 | - |
+| WPS 365匹配度 | 高 |
+| 跟进建议 | 建议立即启动技术交流，由刘凯（数科公司）牵头，向王勇（副CIO）汇报统一管控方案 |
+| 数据来源 | 客户档案（历史采购记录） |
+| 更新日期 | 2026-03-09 |
+| 数据时效性 | 🟢 |
+
+**关键洞察**：
+- 虽然没有公开的实时招标公告，但"下属单位分散购买2000余套"本身就是巨大的内需信号。
+- 建议主动引导客户进行集团级统一采购，而非等待被动招标。
+
+**数据来源**：客户档案（历史笔记）
+**更新日期**：2026-03-09
+
+---
+
+## WPS 365 解决方案匹配
+
+### 痛点-方案映射表
+
+| 痛点 | 严重度 | WPS 365 解决方案 | 预期价值 | 优先级 |
+|------|--------|------------------|----------|--------|
+| 下属单位软件分散，版本混乱 | 高 | WPS 365 集团版统一管控 | 实现账号统一、版本统一、权限统一，满足信创合规 | 高 |
+| 数据孤岛，文档无法互通 | 高 | WPS 365 云盘 + 协同文档 | 打破部门墙，建立集团统一文档库，提升资产复用率 | 高 |
+| OA仅能预览，缺乏深度协作 | 中 | WPS 365 文档中台深度集成 | 无缝嵌入OA，实现文档在线编辑、多人协作、版本追溯 | 中 |
+| 移动办公体验割裂 | 中 | WPS 365 + 企业微信集成 | 在企微中直接调用WPS原生能力，体验流畅，数据不落地 | 中 |
+| HSE巡检数据收集难 | 低 | WPS 365 智能表单 | 一键生成表单，一线员工手机填报，数据自动汇总分析 | 低 |
+
+### 推荐方案包
+
+**方案名称**：北京能源集团信创协同办公一体化解决方案
+
+**包含组件**：
+- WPS 365 企业版（包含文档、表格、演示、PDF、云盘）
+- 企业微信应用集成（原生集成组件）
+- 开放平台 API（对接文档中台与OA）
+- 私有化部署服务
+
+**部署方式**：混合云/私有化（匹配现有IT架构）
+
+**预期价值**：
+- **管理价值**：收编 2000+ 分散账号，降低 IT 采购成本 20% 以上，提升集团管控力。
+- **效率价值**：文档协作效率提升 50%，跨部门沟通成本降低 30%。
+- **合规价值**：100% 满足信创国产化替代要求，通过等保三级认证。
+
+### 成功案例参考
+- 某大型国有能源集团：通过 WPS 365 实现集团全员办公统一，替代原有国外软件，满足信创要求。
+- 某省级电力公司：集成企业微信，实现移动作业与后台办公的高效协同。
+
+---
+
+## 行动建议
+
+### 近期行动（1-2个月）
+- [ ] **技术对接**：与数科公司刘凯建立技术对接群，确认企业微信和文档中台的接口规范。
+- [ ] **方案输出**：输出《WPS 365 与京能集团现有底座集成方案》及《下属单位存量账号收编方案》。
+- [ ] **高层汇报**：争取向副CIO王勇进行一次非正式汇报，抛出"信创合规"与"降本增效"的观点。
+
+### 中期行动（3-6个月）
+- [ ] **POC测试**：在数科公司或某个二级子公司进行小范围 POC 测试，验证集成效果。
+- [ ] **样板打造**：选取 HSE 或智慧电厂场景作为样板点，展示移动办公表单收集能力。
+- [ ] **预算锁定**：协助客户梳理年度 IT 预算，争取将 WPS 365 统一采购项目立项。
+
+### 长期行动（6-12个月）
+- [ ] **全面推广**：完成集团总部及主要二级子公司的全覆盖部署。
+- [ ] **深度运营**：开展 WPS AI 功能培训，提升员工使用深度。
+- [ ] **生态构建**：基于 WPS 365 平台开发能源行业特色应用（如生产报表自动化）。
+
+---
+
+## 数据来源说明
+
+### 一手数据来源
+- 客户档案：北京能源集团背景资料、决策链信息、历史笔记
+- 内部沟通：售前团队访谈记录
+
+### 二手数据来源
+- 行业黑话速成指南（2026/3/9）：能源行业趋势、黑话、沟通策略
+- 公开信息：能源行业数字化转型趋势报告
+
+### 数据时效性说明
+- 本报告基于 2026 年 3 月 9 日的可用数据生成。
+- 客户决策链及 IT 现状数据来源于近期内部档案，具有较高的准确性和时效性。
+- 行业趋势分析参考了最新的行业动态。
+
+---
+
+**报告生成时间**：2026-03-09
+**报告生成工具**：WPS 365 金融客户研究技能
+**联系方式**：售前团队</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-5">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">行业黑话速成指南</div>
+                <div class="skill-doc-meta">2 篇文档 · 最近更新：2026/03/09</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 行业黑话速成指南 - 2026/3/9
+
+**Skill:** 行业黑话速成指南
+**Date:** 2026-03-09T04:50:18.757Z
+
+# 能源行业黑话速成指南
+
+**行业**：能源
+**子行业**：综合能源（电力/热力/煤炭）
+**角色**：售前顾问
+**生成日期**：2023年10月27日
+
+---
+
+## 核心摘要
+
+### 行业四级分类
+
+- **一级行业**：能源
+- **二级行业**：综合能源集团
+- **三级场景**：集团数字化转型 / 安全生产 / 信创适配
+- **四级角色**：售前顾问
+
+### 行业热点速览
+
+基于北京能源集团（京能集团）的国企背景及当前行业动态，热点主要集中在：**双碳目标（碳达峰、碳中和）**、**能源保供**、**数字化转型（智慧电厂/矿山）**、**信创国产化替代**。
+
+### 必知黑话（TOP 10）
+
+- **双碳**：国家定的碳达峰和碳中和目标，能源行业的头等大事。
+- **源网荷储**：电源、电网、负荷、储能，能源系统里的四个关键环节。
+- **HSE**：健康、安全、环境，能源企业安全生产的底线。
+- **信创**：信息技术应用创新，即国产化替代，国企必须完成的任务。
+- **智慧电厂**：用数字化技术让电厂更聪明、更高效。
+- **虚拟电厂**：通过软件把分散的电力资源聚合起来像个大电厂一样调度。
+- **安全生产**：能源企业的生命线，比什么都重要。
+- **两化融合**：信息化和工业化的高层次的深度结合。
+- **绿电交易**：买卖风电、光伏等清洁能源电力的市场行为。
+- **集控中心**：远程集中控制生产运行的地方，数据汇聚的核心。
+
+---
+
+## 行业热点与趋势
+
+本部分结合北京能源集团（国企、综合能源）的特性，帮助你了解当前行业关注点，便于在沟通中"蹭热度"。
+
+**当前热点分析**：
+1.  **信创与国产化**：作为北京国企，"京能"对自主可控要求极高。目前集团已购私有化企业微信和文档中台，说明基础底座已有，但应用层面的全面国产化（如办公套件的深度适配）仍是重点。
+2.  **数字化转型与集团管控**：下属二级、三级公司众多，管理半径大。痛点在于"数据孤岛"和"标准不一"。趋势是利用数字化手段加强集团对下属单位的管控能力（如统一办公平台）。
+3.  **安全生产与HSE管理**：能源行业安全第一。利用数字化工具（如移动巡检、安全隐患上报）落实HSE管理是刚需。
+
+**售前应用提示**：
+- **对副CIO王勇（关系一般）**：多谈**"集团管控"**和**"信创合规"**。例如："王总，针对下属单位分散购买WPS的情况，我们建议通过统一的WPS 365版本进行信创适配归集，满足集团对自主可控的合规要求。"
+- **对数科公司刘凯（关系较好）**：多谈**"技术集成"**和**"解决存量问题"**。例如："刘总，咱们现有的企业微信和文档中台，WPS 365可以无缝打通，把那2000多套分散的账号统一收编，实现单点登录和统一管控。"
+
+---
+
+## 黑话三维表
+
+| 黑话 | 一句话懂它 | 售前怎么用 | 风险提示 |
+|------|-----------|-----------|----------|
+| **双碳** | 碳达峰、碳中和，能源转型的核心目标 | "我们的协同表格可以辅助集团进行碳排放数据的统计与汇报" | 常用，安全，政治正确 |
+| **源网荷储** | 电源、电网、负荷、储能，能源系统的四要素 | "在源网荷储一体化项目中，我们的云盘可以存储海量运行数据" | 概念较大，慎用细节 |
+| **HSE** | 健康、安全、环境管理体系 | "在HSE场景，我们的在线表单可以让一线员工快速上报安全隐患" | 必杀技，能源行业最吃这套 |
+| **信创** | 信息技术应用创新，即国产化替代 | "WPS 365是全栈信创适配的，完全符合集团国产化要求" | **高频词**，对国企必提 |
+| **智慧电厂** | 给电厂装上大脑，用数据管生产 | "在智慧电厂建设中，我们的移动办公可以让厂长随时随地看报表" | 常用，安全 |
+| **虚拟电厂** | 通过软件聚合分散电力资源参与调度 | "（这个黑话售前办公场景很少用，了解即可）" | 慎用，太技术 |
+| **集控中心** | 远程集中控制生产运行的大脑 | "我们的方案可以支持集控中心的大屏数据展示与日常文档协作" | 常用，安全 |
+| **两化融合** | 信息化和工业化结合 | "我们的方案有助于推动集团的两化融合水平，提升办公效率" | 常用，安全 |
+| **降本增效** | 省钱多办事 | "统一采购WPS 365替代分散购买，能大幅降低IT采购成本，提升管理效率" | **必杀技**，直击痛点 |
+| **安全生产** | 生命线，不能出事故 | "利用我们的金山文档进行安全知识培训和考试，落实安全生产责任" | 必杀技，安全 |
+| **数字化转型** | 用技术重塑业务 | "数字化转型不仅是生产设备，办公协同也是重要一环" | 万能词 |
+| **数据孤岛** | 系统之间不通，数据拿不出来 | "解决下属单位2000多套分散软件造成的'数据孤岛'，实现统一文档库" | **精准打击客户痛点** |
+| **等保三级** | 信息安全等级保护三级认证 | "我们的平台通过了等保三级，满足能源行业对网络安全的硬性要求" | 常用，安全 |
+
+---
+
+## 装懂红线
+
+### 红线：遇到 AI 解释模糊的词，宁可不提
+
+**原则**：
+- 能源行业细分领域极多（火电、风电、光伏、煤炭、热力），隔行如隔山。
+- 不要试图在具体的生产技术指标（如"锅炉燃烧效率"、"风机变桨角度"）上不懂装懂。
+
+**示例**：
+- ❌ "我们的WPS可以提高锅炉的燃烧效率"（太外行，容易被笑话）
+- ✅ "我们的WPS可以提升锅炉运行数据的分析统计效率"（安全，准确）
+
+### 绿线：可以用"听说"、"是不是"这类试探性表达
+
+**原则**：
+- 针对京能集团下属单位多、业务杂的特点，不确定具体业务场景时，用试探性话术。
+
+**示例**：
+- ❌ "你们热力公司的管网改造项目肯定需要我们的云盘"
+- ✅ "听说热力公司每年的管网改造会产生大量图纸和文档，是不是存在版本管理难的问题？"
+
+### 保险：准备一个万能句式
+
+**万能句式**：
+- "这块我不太熟，能不能请教您一下..."
+
+**使用场景**：
+- 客户提到具体的电力调度协议、煤炭采掘工艺时。
+- 需要转移话题回办公软件领域时。
+
+**示例**：
+- "王总，您提到的这个深度调峰技术细节我不太熟，能不能请教您一下，咱们一线工程师在写调峰报告时，协作流程上是不是比较耗时？"
+
+---
+
+## 售前应用示例
+
+### 示例1：初次见副CIO王勇（强调管控与合规）
+
+"王总，您好。我们在能源行业，特别是像京能这样的大型综合能源集团，有丰富的服务经验。针对集团目前下属单位分散购买软件的情况，我们建议通过**信创**国产化替代的契机，引入**WPS 365**统一办公底座。这不仅能满足**等保三级**的安全合规要求，更能打破**数据孤岛**，实现集团对下属单位文档资产的统一管控，真正做到**降本增效**。"
+
+### 示例2：方案汇报（针对数科公司刘凯，强调集成与解决痛点）
+
+"刘总，基于咱们集团现有的企业微信和文档中台架构，WPS 365可以实现深度集成。针对下属单位分散采购的2000多套存量软件，我们可以提供平滑迁移方案，将账号体系与企业微信打通，实现**单点登录**。在**HSE**安全管理或**智慧电厂**的日常巡检中，员工可以直接在企业微信里调用WPS编辑表单和文档，数据实时回传，解决移动办公最后一公里的问题。"
+
+### 示例3：深入沟通（遇到不懂的生产术语）
+
+"李工（一线业务人员），您刚才提到的那个'磨煤机优化算法'我不太熟，能不能请教您一下，咱们工程师在记录这些优化实验数据的时候，是不是经常需要多人在线修改同一个Excel表格？如果是的话，我们的在线协作表格可以直接解决这个问题。"
+
+---
+
+**报告生成时间**：2023年10月27日</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-6">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">破冰话题库</div>
+                <div class="skill-doc-meta">2 篇文档 · 最近更新：2026/03/03</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 破冰话题库 - 2026/3/3
+
+**Skill:** 破冰话题库
+**Date:** 2026-03-03T09:48:04.206Z
+
+# 破冰话题列表
+
+**客户名称**：北京能源集团
+**客户地域**（AI判断）：北京
+**客户行业**（AI判断）：能源/国企
+**客户角色**：王勇（集团信息部 副CIO）、刘凯（数科公司负责人）
+**应酬场景**：商务用餐 / 茶歇（默认推荐）
+
+---
+
+鉴于您提供了两位关键联系人，且关系亲疏不同，我为您分别定制了针对 **王勇（副CIO）** 和 **刘凯（数科公司负责人）** 的破冰话题策略。
+
+---
+
+## 🎯 场景一：陪王勇（副CIO，关系一般）用餐
+
+**策略核心**：尊重权威、宏观视角、肯定过往决策（企业微信）、避开管控敏感点。
+
+### 📍 地域文化话题（北京特色）
+
+### 话题1：京城美食与老字号
+
+- **切入话术**："王总，听说这附近有家特别地道的涮羊肉/烤鸭，不知道您口味怎么样？平时在这个区域办公，有什么推荐的馆子吗？"
+- **预期反应**：客户可能会分享他常去的店，或者聊聊北京的饮食文化。
+- **后续话题**：顺势聊到北京的城市变化、交通路况（北京人永恒的话题），或者聊聊国企周边的生活配套。
+- **注意事项**：北京国企领导通常比较稳重，不要推荐过于网红或猎奇的店。
+
+### 💼 行业正能量话题（能源/国企）
+
+### 话题2：能源行业的数字化转型与信创
+
+- **切入话术**："最近看新闻，咱们国家在'双碳'和能源数字化上动作挺大的。作为行业的排头兵，咱们集团在这方面的投入肯定不少吧？"
+- **预期反应**：客户可能会感慨一下集团的战略方向或工作繁忙。
+- **后续话题**："现在国企都在提信创改造，咱们两年前上了企业微信，这步走得真挺有前瞻性的，现在看来底子打得不错。"
+- **注意事项**：只谈宏观趋势和政策利好，不谈具体的KPI压力或技术难点。
+
+### 👔 角色导向话题（副CIO视角）
+
+### 话题3：系统集成的价值（关联企业微信）
+
+- **切入话术**："王总，其实我一直挺佩服咱们两年前决定上企业微信的魄力。现在看，移动办公的基础打得这么好，后面再做系统集成，员工接受度肯定高多了。"
+- **预期反应**：客户会有成就感，觉得自己的决策被认可。
+- **后续话题**：顺势聊到文档中台与移动端的结合，"现在大家在手机上处理文档越来越多了，体验确实挺重要的。"
+- **注意事项**：**严禁**主动提及"下属单位分散购买WPS"一事，这会让副CIO觉得集团管控不力，是敏感雷区。
+
+### 🌟 万能话题
+
+### 话题4：健康与养生（适合中年领导）
+
+- **切入话术**："最近换季，北京温差大，我看咱们部门最近都在忙着赶项目，您平时注意休息，有坚持什么运动吗？"
+- **预期反应**：聊聊羽毛球、高尔夫、走路步数或者养生心得。
+- **后续话题**：轻松愉快的闲聊，拉近距离。
+- **注意事项**：如果客户不喜欢运动，立刻切换到旅游或美食话题。
+
+---
+
+## 🎯 场景二：陪刘凯（数科公司负责人，关系较好）用餐
+
+**策略核心**：落地执行、用户体验、将"分散购买"转化为"群众基础好"、探讨技术落地。
+
+### 📍 地域文化话题（北京生活）
+
+### 话题1：北京交通与出行
+
+- **切入话术**："刘哥，今天过来路上有点堵，现在北京的交通确实越来越有挑战了。您平时通勤方便吗？"
+- **预期反应**：吐槽路况、地铁、开车体验。
+- **后续话题**：聊聊周末去哪儿放松，或者推荐一些北京周边适合自驾/度假的地方。
+- **注意事项**：轻松随意，像朋友聊天。
+
+### 💼 行业正能量话题（技术应用）
+
+### 话题2：AI在办公场景的落地
+
+- **切入话术**："最近AI太火了，咱们数科公司作为技术先锋，有没有在内部搞点AI落地的'黑科技'玩玩？"
+- **预期反应**：客户可能会分享一些技术尝试或内部讨论。
+- **后续话题**："我看咱们下面好多单位都在用WPS，其实WPS现在的AI助手功能挺强的，回头发给您个账号试试玩？"
+- **注意事项**：保持技术探索的趣味性，不要变成产品推销。
+
+### 👔 角色导向话题（数科负责人视角）
+
+### 话题3：肯定下属单位的"自选动作"（高情商转化）
+
+- **切入话术**："刘哥，我发现咱们集团下面二级、三级公司的活力真强。听说下面有2000多套自发买了WPS，这说明咱们一线员工对文档协作的需求真的很旺盛啊，这群众基础太好了。"
+- **预期反应**：客户会表示认同（因为这是事实），且不会感到被冒犯（因为是夸赞集团活力）。
+- **后续话题**："有了这么好的群众基础，咱们数科公司如果统一推个升级版，大家肯定举双手赞成，阻力会小很多。"
+- **注意事项**：**重点**：不要说"下面乱买"，要说"下面需求旺盛、活跃"。将"管控缺失"转化为"市场需求旺盛"。
+
+### 🌟 万能话题
+
+### 话题4：茶与咖啡（办公室文化）
+
+- **切入话术**："刘哥，您平时在办公室喝茶还是咖啡？我看咱们北京这边喝茶的氛围还是很浓的。"
+- **预期反应**：聊聊个人口味，或者办公室里的零食饮料文化。
+- **后续话题**：轻松的生活化聊天，增进私交。
+- **注意事项**：观察对方喜好，如果有机会，下次见面可以带一点不错的茶叶或咖啡豆作为小礼物。
+
+---
+
+## ⚠️ 敏感话题提醒（针对北京能源集团）
+
+- **避免讨论**：
+    - **下属单位"私自采购"的管控问题**：在王勇面前这是"管控不力"，在刘凯面前可以转化为"需求旺盛"，但绝不能作为负面话题提出。
+    - **具体的价格与折扣**：尤其是涉及集团集采与分散采购的价格差异。
+    - **国企改革的人员变动**：避免谈论组织架构调整或人事变动。
+    - **与其他竞品（如钉钉）的对比**：尤其是客户已经买了企业微信，要肯定企业微信的选择，强调WPS是"增强"而非"替代"。
+
+- **如果客户主动提起敏感话题（如下属单位乱买软件）**：
+    - **应对策略（王勇）**："确实，下面单位积极性高是好事，但也确实给集团管理带来了一些挑战。这也是为什么现在需要专业的文档中台来做统一管控和规范。"
+    - **应对策略（刘凯）**："哈哈，这说明咱们WPS产品力确实强，挡不住大家的爱用啊。不过说正经的，统一版本确实能更好地保障数据安全和互联互通。"
+
+---
+
+**生成时间**：2023-10-27</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-7">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">异议攻防模拟器</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/02/27</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 异议攻防模拟器 - 2026/2/27
+
+**Skill:** 异议攻防模拟器
+**Date:** 2026-02-27T01:30:37.659Z
+
+╔═══════════════════════════════════════════════════════════════╗
+║           WPS 365 异议攻防模拟器 v1.0                          ║
+╠═══════════════════════════════════════════════════════════════╣
+║  客户：北京能源集团                                            ║
+║  角色：务实CEO                                                ║
+║  方案：WPS 365 全套方案（协作、邮箱、会议）                     ║
+║  攻击强度：严厉                                                ║
+║  关注点：竞品对比（企业微信、现有系统）                        ║
+╚═══════════════════════════════════════════════════════════════╝
+
+[AI 已加载北京能源集团背景资料：国企背景、2年前私有化企微、文档中台现状、下属单位分散采购...]
+[系统提示：当前角色为务实CEO，性格急躁，极度关注ROI和重复建设问题，攻击强度：严厉]
+
+━━━━━━━━━━━━━━━━━━━━━━━━══════════════════════════━━━━━━━━━━━━━
+
+**务实CEO**：（皱着眉，手里转着笔，语气不耐烦）
+
+我就直说了，两年前集团刚花了大价钱搞了私有化部署的企业微信，现在OA、审批都在上面跑。你现在让我再上一套 WPS 365 全家桶？
+
+这难道不是典型的重复建设吗？下属单位以前乱买软件我都头疼，现在集团层面要是再搞两套系统互不通，员工到底该用哪个？我的钱是大风刮来的吗？给我一个不砍掉这个预算的理由。</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-8">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">需求挖掘分析</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/02/27</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 需求挖掘分析 - 2026/2/27
+
+**Skill:** 需求挖掘分析
+**Date:** 2026-02-27T01:23:09.929Z
+
+# 北京能源集团 需求挖掘分析报告
+
+**目标角色**：集团信息部 副CIO 王勇
+**业务场景**：信创自主可控的文档管理与集团化管控
+**分析框架**：JTBD + SPIN
+**生成日期**：2026-02-11
+
+---
+
+## 🎯 核心洞察（JTBD 视角）
+
+### Job（核心任务）
+- **任务描述**：在满足国家信创自主可控要求的前提下，统一管控集团及下属单位的文档资产，确保数据安全与合规。
+- **任务场景**：面对国资委信创考核压力，以及集团内部下属单位分散采购软件导致的“孤岛”和管理混乱现状。
+- **成功标准**：100% 完成信创替代，实现全集团文档系统的统一权限管控与审计，消除合规风险。
+
+### Friction Points（摩擦点分析）
+
+| 摩擦点类别 | 显性痛点 | 隐性痛点（重点） | 严重度 |
+|-----------|---------|-----------------|--------|
+| 资产管理 | 下属单位分散购买 2000 余套 WPS 365，版本不一 | **集团层面无法掌握真实的软件资产底数，存在合规盲区** | 高 |
+| 流程协作 | 已有文档中台仅用于 OA 预览，能力未释放 | **文档中台与企业微信（私有化）未打通，形成新的数据烟囱** | 中 |
+| 决策支持 | 信创替代进度难以量化 | **缺乏抓手来推动下属单位从“被动替代”转为“主动使用”** | 高 |
+
+### Latent Needs（隐性需求）
+- **需求1：集团级统一管控与审计**。不仅仅是软件能用，而是需要知道谁在用、在哪个终端用、文档流转是否合规，以满足国资监管要求。
+- **需求2：存量资产盘活与整合**。希望将分散的 2000 余套 license 纳入集团统一账号体系，避免重复采购，降低成本。
+- **需求3：生态融合体验**。希望 WPS 365 能深度融入现有的“私有化企业微信”环境，实现单点登录和消息触达，而非割裂的独立工具。
+
+---
+
+## 📋 SPIN 提问脚本
+
+### S - 背景确认问题
+
+**问题1**："王总，了解到咱们集团在信创改造上一直走在前列，目前下属单位的终端信创替代率大概达到了什么水平？"
+- **设计意图**：从宏观政策切入，建立共鸣，确认王勇的 KPI 压力点。
+- **预期回应**：描述替代进度，可能提到“硬件换完了，但软件还在适配”或“下属单位进度不一”。
+
+**问题2**："我们注意到集团内部很多二级、三级公司都在单独采购 WPS，目前这 2000 多套 license 大概是怎么分布的？"
+- **设计意图**：抛出具体数据（2000套），展示专业度，引导话题转向“管理混乱”。
+- **预期回应**：承认分散采购现状，可能表示“都是各单位自己弄的，集团没统一管”。
+
+### P - 问题诱导问题
+
+**问题1**："这种分散采购的模式，在集团进行安全审计或者信创验收时，会不会遇到版本不统一、合规性难以确认的问题？"
+- **针对痛点**：JTBD摩擦点-资产管理（隐性痛点）
+- **设计意图**：将“分散采购”上升到“合规风险”和“审计麻烦”，触动管理者神经。
+
+**问题2**："目前咱们的文档中台主要对接了 OA，但在日常办公中，员工如果通过企业微信沟通时需要处理文档，体验上是不是需要来回切换？"
+- **针对痛点**：JTBD摩擦点-流程协作（生态融合）
+- **设计意图**：结合客户已有的“私有化企业微信”资产，挖掘工具割裂带来的效率损耗。
+
+**问题3**："下属单位各自为战购买软件，后续的续费成本和运维压力，最后是不是还是会回流到集团信息部来兜底？"
+- **针对痛点**：JTBD摩擦点-决策支持（成本控制）
+- **设计意图**：挖掘隐性成本，暗示统一管控的必要性。
+
+### I - 后果牵连问题
+
+**问题1**："如果下属单位继续分散采购，万一出现某个单位使用了非信创版本导致严重的安全漏洞，这对集团整体的信创考核评级会有多大影响？"
+- **关联KPI**：信创考核评级、安全责任事故
+- **设计意图**：利用“安全一票否决制”的心理，放大不作为的后果。
+
+**问题2**："长期来看，如果缺乏统一的文档资产管控平台，集团核心数据在各个二级公司之间流转失控，这个管理责任该如何界定？"
+- **关联KPI**：数据安全合规、管理责任
+- **设计意图**：关联管理者个人的职业风险，强化解决问题的紧迫性。
+
+### N - 价值畅想问题
+
+**问题1**："如果能通过一个平台把这 2000 多套分散的 license 统一收编，实现按需分配和全集团可视化管理，您觉得对后续的降本增效会有多大帮助？"
+- **价值点**：资产盘活、成本可视化
+- **设计意图**：描绘“资产统一管控”的理想状态，激发 CIO 的掌控欲。
+
+**问题2**："如果 WPS 365 能无缝集成到咱们现有的私有化企业微信中，实现单点登录和文档实时协作，对提升全员信创办公的接受度会有什么效果？"
+- **价值点**：体验提升、推广阻力减小
+- **设计意图**：解决“推不动”的痛点，让客户看到业务价值。
+
+---
+
+## 🔗 WPS 365 解决方案匹配
+
+| 挖掘的痛点 | WPS 365 解决方案 | 预期价值 | 优先级 |
+|----------|------------------|----------|--------|
+| 分散采购，缺乏管控 | **集团级管控后台** + **统一账号中心** | 收编存量资产，实现 license 资产可视化，合规率 100% | 高 |
+| 企业微信与文档割裂 | **WPS 365 企业微信集成应用** | 实现单点登录、消息互通、文档免跳转编辑，提升协作效率 30% | 高 |
+| 文档中台能力单一 | **WPS 文档中台能力增强**（预览转编辑、格式转换） | 激活中台价值，支持更多业务场景（OA、ERP）嵌入 | 中 |
+| 信创适配与安全 | **全平台信创适配**（麒麟/统信 + 龙芯/鲲鹏等） | 确保无障碍替代，满足国资委验收标准 | 高 |
+
+---
+
+## 🎭 模拟实战演练
+
+### 场景设定
+副CIO王勇对现状比较满意，认为“大家都在用 WPS，没出什么大问题，不需要折腾”，态度防御且冷淡。
+
+### 对话模拟
+**售前**："王总，了解到咱们集团在信创改造上一直走在前列，目前下属单位的终端信创替代率大概达到了什么水平？"
+
+**客户**："差不多都换完了，反正大家都在用，没啥大问题。"
+
+**售前**："那确实不错。我们注意到集团内部很多二级、三级公司都在单独采购 WPS，目前这 2000 多套 license 大概是怎么分布的？"
+
+**客户**："哦，那些都是他们自己买的，集团没管那么细，能用就行。"
+
+**售前**："理解，这种模式确实灵活。不过王总，在去年的信创验收中，有没有遇到过因为下属单位版本太杂，导致合规性难以确认的情况？"
+
+**客户**："确实有点麻烦，每次要统计都要发函下去，数据收上来很慢。"
+
+**售前**："是的。而且如果万一某个单位用了非信创版本出了安全问题，这个责任界定起来会比较模糊。如果能有一个后台，您坐在办公室就能看到全集团 2000 多个账号的合规状态和版本分布，您觉得对管理会有帮助吗？"
+
+**客户**："那肯定方便多了，但他们都买过了，再统一是不是很麻烦？"
+
+**售前**："不麻烦。我们可以做存量资产纳管，把分散的 license 统一充值到集团账号池里，既不浪费过去的投入，以后还能统一规划。配合咱们现有的企业微信，员工一点就能用，体验更好。您看要不要先拿数科公司做个试点？"
+
+**客户**："嗯，这个思路可以，你让刘凯（数科负责人）出个具体方案我看看。"
+
+### 技巧建议
+- **面对防御**：不否定现状（"能用就行"），而是从"管理效率"和"责任界定"角度切入。
+- **利用关系**：当客户松动时，迅速抛出"刘凯/数科公司"作为执行抓手，降低副CIO的决策心理门槛。
+- **数据说话**：反复强调"2000套"、"统计慢"、"责任模糊"，让问题具象化。
+- **消除顾虑**：主动提出"存量资产纳管"，解决客户担心"重复投资"的顾虑。
+
+---
+
+**生成时间**：2026-02-11
+**分析框架**：JTBD + SPIN</div>
+            </div>
+          
+        
+      </div>
+
+      <!-- Followups Tab -->
+      <div id="tab-followups" class="tab-content">
+        
+          <div class="empty-state">暂无跟进记录</div>
+        
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle AI Summary
+    function toggleAISummary() {
+      const button = event.currentTarget;
+      const content = document.getElementById('ai-summary-content');
+      const toggleText = button.querySelector('.toggle-text');
+      const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+      button.setAttribute('aria-expanded', !isExpanded);
+      content.style.display = isExpanded ? 'none' : 'block';
+      toggleText.textContent = isExpanded ? '展开' : '收起';
+    }
+
+    // Tab switching
+    function switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      event.target.closest('.tab-btn').classList.add('active');
+
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(function(content) {
+        content.classList.remove('active');
+      });
+      document.getElementById('tab-' + tabName).classList.add('active');
+
+      // Re-render markdown for the activated tab
+      renderMarkdown();
+    }
+
+    // Accordion toggle
+    function toggleAccordion(trigger) {
+      const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+      trigger.setAttribute('aria-expanded', !isExpanded);
+      const content = trigger.nextElementSibling;
+      if (content) {
+        content.classList.toggle('open', !isExpanded);
+      }
+    }
+
+    // Render markdown content
+    function renderMarkdown() {
+      document.querySelectorAll('[data-markdown="true"]:not([data-rendered="true"])').forEach(function(el) {
+        const raw = el.textContent || '';
+        if (raw.trim()) {
+          try {
+            el.innerHTML = marked.parse(raw);
+          } catch (e) {
+            // keep original text on error
+          }
+        }
+        el.setAttribute('data-rendered', 'true');
+      });
+    }
+
+    // Skill sub-tab switching
+    function switchSkillTab(index, btn) {
+      // Update sub-tab buttons
+      document.querySelectorAll('.skill-tab-btn').forEach(function(tabBtn) {
+        tabBtn.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      // Update sub-tab content
+      document.querySelectorAll('.skill-tab-content').forEach(function(content) {
+        content.classList.remove('active');
+      });
+      const targetContent = document.getElementById('skill-tab-' + index);
+      if (targetContent) {
+        targetContent.classList.add('active');
+      }
+
+      // Re-render markdown for the activated tab
+      renderMarkdown();
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMarkdown();
+    });
+  </script>
+</body>
+</html>

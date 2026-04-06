@@ -42,7 +42,20 @@ export function CustomerFormModal({ isOpen, onClose, onSuccess }: CustomerFormMo
 
     setIsSubmitting(true);
     try {
-      await apiService.createCustomer(team.id, formData);
+      // 1. 创建客户
+      const response = await apiService.createCustomer(team.id, formData);
+
+      // 2. 自动执行 AI 填充
+      try {
+        await apiService.autoFillCustomerProfile(team.id, response.id, 'all');
+        // AI 填充成功，显示提示
+        alert('客户创建成功，AI 填充已完成！');
+      } catch (fillError) {
+        console.warn('AI 填充失败，但客户已创建:', fillError);
+        // AI 填充失败不影响客户创建
+        alert('客户创建成功（AI 填充失败，可稍后手动执行）');
+      }
+
       onSuccess();
       handleClose();
     } catch (error) {

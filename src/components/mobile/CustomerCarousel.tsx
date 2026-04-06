@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Building2, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Building2, User, FileText, Eye, Loader2 } from 'lucide-react';
 import { useCurrentCustomerStore } from '../../stores/currentCustomer.store';
 import { useMobileTabStore } from '../../stores/mobileTab.store';
+import { useAuth } from '../../context/AuthContext';
+import { apiService } from '../../services/api.service';
 import type { Customer } from '../../types';
 
 interface CustomerCarouselProps {
@@ -15,7 +17,9 @@ interface CustomerCarouselProps {
 export function CustomerCarousel({ customers }: CustomerCarouselProps) {
   const { currentCustomer, setCurrentCustomer } = useCurrentCustomerStore();
   const { setActiveTab } = useMobileTabStore();
+  const { team } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isGenerating360, setIsGenerating360] = useState(false);
 
   const filteredCustomers = customers.length > 0 ? customers : [];
   const hasCustomers = filteredCustomers.length > 0;
@@ -47,6 +51,26 @@ export function CustomerCarousel({ customers }: CustomerCarouselProps) {
 
   const handleManageCustomers = () => {
     setActiveTab('customers');
+  };
+
+  const handleGenerate360 = async () => {
+    if (!displayCustomer || !team) return;
+    setIsGenerating360(true);
+    try {
+      await apiService.generateCustomer360(team.id, displayCustomer.id);
+      alert('360报告生成成功');
+    } catch (error: any) {
+      console.error('生成360报告失败:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || '生成360报告失败，请稍后重试';
+      alert(errorMsg);
+    } finally {
+      setIsGenerating360(false);
+    }
+  };
+
+  const handleView360 = () => {
+    if (!displayCustomer) return;
+    window.open(`/customer360/${displayCustomer.id}.html`, '_blank');
   };
 
   return (
@@ -102,12 +126,38 @@ export function CustomerCarousel({ customers }: CustomerCarouselProps) {
           >
             <ChevronLeft className="w-5 h-5 text-white" />
           </button>
-          <button
-            onClick={handleManageCustomers}
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-white text-sm transition-colors"
-          >
-            管理客户
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleGenerate360}
+              disabled={isGenerating360 || !displayCustomer?.name}
+              className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-full text-white text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              {isGenerating360 ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  生成中
+                </>
+              ) : (
+                <>
+                  <FileText className="w-3 h-3" />
+                  生成360
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleView360}
+              className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-full text-white text-xs transition-colors flex items-center gap-1"
+            >
+              <Eye className="w-3 h-3" />
+              查看360
+            </button>
+            <button
+              onClick={handleManageCustomers}
+              className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-full text-white text-xs transition-colors"
+            >
+              管理客户
+            </button>
+          </div>
           <button
             onClick={handleNext}
             className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"

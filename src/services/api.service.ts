@@ -336,8 +336,8 @@ class ApiService {
   }
 
   getCustomer360PreviewUrl(customerId: string): string {
-    const baseUrl = import.meta.env.VITE_API_URL || '';
-    return `${baseUrl}/customer360/${customerId}.html`;
+    // 通过 nginx 代理访问，无需完整 URL
+    return `/customer360/${customerId}.html`;
   }
 
   // Skills endpoints

@@ -608,8 +608,13 @@ export class AIService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`[BaiduWebSearch] API error: ${response.status} - ${errorText}`);
-        throw new Error(`Baidu API error: ${response.status} - ${errorText}`);
+        this.logger.warn(`[BaiduWebSearch] API error: ${response.status} - ${errorText}`);
+        // 对于 QPS 限制等临时错误，返回空内容而不是抛出异常
+        // 这样可以让外层逻辑继续执行，而不是中断整个流程
+        return {
+          content: '',
+          references: [],
+        };
       }
 
       const data = await response.json();

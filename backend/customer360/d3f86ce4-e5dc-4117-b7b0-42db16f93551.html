@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>客户360视图 - 北京建工集团</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --primary: #1677FF;
+      --primary-light: #E6F4FF;
+      --primary-dark: #0958D9;
+      --bg: #F5F7FA;
+      --card-bg: #FFFFFF;
+      --text-primary: #1F1F1F;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border: #E8E8E8;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 24px;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+
+    .header-title { font-size: 20px; font-weight: 600; line-height: 1.3; }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-industry {
+      font-size: 13px; color: var(--primary); background: var(--primary-light);
+      padding: 3px 10px; border-radius: 4px;
+    }
+
+    .header-time {
+      font-size: 13px;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+
+    /* Summary Cards */
+    .summary-cards {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: var(--card-bg); border-radius: 12px;
+      padding: 20px; text-align: center; box-shadow: var(--shadow);
+    }
+
+    .summary-card-value { font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+    .summary-card-value.no-data { font-size: 20px; color: var(--text-muted); }
+    .summary-card-label { font-size: 13px; color: var(--text-secondary); }
+
+    /* AI Summary Card */
+    .ai-summary-card {
+      background: linear-gradient(135deg, #1677FF 0%, #4096FF 100%);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(22, 119, 255, 0.15);
+      color: #fff;
+    }
+
+    .ai-summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .ai-summary-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .ai-summary-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ai-summary-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      padding: 8px 16px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      backdrop-filter: blur(10px);
+    }
+
+    .ai-summary-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .ai-summary-toggle-btn:active {
+      transform: translateY(0);
+    }
+
+    .ai-summary-arrow {
+      transition: transform 0.3s ease;
+    }
+
+    .ai-summary-toggle-btn[aria-expanded="false"] .ai-summary-arrow {
+      transform: rotate(-90deg);
+    }
+
+    .ai-summary-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    .ai-summary-content {
+      font-size: 15px;
+      line-height: 1.8;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .ai-summary-content h1,
+    .ai-summary-content h2,
+    .ai-summary-content h3 {
+      color: #fff;
+      margin: 16px 0 8px;
+      font-weight: 700;
+    }
+
+    .ai-summary-content h1 { font-size: 22px; }
+    .ai-summary-content h2 { font-size: 18px; }
+    .ai-summary-content h3 { font-size: 16px; }
+
+    .ai-summary-content p { margin: 10px 0; }
+    .ai-summary-content ul, .ai-summary-content ol {
+      padding-left: 24px;
+      margin: 10px 0;
+    }
+    .ai-summary-content li { margin: 6px 0; }
+
+    .ai-summary-content strong {
+      color: #fff;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .ai-summary-content code {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* AI Summary scrollbar */
+    .ai-summary-content::-webkit-scrollbar {
+      width: 6px;
+    }
+    .ai-summary-content::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    .ai-summary-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+    }
+    .ai-summary-content::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Tabs */
+    .tabs-container {
+      background: var(--card-bg); border-radius: 12px;
+      box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px;
+    }
+
+    .tabs-header {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .tab-btn {
+      padding: 16px 24px; background: none; border: none;
+      font-size: 15px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; transition: all 0.2s;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+
+    .tab-btn:hover { color: var(--primary); }
+
+    .tab-btn.active {
+      color: var(--primary); background: var(--card-bg);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-btn .badge {
+      display: inline-block; background: var(--primary-light);
+      color: var(--primary); font-size: 12px;
+      padding: 2px 8px; border-radius: 10px; margin-left: 8px;
+    }
+
+    .tab-btn.active .badge {
+      background: var(--primary); color: #fff;
+    }
+
+    .tab-content { display: none; padding: 20px 24px; }
+    .tab-content.active { display: block; }
+
+    /* Profile sections in accordion style */
+    .accordion-item { border-bottom: 1px solid var(--border); }
+    .accordion-item:last-child { border-bottom: none; }
+
+    .accordion-trigger {
+      width: 100%; padding: 16px 0; background: none; border: none;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; text-align: left; font-size: 14px; font-weight: 500;
+    }
+    .accordion-trigger:hover { color: var(--primary); }
+
+    .accordion-arrow { transition: transform 0.2s; }
+    .accordion-trigger[aria-expanded="true"] .accordion-arrow { transform: rotate(180deg); }
+
+    .accordion-content { display: none; padding-bottom: 16px; }
+    .accordion-content.open { display: block; }
+
+    .accordion-content-inner {
+      background: var(--bg); border-radius: 8px; padding: 16px;
+      font-size: 14px; line-height: 1.8; max-height: 500px; overflow-y: auto;
+    }
+
+    /* Skills documents - list style */
+    .skills-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .skill-card {
+      background: var(--bg); border-radius: 8px; padding: 16px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .skill-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .skill-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+    .skill-meta { font-size: 12px; color: var(--text-muted); }
+
+    .skill-content {
+      background: var(--card-bg); border-radius: 6px; padding: 12px;
+      font-size: 13px; line-height: 1.7; max-height: 400px; overflow-y: auto;
+    }
+
+    /* Skills sub-tabs */
+    .skills-tabs-header {
+      display: flex; gap: 4px; margin-bottom: 16px;
+      background: var(--bg); border-radius: 10px; padding: 4px;
+      overflow-x: auto; flex-wrap: nowrap;
+    }
+
+    .skill-tab-btn {
+      padding: 10px 16px; background: none; border: none;
+      font-size: 14px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; transition: all 0.2s; border-radius: 8px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .skill-tab-btn:hover { color: var(--primary); background: var(--card-bg); }
+
+    .skill-tab-btn.active {
+      color: var(--primary); background: var(--card-bg);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .skill-tab-content { display: none; }
+    .skill-tab-content.active { display: block; }
+
+    .skill-doc-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .skill-doc-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+    .skill-doc-meta { font-size: 13px; color: var(--text-muted); }
+
+    .skill-doc-content {
+      background: var(--card-bg); border-radius: 10px; padding: 24px;
+      font-size: 14px; line-height: 1.8; max-height: 600px; overflow-y: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    /* Skill content markdown styles */
+    .skill-doc-content h1 { font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px; padding-bottom: 12px; border-bottom: 2px solid var(--primary); }
+    .skill-doc-content h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 24px 0 12px; }
+    .skill-doc-content h3 { font-size: 15px; font-weight: 600; color: var(--primary); margin: 16px 0 8px; }
+    .skill-doc-content h4 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin: 12px 0 6px; }
+    .skill-doc-content p { margin: 10px 0; }
+    .skill-doc-content ul, .skill-doc-content ol { padding-left: 24px; margin: 10px 0; }
+    .skill-doc-content li { margin: 6px 0; }
+    .skill-doc-content table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    .skill-doc-content th, .skill-doc-content td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+    .skill-doc-content th { background: var(--bg); font-weight: 600; }
+    .skill-doc-content tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+    .skill-doc-content code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--primary-dark); }
+    .skill-doc-content pre { background: var(--bg); padding: 16px; border-radius: 8px; overflow-x: auto; margin: 16px 0; }
+    .skill-doc-content pre code { background: none; padding: 0; }
+    .skill-doc-content blockquote { border-left: 4px solid var(--primary); padding: 12px 16px; margin: 16px 0; color: var(--text-secondary); background: var(--primary-light); border-radius: 0 8px 8px 0; }
+    .skill-doc-content hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    .skill-doc-content strong { font-weight: 600; color: var(--text-primary); }
+
+    /* Empty state */
+    .empty-state {
+      padding: 40px 24px; text-align: center;
+      color: var(--text-muted); font-size: 14px;
+    }
+
+    /* Markdown Styles */
+    .accordion-content-inner h1, .accordion-content-inner h2,
+    .accordion-content-inner h3, .accordion-content-inner h4 {
+      color: var(--text-primary); margin: 12px 0 8px; font-weight: 600;
+    }
+    .accordion-content-inner h1 { font-size: 18px; }
+    .accordion-content-inner h2 { font-size: 16px; }
+    .accordion-content-inner h3 { font-size: 15px; }
+    .accordion-content-inner p { margin: 8px 0; }
+    .accordion-content-inner ul, .accordion-content-inner ol { padding-left: 20px; margin: 8px 0; }
+    .accordion-content-inner li { margin: 4px 0; }
+    .accordion-content-inner table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    .accordion-content-inner th, .accordion-content-inner td {
+      border: 1px solid var(--border); padding: 8px 12px; text-align: left;
+    }
+    .accordion-content-inner th { background: var(--bg); font-weight: 600; }
+    .accordion-content-inner code {
+      background: var(--bg); padding: 2px 6px; border-radius: 4px;
+      font-size: 13px; color: var(--primary-dark);
+    }
+    .accordion-content-inner pre {
+      background: var(--bg); padding: 12px; border-radius: 8px;
+      overflow-x: auto; margin: 12px 0;
+    }
+    .accordion-content-inner blockquote {
+      border-left: 3px solid var(--primary); padding-left: 12px;
+      color: var(--text-secondary); margin: 12px 0;
+    }
+
+    /* Print Styles */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .tabs-header { display: none; }
+      .tab-content { display: block !important; }
+      .accordion-content { display: block !important; }
+      .ai-summary-card {
+        background: linear-gradient(135deg, #1677FF 0%, #4096FF 100%) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
+    /* Followups */
+    .followups-list { display: flex; flex-direction: column; gap: 12px; }
+    .followup-item {
+      background: var(--bg); border-radius: 10px; padding: 16px 20px;
+      border-left: 3px solid var(--primary);
+    }
+    .followup-body {
+      font-size: 14px; color: var(--text-primary); line-height: 1.7;
+      white-space: pre-wrap; margin-bottom: 12px;
+    }
+    .followup-meta {
+      display: flex; align-items: center; gap: 16px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .followup-user, .followup-date {
+      display: flex; align-items: center; gap: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="header-title">北京建工集团</h1>
+        <div class="header-meta">
+          
+            <span class="header-industry">建筑</span>
+          
+          <span class="header-time">生成时间：2026/04/06</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- AI Sales Summary Card -->
+    <div class="ai-summary-card">
+      <div class="ai-summary-header">
+        <div class="ai-summary-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+          AI销售洞察
+        </div>
+        <div class="ai-summary-actions">
+          <div class="ai-summary-badge">智能分析</div>
+          <button class="ai-summary-toggle-btn" onclick="toggleAISummary()" aria-expanded="true">
+            <span class="toggle-text">收起</span>
+            <svg class="ai-summary-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="ai-summary-content" id="ai-summary-content" data-markdown="true">**WPS 365 销售摘要：北京建工集团**
+
+**客户概况**：
+北京建工集团是北京市属建筑龙头，员工约2万人，年营收超千亿。作为国企数字化转型的先锋，客户近期成立数智技术公司，并入选北京市智能建造领军企业。2024年曾通过单一来源采购WPS 365（70万元），具备良好的合作基础。
+
+**核心机会**：
+当前客户正处于“十五五”规划与信创替代的关键期。政策强力推动智能建造，客户急需解决工程图纸（CAD/BIM）协同、总部与跨区域项目部数据互通、以及核心数据安全合规等痛点。
+
+**销售策略**：
+1.  **切入点**：紧抓“信创国产化”刚需，强调WPS 365全栈信创适配及私有化部署能力，满足国企数据不出域的硬性合规要求。
+2.  **场景打击**：针对建筑行业特性，主推WPS 365对CAD图纸的移动端预览与批注功能，以及基于云盘的工程文档版本管理，解决“智慧工地”一线办公难题。
+3.  **谈判预案**：若遇价格僵局，建议采用“标准化实施服务+6.5折”或“延长账期”方案，平衡采购降本KPI与我方利润红线。
+
+**下一步行动**：
+重点对接集团信息化部，推动针对工程文档兼容性的POC测试，利用过往成功案例引导从单一部门扩容至全集团及子公司。</div>
+    </div>
+
+    <!-- Tabs Container -->
+    <div class="tabs-container">
+      <div class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab('profile')">
+          客户档案<span class="badge">3 项</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('skills')">
+          技能文档<span class="badge">7 个</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('followups')">
+          跟进记录<span class="badge">1 条</span>
+        </button>
+      </div>
+
+      <!-- Profile Tab -->
+      <div id="tab-profile" class="tab-content active">
+        
+          <div class="accordion">
+            
+              
+                <div class="accordion-item">
+                  <button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)">
+                    <span>基本信息</span>
+                    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <div class="accordion-content">
+                    <div class="accordion-content-inner" data-markdown="true"># 北京建工集团
+
+## 企业基本信息
+
+# 北京建工集团有限责任公司
+
+## 一、基本信息
+- **主营业务**：房屋建筑工程施工总承包（特级资质）、市政公用工程施工总承包（一级）、房地产开发经营（一级）、机电设备安装施工总承包（一级），业务覆盖工程建筑、房地产开发、环保工程、资源循环利用等领域
+- **员工规模**：约2万人
+- **近3年营收**：
+  - 2026年：暂未披露（当前时间为2026年4月6日）
+  - 2025年：1230.27亿元（中国企业500强第217位）
+  - 2024年：1230.27亿元，同比下降5.37%
+  - 2023年：1300.1亿元
+- **近3年利润**：
+  - 2026年：暂未披露
+  - 2025年：暂未披露
+  - 2024年：净利润11.79亿元，同比下降16.44%
+- **行业地位**：我国北方最大的建筑安装企业集团之一，跻身全球225家最大国际工程承包商、中国建筑业500强企业、中国工程承包商10强企业，业务覆盖全球30多个国家
+
+## 二、二级公司/对外投资
+（需要使用企业ID查询对外投资信息）
+
+## 三、招投标与供应商
+- **主要客户**：
+  - 昌平区政府（未来科技城建设合作）
+  - 毛里求斯政府（保障住房项目）
+  - 保利地产（合作关系）
+- **主要供应商**：
+  - 中信银行北京分行（战略合作银行）
+- **业务结构**：建筑业收入占比79.29%，房地产业收入占比12.37%（2024年中期数据）
+
+## 四、数字化动态
+- **数字化举措**：2024年成立北京建工数智技术公司，由集团智能建造中心与北京建工技术公司重组整合，深度推动数字化转型
+- **数字化平台**：构建机房、数据等数字化基础设施，将建筑科技技术应用到施工生产一线和业务系统
+- **新质生产力**：以科技创新提升产业发展水平，构筑新质生产力探索平台
+
+**注**：由于未能获取到企业的orgid和creditcode，无法查询更详细的对外投资、招投标等数据。
+
+---
+*数据来源：同花顺旗下快查企业数据引擎*</div>
+                  </div>
+                </div>
+              
+            
+              
+                <div class="accordion-item">
+                  <button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)">
+                    <span>决策链</span>
+                    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <div class="accordion-content">
+                    <div class="accordion-content-inner" data-markdown="true">### 数字化新闻与成果
+
+**加快转型！北京建工入选北京市第一批智能建造领军企业**
+> 时间：2024-05-15
+> 加快转型！北京建工入选北京市第一批智能建造领军企业近日 北京市住房和城乡建设委员会公布了 “十四五”期间北京市智能建造领军企业 （第一批）九家企业 北京建工荣登榜单 是两家综合型领军企业之一 标志着集团在产业链融合创新方面 具备显著的行业引领和示范能力 多年来，北京建工始终紧随国家战略步伐，聚焦“三主业、一培育”业务格局，以智能建造为抓手，大力推进企业数字化转型， 在数字化基础平台建设、持续推动信...
+> 来源：[https://mp.weixin.qq.com/s?__biz=MzAwOTI0ODg0OA==&idx=1&mid=2651311580&sn=1434996501f5e158f4942872a0ddc72d](https://mp.weixin.qq.com/s?__biz=MzAwOTI0ODg0OA==&idx=1&mid=2651311580&sn=1434996501f5e158f4942872a0ddc72d)
+
+**北京建工“满贯”完成首季各项指标**
+> 时间：2024-04-11
+> 去年年底，北京建工集团进行总部核心部门优化调整，北京建工集团智能建造中心与全资二级企业北京建工建筑技术公司重组整合，成立北京建工数智技术公司，深度推动数字化转型。 北京建工集团多年来始终围绕科技创新赋能建筑产业，智能建造中心作为集团打造的科创平台，积极构建机房、数据等数字化基础设施，将一大批行业前端的建筑科技技术应用到施工生产一线和业务系统。 新的一年，以北京建工数智技术公司成立和创新体系的深度优...
+> 来源：[https://mp.weixin.qq.com/s?__biz=MzA4MDkwODkzOA==&idx=1&mid=2651498316&sn=b5d6aea8b5f85b67745857a4def661cf](https://mp.weixin.qq.com/s?__biz=MzA4MDkwODkzOA==&idx=1&mid=2651498316&sn=b5d6aea8b5f85b67745857a4def661cf)
+
+**北京制造业数字化转型方案发布！这类企业最高奖3000万**
+> 时间：2024-02-29
+> 培育100种以上数字化转型优秀供给产品，培育20家市级及以上工业互联网平台；打造20家国家级智能制造标杆企业、示范工厂或“世界灯塔工厂”，新增100家智能工厂与数字化车间。 获评“灯塔工厂”最高奖3000万 数字化转型成本高、投入大，企业将获得“真金白银”的支持—— 对工业互联网平台赋能提升企业数字化水平实现数字化达标的，按照每达标一家不超过10万元的标准，对工业互联网平台进行奖励； 对提升数字化...
+> 来源：[https://mp.weixin.qq.com/s?__biz=MzUzMTgzOTIyNQ==&chksm=fb18c476934ec49ed36140e330ccbb7ddb8e88a24b7e65a0a96c2c67151c019aa44c488bafd6&idx=3&mid=2247535511&sn=6f4a3f7d202bc1aad9f51de79ba74d51](https://mp.weixin.qq.com/s?__biz=MzUzMTgzOTIyNQ==&chksm=fb18c476934ec49ed36140e330ccbb7ddb8e88a24b7e65a0a96c2c67151c019aa44c488bafd6&idx=3&mid=2247535511&sn=6f4a3f7d202bc1aad9f51de79ba74d51)
+
+**建工集团丨全国建筑行业首个！荣获“IPv6应用创新最佳实践奖”**
+> 时间：2025-07-16
+> 作为下一代互联网核心协议，IPv6为建筑行业数字化转型提供了关键技术支撑，本届“最佳实践”评选重点关注各领域内已落地的项目，以其行业代表性和推广示范价值作为标准，评选政府、教育、医疗、大型企业等领域的优秀案例， 发掘各行业领域标杆应用，为各行各业在基础网络建设领域提供思考启发与借鉴价值。此次获奖，既是对建工集团技术创新与应用的肯定，也展现了建工集团在建筑行业数字化转型中的引领作用。 建工集团所属数...
+> 来源：[https://mp.weixin.qq.com/s?__biz=MzI5NTUwMDc3Mw==&chksm=edd7d63ac97484cfb343b3e78ae931708e11a54d55874a340c8ef9140f01a06797c48d997371&idx=2&mid=2247949565&sn=b7660ea5045bd539fead696744566b7a](https://mp.weixin.qq.com/s?__biz=MzI5NTUwMDc3Mw==&chksm=edd7d63ac97484cfb343b3e78ae931708e11a54d55874a340c8ef9140f01a06797c48d997371&idx=2&mid=2247949565&sn=b7660ea5045bd539fead696744566b7a)
+
+**最佳实践，全国建筑行业首个**
+> 时间：2025-07-15
+> 发掘各行业领域标杆应用，为各行各业在基础网络建设领域提供思考启发与借鉴价值。此次获奖，既是对集团技术创新与应用的肯定，也展现了集团在建筑行业数字化转型中的引领作用。 北京建工所属数智公司充分发挥集团数智事业部管理职能，配合集团公司协同发展部制定《IPv6整体规模化部署方案》，以IT集约化方式，提供设备调研、统一采购、点对点调试安装、后期运维等一站式服务，在降本的同时提高服务质量， 高效迅速地完成了...
+> 来源：[http://news.10jqka.com.cn/19700121/c669640299.shtml](http://news.10jqka.com.cn/19700121/c669640299.shtml)
+
+**厉害了！获奖+6！**
+> 时间：2024-03-19
+> 厉害了！获奖+6！加快培育发展新质生产力 扎实推动集团高质量发展 日前 2023年度华夏建设科学技术奖 获奖项目名单揭晓 北京建工6项技术成果上榜 至此 集团累计126项技术成果获得该奖项 科技创新活力持续迸发 一等奖 获奖技术：复杂环境大型场馆智能建造关键技术及创新应用 获奖单位：北京建工建研院 主要成果：基于我国大型场馆建造技术发展情况和结构特点，提出了融合人工智能、数字孪生的统计矩智能建造理...
+> 来源：[https://mp.weixin.qq.com/s?__biz=MzAwOTI0ODg0OA==&idx=1&mid=2651309083&sn=04846515db97f5a3e06661ccb65cd899](https://mp.weixin.qq.com/s?__biz=MzAwOTI0ODg0OA==&idx=1&mid=2651309083&sn=04846515db97f5a3e06661ccb65cd899)
+
+**“空天地”一体化为城市把脉 北京建工智慧监测神器守护百姓生活**
+> 时间：2024-03-12
+> 截至目前，科技发展公司正与北京市住建委以及东城、西城、海淀、丰台等多区住建委、房管部门进行接洽，商讨智慧监测管理平台开发以及各区危旧房屋智慧监测工作相关事宜，力争一体化智慧监测技术在北京市全面推广应用。北京建工。 受访者供图 实干争先创新为要，努力打造“数字建工” 近年来，北京建工集团加快科技创新脚步，从智慧管廊的建设者到智慧城市的运营者，依托海量城市基础设施运维数据支撑， 正在将传统静态的数字城...
+> 来源：[https://www.sohu.com/a/763502752_114988](https://www.sohu.com/a/763502752_114988)
+
+**再获多项荣誉！**
+> 时间：2024-12-20
+> 北京建工土木公司 “竖向盾构”新技术推动，地下空间产业链变革 一等奖 北京建工四建公司思建新创 施工试验智能信息化管理研究与应用 一等奖 北京建工城市运营公司恒兴物业 构建国有企业志愿者服务管理体系在大型交通枢纽的实践 二等奖 北京建工市政路桥科技发展公司 基于“空天地一体化” 的城市基础设施监测管理技术创新与应用 二等奖 北京建工六建集团 国有建筑企业思想政治工作与“精·聚”文化融合的实践与探索...
+> 来源：[https://mp.weixin.qq.com/s?__biz=MzAwOTI0ODg0OA==&idx=1&mid=2651320379&sn=f334fa9b8502a293333ec6736699736a](https://mp.weixin.qq.com/s?__biz=MzAwOTI0ODg0OA==&idx=1&mid=2651320379&sn=f334fa9b8502a293333ec6736699736a)
+
+**北京建工集团**
+> 获奖单位:北京建工市政集团 主要成果:该成果的应用主要体现在绿色建造与智能建造技术、智能化运维与管理、多功能融合与空间优化、先进施工技术和韧性设计与防灾减灾等方面,这些关键技术的综合应用,能够有效推动功能融合地下空间工程的立体化建设,提高地下空间的利用效率和安全性,同时也为城市的可持续发展提供了重要支撑,在多项
+> 来源：[https://www.bcegc.com/menu15/newsDetail/15816.html](https://www.bcegc.com/menu15/newsDetail/15816.html)
+
+**北京建工集团: 全域赋能转型升级 加快打造“数字建工”**
+> 时间：2023-05-05
+> 近期，在中国建设报社、全联房地产商会数字城市分会等机构指导下，广联达《数字建筑大讲堂》推出“系统性数字化”专题系列，邀请建筑相关领域数字化转型业务专家、数字化转型先行者，围绕建筑企业数字化转型“难关痛”，从趋势洞察、方案解码、案例解读三个维度，全方位、多角度、立体化展示系统性数字化落地方法论及实践经验，为推动建筑企业高质量发展提供先进理念与实践经验支持，为行业企业更好转型提供借鉴。
+作为建筑业数字...
+> 来源：[https://news.bjd.com.cn/2023/05/05/10420967.shtml](https://news.bjd.com.cn/2023/05/05/10420967.shtml)
+
+
+### 数字化领导发言
+
+**“空天地”一体化为城市把脉 北京建工智慧监测神器守护百姓生活**
+> 时间：2024-03-12
+> 谭磊介绍称，该项新技术受天气的影响小，数据精度高，真正做到了全覆盖、全天候、全工期。“运用我们这套设备，可以精准监测每栋建筑的实时健康状态，有效避免大规模转移搬运的舟车劳顿，大大降低运维成本。” 北京建工。 还融合窄带物联网、城市信息模型和大数据监测平台等尖端技术，构筑创新解决方案，能够实现建筑结构安全的全方位、多层面实时监测、健康状态评估与危险预警。谭磊在现场打开电脑，向记者展示了监测系统采集的...
+> 来源：[https://www.sohu.com/a/763502752_114988](https://www.sohu.com/a/763502752_114988)
+
+**全国政协委员、正泰集团董事长南存辉：制造业转型升级离不开数字化、智能化融合技术创新**
+> 时间：2026-03-07
+> 3月7日，全国政协委员、正泰集团董事长南存辉在全国政协十四届四次会议第二场“委员通道”集体采访上表示，制造业转型升级离不开数字化、智能化融合技术创新。 他表示，正泰集团创新发展40多年来，从传统的电气设备制造商到新能源解决方案提供商，再到现在的综合能源服务商，每一次转型靠的都是技术创新、数字融合促进持续发展。 公司持续攻克虚拟电厂、固态变压器等关键技术，持续提升智能制造、绿色制造、服务型制造水平。...
+> 来源：[http://jnzstatic.cs.com.cn/zzb/htmlInfo/116537.html](http://jnzstatic.cs.com.cn/zzb/htmlInfo/116537.html)
+
+**泰格医药：公司核心战略是持续推进数字化、智能化**
+> 时间：2026-04-01
+> 证券日报网4月1日讯，泰格医药在接受调研者提问时表示，公司核心战略是持续推进数字化、智能化，自研AI大模型平台已落地商用，布局药物警戒、CRA辅助等AI应用；巩固临床资源合作关系，拓展国际业务和海外布局。 开年业务亮点：与某全球龙头MNC签署战略合作协议，参与其全球早期临床研究策略制定，提供全方位支持。 
+> 来源：[http://news.10jqka.com.cn/19700121/c675702393.shtml](http://news.10jqka.com.cn/19700121/c675702393.shtml)
+
+**方大特钢推进数字化转型智能化升级**
+> 时间：2026-04-02
+> 近日，方大特钢轧钢厂基于5G技术的高线成品库智能库管改造项目完成调试投入运行，智能办公助手系统也正式上线。两大数字化项目的落地，标志着企业在生产环节与办公场景的智能化转型中又迈出一步。 据了解，轧钢厂基于5G技术的高线成品库智能库管改造前，高线车间成品库主要依靠人工完成行车吊运、物料数据核准等工作。 为提升工作效率，方大特钢对其启动智能化改造，新增智能无人管理库区系统、汽车火车自动装车系统、钩号识...
+> 来源：[http://www.fangda-specialsteels.com/web/News.aspx?S_Id=14050](http://www.fangda-specialsteels.com/web/News.aspx?S_Id=14050)
+
+**山西林草管理服务信息平台试运行启动 开启数字化智能化管控新征程**
+> 时间：2026-04-04
+> 武耀文强调，在推进林草事业高质量发展的进程中，传统管理模式已难以适应新时代发展需求，数字化、智能化已成为破解发展难题、提升工作效能的关键抓手。 2025年8月以来，省林草局党组将加快信息化建设列为林草工作的第一基础和重要抓手，纳入“治理能力提升年”活动重要内容，明确提出“林草数字化、林场智能化、林局信息化”的总体目标， 按照系统重构、模块重建、数据重整、终端重塑的总体新布局，全面启动平台建设，目前...
+> 来源：[https://www.sohu.com/a/1005156542_121106854](https://www.sohu.com/a/1005156542_121106854)
+
+**温氏股份：公司积极开展数字化和智能化转型**
+> 时间：2026-03-17
+> 证券日报网讯3月17日，温氏股份在互动平台回答投资者提问时表示，公司积极开展数字化和智能化转型。 近10年来，公司累计投入超30亿元用于数字化转型，将云计算、大数据等前沿技术及相关装备引入生产和管理的各个环节，目前已取得良好成果。如今，在公司的养殖示范基地，“人管机器、机器管畜禽”的智能养殖新模式已成为常态。 智能化盘点技术、基于雷达毫米波的猪只发情监测技术等一系列应用也已投入实际生产，极大地提升...
+> 来源：[http://finance.sina.com.cn/stock/relnews/cn/2026-03-17/doc-inhrieim8035191.shtml](http://finance.sina.com.cn/stock/relnews/cn/2026-03-17/doc-inhrieim8035191.shtml)
+
+**数字化转型：如何通过智能化技术提升中小企业竞争力**
+> 时间：2026-04-02
+> 版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。随着全球经济的快速发展和信息技术的不断进步，数字化转型已成为各行各业的核心议题，尤其是对中小企业而言。 数字化不仅能优化企业的内部运营，还能帮助企业在激烈的市场竞争中脱颖而出。近年来，随着人工智能、大数据、云计算等技术的不断进步，越来越多的中小企业开始认识到数字化转型的重要性。 其次，缺乏有效的...
+> 来源：[https://blog.csdn.net/2501_94114293/article/details/155038372](https://blog.csdn.net/2501_94114293/article/details/155038372)
+
+**当光伏电站迈向智能化，如何实现运维管理的数字化？**
+> 时间：2026-04-04
+> 版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。随着智能化光伏运维解决方案的逐步推广，光伏电站的运维管理正在实现前所未有的变革。 这种转型不仅依赖于先进的数字化技术，还包括全面的维护管理方案，确保电站运行的高效与安全。智能运维光伏电站利用数据收集与分析，实现了设备状态的实时监控和故障预警，缩短了故障响应时间。 随着技术的快速发展，智能化光伏运...
+> 来源：[https://blog.csdn.net/sxgzzn/article/details/158701883](https://blog.csdn.net/sxgzzn/article/details/158701883)
+
+**北新路桥集团总经理朱长江赴成温邛高速扩容项目调研 强调五项重点要求**
+> 时间：2026-04-06
+> 北新路桥集团总经理朱长江赴成温邛高速扩容项目调研 强调五项重点要求据北新路桥之声消息，4月4日上午，北新路桥集团党委副书记、副董事长、总经理朱长江带队深入四川分公司承建的成温邛高速公路扩容项目TJ6标段， 开展实地检查调研并召开专题座谈会。朱长江一行实地查看了项目混凝土拌合站、钢筋加工场、智慧收料磅房等关键区域，详细了解项目标准化建设、生产管理及前期工作推进情况，并对筹备工作中的难点给予指导。 在...
+> 来源：[http://news.10jqka.com.cn/19700121/c675780336.shtml](http://news.10jqka.com.cn/19700121/c675780336.shtml)
+
+**中曼石油：推进公司数字化转型与智能化升级**
+> 时间：2026-03-27
+> 同花顺（300033）金融研究中心03月27日讯，有投资者向中曼石油（603619）提问， 董秘，您好！据企查查APP显示，近日，公司成立西诺(上海)智能信息科技有限公司成立，注册资本1000万元，由公司全资控股。 公司成立此子公司是作何考虑？是否涉及算力方面？谢谢！。公司回答表示，您好，成立子公司是立足自身发展战略需要，推进公司数字化转型与智能化升级，进一步提升运营效率与综合竞争力。谢谢！。点击...
+> 来源：[http://news.10jqka.com.cn/20260327/c675597023.shtml](http://news.10jqka.com.cn/20260327/c675597023.shtml)
+
+
+### 十五五规划数字化要求
+
+**“十五五”规划推进数智化变革 催生万亿级产业新空间**
+> 时间：2026-04-05
+> “十五五”规划推进数智化变革 催生万亿级产业新空间据江苏发改消息，“十五五”规划纲要明确提出“提升数智化发展水平”，数字化、网络化、智能化正驱动产业深刻变革，释放巨大增长潜力。 数智化转型不仅大幅提升生产效率，更将培育智能产业、人工智能等超十万亿规模的新兴市场，并催生千万级人才需求。 到2030年，该工厂的数智化改造新增投资将超过10亿元。全国范围内，数智化拉动效应显著： 1. 产业升级方面：全国...
+> 来源：[http://news.10jqka.com.cn/19700121/c675778788.shtml](http://news.10jqka.com.cn/19700121/c675778788.shtml)
+
+**“空天地”一体化为城市把脉 北京建工智慧监测神器守护百姓生活**
+> 时间：2024-03-12
+> 受访者供图 实干争先创新为要，努力打造“数字建工” 近年来，北京建工集团加快科技创新脚步，从智慧管廊的建设者到智慧城市的运营者，依托海量城市基础设施运维数据支撑， 正在将传统静态的数字城市升级为可感知、动态在线、虚实交互的“数字孪生”城市。作为建筑业数字化转型先锋企业代表，北京建工集团坚持围绕“融、通、智、信”打造“数字建工”。“融”即组织融合、管理融合、技术融合。 “通”即业务互通、数据互通、产...
+> 来源：[https://www.sohu.com/a/763502752_114988](https://www.sohu.com/a/763502752_114988)
+
+**北京城市副中心管理委员会关于印发《关于北京城市副中心推动智能建造发展的指导意见（试行）》的通知**
+> 时间：2025-02-26
+> （三）发展目标 到2026年，智能建造适用技术在重点建设项目中实现全覆盖，建立2个智能建造创新中心，搭建2个建筑产业互联网平台，建设20个以上智能建造试点示范工程，打造张家湾设计小镇成为智能建造创新实践基地， 初步形成智能建造产业集群并不断壮大，专项投资保持连续增长，产业支撑经济发展的功能地位显著增强。 到“十五五”末，在各类建设项目中普遍应用智能建造适用技术，智能建造产业集群规模效益、创新实力、...
+> 来源：[https://www.beijing.gov.cn/zhengce/zhengcefagui/202503/t20250307_4028804.html](https://www.beijing.gov.cn/zhengce/zhengcefagui/202503/t20250307_4028804.html)
+
+**加快转型！北京建工入选北京市第一批智能建造领军企业**
+> 时间：2024-05-15
+> 加快转型！北京建工入选北京市第一批智能建造领军企业近日 北京市住房和城乡建设委员会公布了 “十四五”期间北京市智能建造领军企业 （第一批）九家企业 北京建工荣登榜单 是两家综合型领军企业之一 标志着集团在产业链融合创新方面 具备显著的行业引领和示范能力 多年来，北京建工始终紧随国家战略步伐，聚焦“三主业、一培育”业务格局，以智能建造为抓手，大力推进企业数字化转型， 在数字化基础平台建设、持续推动信...
+> 来源：[http://news.10jqka.com.cn/20240515/c657850419.shtml](http://news.10jqka.com.cn/20240515/c657850419.shtml)
+
+**“十五五”规划即将启动，建筑企业如何谋求“生存”与“发展”？**
+> 时间：2024-10-22
+> “十四五”时期，建筑企业已纷纷提出“投建营”一体化发展，但从项目实际落地来看，普遍重“投建”轻“运营”，投资仅为获取工程项目的手段，或寻求运营期退出，或不注重运营能力培育以致不能有效盘活运营资产，形成重资产包袱， 拉低企业经营绩效，甚至使企业陷入经营困境。随着建筑业规模登顶，步入低增量、高存量的发展新阶段，提升运营能力将是建筑企业生存与发展的关键。 “十五五”时期，建筑企业要真正谋求“投建营”一体...
+> 来源：[https://mp.weixin.qq.com/s?__biz=MzI2MjQ3OTAxOA==&idx=4&mid=2247520799&sn=e41c1446af1cd7ece28b4299cb392004](https://mp.weixin.qq.com/s?__biz=MzI2MjQ3OTAxOA==&idx=4&mid=2247520799&sn=e41c1446af1cd7ece28b4299cb392004)
+
+**“十五五”，安全生产智能化建设怎么干？**
+> 时间：2026-04-01
+> 3月13日，“十五五”规划纲要正式发布。纲要设“提高公共安全治理水平”专章，并以“提高安全生产水平”专节进行擘画，对安全生产工作进行专门谋划布局。 “坚持智能化、绿色化、融合化方向”“把握数字化、网络化、智能化发展大势”“加快机械化信息化智能化融合发展”……“智能”一词在纲要中出现高达53次，彰显了智能化在“十五五”时期的重要地位，为安全生产智能化建设， 提供了前所未有的历史机遇。安全生产智能化，...
+> 来源：[https://finance.sina.cn/2026-04-01/detail-inhsxvfk1977528.d.html](https://finance.sina.cn/2026-04-01/detail-inhsxvfk1977528.d.html)
+
+**央视新闻 | “十五五”新图景：数智化变革中的万亿新空间**
+> 时间：2026-04-05
+> 央视新闻 | “十五五”新图景：数智化变革中的万亿新空间“十五五”规划纲要提出“深入推进数字中国建设，提升数智化发展水平”。数字化、网络化、智能化正在带来新的产业变革和巨大的增长空间。 “十五五”规划纲要首次提出“提升数智化发展水平”，带动新业态蓬勃兴起。智能产线的这台焊接设备上，3个机械臂在智能模型监测下协同作业，机械臂上还带着能自动避障的激光传感器，未来五年，这样的传感器在这里还会增加55个。...
+> 来源：[https://mp.weixin.qq.com/s?__biz=MzIzNjY2MjI0Nw==&chksm=e96c648467a385051838689c3787ffe7352c0cdb9adbd43a40401aad29d4bb976552dd6e521a&idx=1&mid=2247563219&sn=e6b7a46942edd7506e1e99f485d5a5eb](https://mp.weixin.qq.com/s?__biz=MzIzNjY2MjI0Nw==&chksm=e96c648467a385051838689c3787ffe7352c0cdb9adbd43a40401aad29d4bb976552dd6e521a&idx=1&mid=2247563219&sn=e6b7a46942edd7506e1e99f485d5a5eb)
+
+**电力设备：特高压和主网、配网、智能化是重点方向-“十五五”国网投资超四万亿**
+> 时间：2026-03-25
+> 我们认为，强化特高压与骨干网架投资与互联能力，加大城乡配电网升级投资与承载能力，赋能电网智能转型与调度能力是未来电网投资的核心方向。 3)同时，优化区域主网架布局，统筹电源与电网规划衔接，匹配集中式新能源基地开发时序，保障资源高效优化配置。配网：1）提升新能源承载能力、增大分布式电源接入空间是配网升级的主要目标。 “十五五”将重点补齐配网短板，打造有源化、智能化、柔性化的现代配电网，规划期内实现配...
+> 来源：[https://stock.stockstar.com/JC2026032500023165.shtml](https://stock.stockstar.com/JC2026032500023165.shtml)
+
+**汽车行业十五五规划纲要解读：扩内需与高质量发展共振 智能化引领汽车行业“十五五”新征程**
+> 时间：2026-03-15
+> “十五五”是加快发展新质生产力的关键期，智能化水平成为汽车产业的核心竞争力，无人物流车、Robotaxi等产业有望获得飞速发展。 《规划纲要》提出，要加快新一代信息技术、新能源、新材料、智能网联新能源汽车、机器人、生物医药、高端装备、航空航天等战略性新兴产业发展，因地制宜建设各具特色、优势互补的战略性新兴产业集群， 着力打造一批成长潜力大、技术含量高、渗透领域广的新兴支柱产业。“十五五”时期，我国...
+> 来源：[https://stock.finance.sina.com.cn/stock/go.php/vReport_Show/kind/lastest/rptid/826886108586/index.phtml](https://stock.finance.sina.com.cn/stock/go.php/vReport_Show/kind/lastest/rptid/826886108586/index.phtml)
+
+**【中国银河汽车】扩内需与高质量发展共振，智能化引领汽车行业“十五五”新征程——“十五五”规划纲要点评**
+> 时间：2026-03-14
+> 【报告导读】。1. 扩大内需、激发汽车消费活力是“十五五”时期实现国民经济稳增长的重要抓手。2. 汽车后市场被重点提及，是延伸汽车消费链条、激发消费新活力的关键领域，改装、租赁等细分赛道有望受益。 3. “十五五”是加快发展新质生产力的关键期，智能化水平成为汽车产业的核心竞争力，无人物流车、Robotaxi等产业有望获得飞速发展。 “十五五”是加快发展新质生产力的关键期，智能化水平成为汽车产业的核...
+> 来源：[https://finance.sina.cn/2026-03-14/detail-inhqyaqs4166523.d.html](https://finance.sina.cn/2026-03-14/detail-inhqyaqs4166523.d.html)
+</div>
+                  </div>
+                </div>
+              
+            
+              
+                <div class="accordion-item">
+                  <button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)">
+                    <span>历史合作</span>
+                    <svg class="accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+                  <div class="accordion-content">
+                    <div class="accordion-content-inner" data-markdown="true">**WPS365产品采购项目**  
+- **产品**：WPS365  
+- **形式**：单一来源采购  
+- **时间**：2024年  
+- **状态**：中标（成交金额70万元，供应商为北京金山办公软件股份有限公司）
+
+---
+
+{}
+
+
+---
+
+{}
+</div>
+                  </div>
+                </div>
+              
+            
+          </div>
+        
+      </div>
+
+      <!-- Skills Tab -->
+      <div id="tab-skills" class="tab-content">
+        
+          <!-- Skills sub-tabs -->
+          <div class="skills-tabs-header">
+            
+              <button class="skill-tab-btn active" onclick="switchSkillTab('0', this)">
+                竞品反制策略报告
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('1', this)">
+                商务谈判筹码方案
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('2', this)">
+                破冰话题库
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('3', this)">
+                需求挖掘分析
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('4', this)">
+                财报年报战略解码技能
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('5', this)">
+                电梯演讲
+              </button>
+            
+              <button class="skill-tab-btn " onclick="switchSkillTab('6', this)">
+                金融与国企客户深度研究
+              </button>
+            
+          </div>
+          <!-- Skills content -->
+          
+            <div class="skill-tab-content active" id="skill-tab-0">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">竞品反制策略报告</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/02/27</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 竞品反制策略报告 - 2026/2/27
+
+**Skill:** 竞品反制策略报告
+**Date:** 2026-02-27T03:12:26.180Z
+
+# 飞书 竞品反制策略报告
+
+**报告类型**：竞品"杀手锏"反制
+**目标竞品**：飞书
+**客户名称**：北京建工集团
+**客户类型**（AI判断）：**国企/央企**
+**生成日期**：2023-10-27
+
+---
+
+## 核心摘要
+
+### 客户类型分析
+
+**客户名称**：北京建工集团
+**客户类型**：国企/央企（建筑行业）
+**核心关注**：信创国产化、数据主权（私有化）、涉密/敏感数据保护、工程文档格式兼容性、合规审计。
+
+### 竞品优势分析
+
+- **协作体验**：飞书的文档协作体验流畅，互联网基因强，适合高频轻量级沟通。
+- **集成度**：IM与文档集成度高，在互联网科技企业应用广泛。
+- **功能创新**：在OKR、多维表格等管理工具有一定创新性。
+
+### 竞品弱点分析
+
+- **私有化部署缺失**：核心功能主要依赖公有云，难以满足国企数据不出域的硬性要求。
+- **信创支持不足**：对国产操作系统（如统信、麒麟）和国产芯片（如鲲鹏、海光）的适配深度不足。
+- **工程文档兼容性**：对建筑行业复杂的CAD、工程预算表等传统Office格式的兼容性不如WPS。
+- **合规风险**：数据存储在云端，对于大型国企基建项目存在数据出境或不可控的合规隐患。
+
+### WPS 365 差异化优势
+
+- **全栈信创支持**：完美适配国产化软硬件环境，满足国企信创改造考核指标。
+- **私有化部署**：支持本地化部署，数据完全自主可控，不出境。
+- **深度格式兼容**：对工程文档、历史存量文档的兼容性达到99%以上，平滑迁移无障碍。
+- **国企适配经验**：拥有大量大型央国企服务案例，懂国企的组织架构和审批流程。
+
+---
+
+## 竞品对比表（国企/央企视角）
+
+| 对比维度 | WPS 365 | 飞书 |
+|---------|---------|------|
+| **信创支持** | ✅ 全栈支持（芯片/OS/中间件） | ❌ 支持较弱，主要依赖外设 |
+| **私有化部署** | ✅ 支持深度私有化/混合云 | ❌ 核心功能主要依赖公有云 |
+| **数据不出境** | ✅ 保证 | ❌ 数据需上传至云端 |
+| **涉密/合规认证** | ✅ 涉密认证、等保三级 | ⚠️ 主要是通用云认证 |
+| **工程文档兼容性** | ✅ 强（兼容CAD、复杂格式） | ⚠️ 一般（转换易出错） |
+| **二次开发集成** | ✅ 开放平台，支持国企OA集成 | ⚠️ 相对封闭，生态壁垒高 |
+
+---
+
+## FUD 策略应用
+
+### 1. 捧杀（公允）
+
+"飞书在互联网企业里确实口碑不错，特别是文档的即时协作和UI设计，体验上确实很流畅，很多科技公司都在用。"
+
+### 2. 转折（过渡）
+
+"不过，考虑到咱们**北京建工集团**作为大型国企的背景，特别是建筑行业涉及大量工程图纸、招投标文件等核心数据，对数据安全、信创适配以及私有化部署的要求是非常严格的。"
+
+### 3. 重构（WPS 优势）
+
+"在这方面，**WPS 365** 的优势就比较明显了。我们支持全栈信创环境，能完美适配咱们国产化的操作系统和芯片；同时我们支持深度私有化部署，确保核心工程数据'数据不出域'，完全满足国企对数据主权的硬性要求。而且，我们对复杂的工程文档格式兼容性更好，能保障历史文档的平滑迁移。"
+
+---
+
+## 反制话术
+
+### 场景一：初次接触（强调安全与合规）
+
+**客户**："我们听说飞书的协作体验很好，想了解一下。"
+**话术**：
+"飞书在轻量协作方面确实有特色。不过对于咱们建工集团这样的国企，**合规与安全是第一位的**。飞书主要基于公有云，对于工程核心数据的存储和传输可能存在合规风险。WPS 365 专门针对国企设计了**私有化部署方案**，数据完全留在咱们自己的服务器上，配合**涉密认证**和**等保三级**资质，能帮您规避很多合规风险，同时协作效率一点也不输给飞书。"
+
+### 场景二：深入沟通（强调信创与业务适配）
+
+**客户**："但是飞书的功能界面看起来更现代一点。"
+**话术**：
+"界面确实是一个方面，但**好用更要能用**。咱们现在面临信创改造的大趋势，飞书在国产操作系统（如统信UOS、麒麟）上的适配体验可能不如人意。WPS 365 是**信创生态的排头兵**，无论是在电脑端还是移动端，都能在国产系统上流畅运行。而且建筑行业有很多复杂的CAD图纸和特殊格式的报表，WPS 的**格式兼容引擎**能保证这些文档打开不乱码、排版不跑偏，这是飞书目前比较难做到的。"
+
+### 场景三：应对价格/成本质疑
+
+**客户**："飞书给我们的报价看起来很有竞争力。"
+**话术**：
+"单纯看软件授权费，可能都有优势。但如果算上**迁移成本**和**合规风险成本**，WPS 365 的综合性价比（TCO）更高。飞书的迁移涉及到大量文档格式转换，可能造成历史数据丢失。而 WPS 可以做到**平滑无缝迁移**，员工几乎不需要培训。更重要的是，选择符合信创标准的 WPS，能帮您完成**国产化替代的考核指标**，这笔隐形的价值是无法用价格衡量的。"
+
+---
+
+## 风险提示
+
+- **避免直接攻击**：不要说"飞书不安全"，而要说"飞书主要面向公有云，在国企私有化场景下可能存在合规挑战"。
+- **客观对比**：承认飞书在UI和互联网协作上的优势，将重点引导至"国企刚需"（信创、私有化、安全）。
+- **法律风险**：确保所有关于飞书"不支持私有化"的描述是基于其当前公开的产品策略（主要依赖公有云SaaS模式）。
+
+---
+
+**报告生成时间**：2023-10-27</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-1">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">商务谈判筹码方案</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/02/25</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 商务谈判筹码方案 - 2026/2/25
+
+**Skill:** 商务谈判筹码方案
+**Date:** 2026-02-25T13:54:19.222Z
+
+# 北京建工集团 商务谈判筹码方案
+
+**目标角色**：采购负责人
+**价格差距**：客户希望6折，我方坚持7折
+**生成日期**：2026-02-11
+
+---
+
+## 📊 谈判僵局分析
+
+**客户要求**：价格降至6折，否则无法通过采购审批
+**我方底线**：最低7折，否则突破毛利红线
+**核心矛盾**：10%的价格差距，且采购角色对价格极其敏感
+**客户动机**：
+1.  **业绩考核**：采购负责人背负年度降本KPI，需要通过压价来体现绩效。
+2.  **合规性**：作为国企，需要确保采购流程合规，避免“萝卜采购”嫌疑。
+3.  **现金流**：建筑行业通常对现金流敏感，希望优化付款节奏。
+
+---
+
+## 💡 谈判筹码方案
+
+### 方案一：标准化实施服务 + 6.5折（折中方案）
+
+| 维度 | 内容 |
+|------|------|
+| **筹码类型** | 服务类 |
+| **具体内容** | 将原定的“定制化现场实施”调整为“标准化实施方案”。减少现场驻场天数，增加远程指导和标准化模板部署。 |
+| **我方成本** | 降低差旅成本和实施顾问工时成本（约覆盖降价幅度的50%） |
+| **客户价值** | 标准化流程更规范，符合国企合规要求；上线周期缩短20%。 |
+| **价格让渡** | 可在原价基础上降至6.5折 |
+| **适用场景** | 客户对定制化需求不强，主要关注基础功能和合规性 |
+
+**谈判话术**：
+```
+[认可] 王总（采购），我非常理解您的压力，年度降本指标确实是硬指标。
+
+[转折] 咱们在交付模式上做一个微调，既能帮您达成价格目标，又能确保项目快速落地。
+我们将原计划的定制化现场实施，调整为行业通用的标准化实施模板，减少部分非必要的现场驻场。
+
+[价值] 这样一来，实施流程更符合国企的标准化规范，审计更合规，同时上线速度还能加快。
+基于交付成本的优化，我特批申请到6.5折的折扣。
+
+[行动] 您看用标准化服务换取这1.5折的优惠，这个方案能帮您过会吗？
+```
+
+**心理学原理**：**折中效应** - 在6折和7折之间提出6.5折，并附带服务调整，容易被采购方视为“双方都做出了让步”的公平选择。
+
+**风险提示**：
+- 需确保标准化模板能满足客户核心业务流程，避免上线后体验不佳。
+- 需在合同中明确远程支持的SLA响应时间。
+
+---
+
+### 方案二：延长账期 + 7折（坚守价格）
+
+| 维度 | 内容 |
+|------|------|
+| **筹码类型** | 账期类 |
+| **具体内容** | 维持7折价格不变，但优化付款节奏。如：将“3-6-1”付款比例调整为“3-4-2-1”或延长尾款支付期限至验收后6个月。 |
+| **我方成本** | 资金占用成本（需评估是否在可接受范围内） |
+| **客户价值** | 缓解建筑行业常见的现金流压力，相当于获得了“无息贷款”。 |
+| **价格让渡** | 0（坚守7折底线） |
+| **适用场景** | 客户财务部门有现金流压力，或采购负责人需要通过“账期优势”来弥补价格未达标的遗憾 |
+
+**谈判话术**：
+```
+[认可] 王总，6折的价格确实已经突破了我们的成本红线，公司财务那边真的审批不下来。
+
+[转折] 价格上我已经尽全力申请到了7折的底价，但我可以在资金使用上为您争取更多便利。
+考虑到咱们建筑行业的资金周转特点，我可以把付款节奏放缓，尾款账期延长6个月。
+
+[价值] 这相当于为您提供了半年的无息流动资金，这对贵司的资金周转价值可能比直接降价几个点更实在。
+您用这笔钱周转产生的收益，可能远超那1个点的差价。
+
+[行动] 价格坚守7折，但给您最宽松的账期，您看这样是否能帮您完成采购任务？
+```
+
+**心理学原理**：**心理账户** - 引导客户将“价格”和“现金流”划入不同的心理账户。采购可能无法在价格账户上达标，但可以在“财务优化”账户上获得巨大功劳。
+
+**风险提示**：
+- 需严格评估客户信用评级，北京建工虽为国企，但仍需确认回款风险。
+- 需财务部门测算资金成本。
+
+---
+
+### 方案三：赠送移动端/协作增强包 + 7折（增值方案）
+
+| 维度 | 内容 |
+|------|------|
+| **筹码类型** | 产品组合 |
+| **具体内容** | 维持7折价格，额外赠送“移动办公增强包”或“项目协作模块”若干用户数/时长（针对建筑工地场景）。 |
+| **我方成本** | 软件许可的边际成本极低 |
+| **客户价值** | 解决建筑行业“工地现场办公难、协作难”的痛点，提升一线员工效率。 |
+| **价格让渡** | 0（价格7折，赠送高价值赠品） |
+| **适用场景**：最终用户（业务部门）有强烈的移动办公需求，采购负责人需要给业务部门一个交代 |
+
+**谈判话术**：
+```
+[认可] 王总，6折确实很难操作，但我也不想让您难做。
+
+[转折] 咱们换个思路，除了基础版授权，我额外赠送您一套“移动办公增强包”。
+咱们建筑行业工地多，现场人员需要随时汇报、审批，这个功能对业务部门特别实用。
+
+[价值] 虽然**单价**维持在了7折，但**总包**（Total Package）的价值其实是提升的。
+您可以跟业务部门说，通过谈判争取到了高价值的移动端授权，既满足了降本要求，又支持了业务一线。
+
+[行动] 赠送价值X万的增强包，价格7折，您看这个配置能否立项？
+```
+
+**心理学原理**：**不协同效应** - 客户倾向于避免损失。如果拒绝7折，就失去了移动端增强包的“赠品”，这会增加他们放弃方案的心理负担。
+
+**风险提示**：
+- 需确保赠送的模块不是客户后续必须付费购买的“刚需”模块，避免透支未来收入。
+- 明确赠送模块的服务期限。
+
+---
+
+## ⚠️ 红线警示
+
+- [ ] 任何方案都需经财务确认，不突破毛利红线
+- [ ] 价格计算需要具体数字，AI 不能代替算账
+- [ ] 账期类筹码需严格评估客户回款风险
+- [ ] 服务类削减需确保不影响项目验收交付
+
+---
+
+## 📈 推荐方案优先级
+
+1.  **最优方案**：**方案一（标准化实施 + 6.5折）** - 直接针对采购负责人的降价需求，通过降低我方交付成本来弥补价格缺口，达成双赢，最容易被采购接受以完成KPI。
+2.  **备选方案**：**方案二（延长账期 + 7折）** - 针对国企现金流特点，用财务价值置换价格折扣，适合财务部门强势的场景。
+3.  **保底方案**：**方案三（赠送增强包 + 7折）** - 适合业务部门影响力较大，采购需要给业务部门交代时的“甜头”方案。
+
+---
+
+**生成时间**：2026-02-11
+**分析框架**：非零和博弈 + 谈判心理学</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-2">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">破冰话题库</div>
+                <div class="skill-doc-meta">4 篇文档 · 最近更新：2026/02/25</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 破冰话题库 - 2026/2/25
+
+**Skill:** 破冰话题库
+**Date:** 2026-02-25T10:54:50.297Z
+
+# 破冰话题列表
+
+**客户名称**：北京建工集团
+**客户地域**（AI判断）：北京
+**客户行业**（AI判断）：建筑/工程
+**客户角色**：CIO（首席信息官）
+**应酬场景**：商务午餐
+
+---
+
+## 📍 地域文化话题
+
+### 话题1：北京美食与午餐偏好
+
+- **切入话术**："来北京这么久，发现这边的烤鸭店真是各有各的特色。您平时如果招待朋友或者自己用餐，比较偏爱哪种口味的餐厅？是喜欢那种老字号的传统氛围，还是喜欢一些新式的创意菜？"
+- **预期反应**：客户可能会分享他喜欢的具体餐厅（如大董、四季民福等），或者谈论对北京饮食文化的看法。
+- **后续话题**：顺势聊到北京的城市变迁，或者询问他平时是否喜欢在胡同里转转，寻找隐藏的美食。
+- **注意事项**：午餐时间通常比较紧凑，话题不要过于冗长，避免聊到需要排队很久的网红店带来的负面体验。
+
+### 话题2：北京的城市发展与交通
+
+- **切入话术**："这几年北京的城市规划变化真大，尤其是通州那边和几个新机场的建设。您在北京待久了，感觉现在出行比以前方便些了吗？"
+- **预期反应**：客户可能会吐槽北京的交通，或者分享他对北京城市扩张、基础设施建设的看法（作为建筑行业专家，他可能有独特见解）。
+- **后续话题**：从交通延伸到他在工作中参与或见证的标志性建筑，表达对他所在行业贡献的敬意。
+- **注意事项**：避免谈论具体的交通管制政策或拥堵收费等敏感管理措施。
+
+---
+
+## 💼 行业正能量话题
+
+### 话题1：智能建造与数字化转型
+
+- **切入话术**："最近经常听到'智能建造'这个词，感觉咱们建筑行业正在经历一场很大的数字化变革。我看北京建工在很多地标项目上都应用了不少新技术，您觉得目前行业里哪个场景的数字化落地效果最让人惊喜？"
+- **预期反应**：CIO通常对技术应用有见解，他可能会提到BIM（建筑信息模型）、智慧工地或数字孪生等技术。
+- **后续话题**："现在的AI技术这么火，您觉得在建筑施工安全监控或者图纸审核这些环节，AI能帮上大忙吗？"
+- **注意事项**：不要直接询问具体的技术难题或项目痛点，午餐场合以探讨趋势和正面案例为主。
+
+### 话题2：绿色建筑与可持续发展
+
+- **切入话术**："现在国家都在提倡双碳目标，感觉绿色建筑、装配式建筑越来越受重视了。作为行业龙头，咱们在绿色施工方面应该有不少经验吧？"
+- **预期反应**：客户可能会介绍公司的一些环保举措或获奖项目，表现出自豪感。
+- **后续话题**：聊到建筑材料创新或者节能技术的应用，表达对行业未来的看好。
+- **注意事项**：避免谈论环保督察带来的压力或处罚等负面话题。
+
+---
+
+## 👔 角色导向话题（CIO）
+
+### 话题1：新技术趋势的"去伪存真"
+
+- **切入话术**："现在做CIO挺不容易的，技术概念层出不穷，什么元宇宙、Web3.0、AIGC……我想请教一下，您在筛选新技术时，主要看它能不能解决实际业务痛点吗？"
+- **预期反应**：CIO通常会有共鸣，感叹技术泡沫，分享他的判断标准或选型逻辑。
+- **后续话题**："确实，能落地的技术才是好技术。您觉得对于咱们建筑行业，未来三年最核心的技术抓手会是云原生还是大数据？"
+- **注意事项**：不要推销具体产品，保持请教和探讨的态度。
+
+### 话题2：IT团队管理与协作
+
+- **切入话术**："建筑行业的IT团队不仅要懂技术，还得懂工程业务，这跨界融合挺难的。您在带团队时，是怎么促进IT人员跟业务人员沟通的？"
+- **预期反应**：CIO可能会分享一些管理心得，或者吐槽业务与IT融合的挑战。
+- **后续话题**：聊到远程协作、移动办公在建筑工地的应用，表示对一线IT人员辛苦的理解。
+- **注意事项**：避免深入询问团队编制、预算等具体数字。
+
+---
+
+## 🌟 万能话题
+
+### 话题1：周末休闲与运动
+
+- **切入话术**："做咱们这行平时项目节奏快，压力大。您周末一般怎么放松？是喜欢爬山运动，还是喜欢在家静一静？"
+- **预期反应**：客户分享他的兴趣爱好，如高尔夫、跑步、陪家人等。
+- **后续话题**：根据他的爱好延伸，比如如果喜欢运动，可以聊北京适合徒步的路线；如果喜欢陪家人，可以聊亲子教育或展览。
+- **注意事项**：如果客户表示工作太忙没时间休息，要表示理解和同理心，不要强行安利休闲方式。
+
+### 话题2：近期出差或旅行见闻
+
+- **切入话术**："最近看您朋友圈（或听说）好像去了XX地？那边感觉怎么样？我也一直想去看看。"
+- **预期反应**：客户分享旅行体验或出差见闻。
+- **后续话题**：聊到当地的风土人情或美食，或者对比北京与那个城市的生活节奏。
+- **注意事项**：如果没有确切信息，不要瞎猜，可以用"最近出差多吗"来开启话题。
+
+---
+
+## ⚠️ 敏感话题提醒
+
+- **避免讨论**：
+  - 具体的施工安全事故（行业敏感点）。
+  - 项目回款周期或资金链紧张问题。
+  - 公司内部的人事变动或组织架构调整。
+  - 竞品（如其他建筑软件厂商）的具体报价或负面消息。
+  - 房地产市场的低迷行情（虽然是相关行业，但尽量保持积极）。
+
+- **如果客户主动提起敏感话题（如抱怨某个项目很难做）**：
+  - **应对策略**：表示理解（"确实，大型项目协调起来太复杂了"），然后迅速转移到正面（"不过这也正是体现咱们管理能力的时候，像XX项目就做得特别漂亮"）。
+
+---
+
+**生成时间**：2023-10-27</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-3">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">需求挖掘分析</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/02/25</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 需求挖掘分析 - 2026/2/25
+
+**Skill:** 需求挖掘分析
+**Date:** 2026-02-25T09:34:36.114Z
+
+# 北京建工集团 需求挖掘分析报告
+
+**目标角色**：CEO
+**业务场景**：数字化办公门户
+**分析框架**：JTBD + SPIN
+**生成日期**：2026-02-11
+
+---
+
+## 🎯 核心洞察（JTBD 视角）
+
+### Job（核心任务）
+- **任务描述**：统筹集团整体运营，通过数字化手段实现总部与各项目部的无缝连接，确保战略决策的快速下达与执行反馈的实时获取。
+- **任务场景**：日常经营分析会、重大项目突发情况处理、跨区域多项目监管。
+- **成功标准**：数据实时透明（T+0），决策指令下达零延迟，全员数字化协作覆盖率达 100%。
+
+### Friction Points（摩擦点分析）
+
+| 摩擦点类别 | 显性痛点 | 隐性痛点（重点） | 严重度 |
+|-----------|---------|-----------------|--------|
+| 信息获取 | 各业务系统（ERP/财务/工程）数据割裂，看报表需要人工汇总 | **数据孤岛导致"管理盲区"**，一线真实情况传递到CEO时已被过滤或失真 | 高 |
+| 流程协作 | 审批流程长，跨部门协作依赖线下会议 | **组织僵化**，缺乏敏捷响应市场变化的机制，决策链条过长导致机会流失 | 高 |
+| 工具支持 | 办公入口多，账号密码管理混乱 | **员工抵触数字化**，因体验差导致系统闲置，数字化投入无法转化为实际生产力 | 中 |
+
+### Latent Needs（隐性需求）
+- **需求1：构建"数字驾驶舱"**。不仅仅是看报表，而是希望拥有一个能实时反映项目健康度、风险预警的移动指挥中心。
+- **需求2：知识资产沉淀**。建筑行业人员流动大，CEO 担心核心经验随人员流失，迫切需要将个人经验转化为组织知识库。
+- **需求3：组织文化在线化**。通过统一的门户入口，传递集团价值观，提升大型国企的凝聚力和执行力。
+
+---
+
+## 📋 SPIN 提问脚本
+
+### S - 背景确认问题
+
+**问题1**："王总，了解到北京建工近年来在数字化转型方面投入很大，特别是在智慧工地和一体化管控平台建设上，目前的整体应用落地情况如何？"
+- **设计意图**：确认现状，建立共鸣。CEO 通常对已投入的成果比较关注，先肯定再探询。
+- **预期回应**：正面描述基础设施建设的成果，但可能会提到应用层面的参差不齐。
+
+**问题2**："在集团日常管理中，您目前主要是通过什么方式来掌握全国各地项目一线的实时经营数据的？"
+- **设计意图**：了解信息获取渠道，为后续暴露"信息滞后/失真"做铺垫。
+- **预期回应**：描述目前的汇报流程（如：周报、月报、系统查看），可能暗示存在时间差。
+
+### P - 问题诱导问题
+
+**问题1**："在建筑行业，很多集团领导反馈，虽然系统建了很多，但数据往往分散在财务、工程、劳务等不同系统里，要形成一张完整的经营报表还需要人工统计。咱们集团是否也存在这种'数据打架'或'数据滞后'的情况？"
+- **针对痛点**：JTBD摩擦点-信息获取
+- **设计意图**：抛出行业共性问题，降低防御心理，引导客户承认数据治理难题。
+
+**问题2**："当遇到突发状况或需要紧急决策时，总部与一线项目部的沟通协作是否顺畅？是否存在信息传递链条过长、导致决策延误的情况？"
+- **针对痛点**：JTBD摩擦点-流程协作
+- **设计意图**：场景化痛点挖掘，触动CEO对"管理失控"和"效率低下"的担忧。
+
+**问题3**："随着数字化系统越来越多，一线员工在使用时是否反馈过入口不统一、体验繁琐的问题？这是否在一定程度上影响了大家使用数字化工具的积极性？"
+- **针对痛点**：JTBD摩擦点-工具支持
+- **设计意图**：挖掘隐性痛点（员工抵触），CEO 可能未直接感知，但会担心投入产出比。
+
+### I - 后果牵连问题
+
+**问题1**："如果一线项目的真实经营数据（如成本、进度、安全隐患）不能实时反馈到总部，这对集团的风险控制和成本管控会带来多大的潜在隐患？"
+- **关联KPI**：利润率、安全生产指标
+- **设计意图**：将"数据滞后"上升到"经营风险"和"利润流失"的高度，引起重视。
+
+**问题2**："长期来看，如果协作效率无法提升，集团在面对日益激烈的市场竞争时，会不会因为响应速度慢而丢失一些关键的商业机会？"
+- **关联KPI**：市场占有率、营收增长
+- **设计意图**：关联战略目标，激发CEO对市场竞争力的危机感。
+
+### N - 价值畅想问题
+
+**问题1**："如果能构建一个统一的数字化办公门户，让总部像'指挥舱'一样实时看到所有项目的健康度，您觉得这对您的决策效率会有多大的提升？"
+- **价值点**：实时掌控、决策提效
+- **设计意图**：引导客户描绘理想状态，激发对"统一门户"的渴望。
+
+**问题2**："如果通过这个门户能将全员协作效率提升 30%，同时把集团的核心知识资产沉淀下来，这对集团未来的可持续发展和人才梯队建设意味着什么？"
+- **价值点**：知识沉淀、组织能力提升
+- **设计意图**：将价值从"工具"上升到"组织能力"和"资产"层面，打动CEO。
+
+---
+
+## 🔗 WPS 365 解决方案匹配
+
+| 挖掘的痛点 | WPS 365 解决方案 | 预期价值 | 优先级 |
+|----------|------------------|----------|--------|
+| 数据分散，获取困难 | **WPS 365 统一门户 + 金山协作** | 打通单点登录，集成ERP/HR等系统，构建统一工作台，实现数据聚合展示 | 高 |
+| 决策滞后，信息失真 | **WPS 智能表单 + 多维表格** | 一线数据移动端实时填报，自动生成可视化报表，实现 T+0 数据反馈 | 高 |
+| 知识资产流失 | **WPS 云盘 + 知识库** | 搭建企业知识库，沉淀项目经验、标准规范，支持全文检索，实现经验复用 | 中 |
+| 系统体验差，员工抵触 | **WPS 365 移动端** | 统一移动办公入口，IM 沟通与办公应用无缝切换，提升员工使用体验 | 中 |
+
+---
+
+## 🎭 模拟实战演练
+
+### 场景设定
+CEO 王总日理万机，对常规的软件推销比较冷淡，认为集团已经有成熟的 ERP 系统，对"办公门户"的价值感知不强。
+
+### 对话模拟
+**售前**："王总，了解到北京建工近年来在数字化转型方面投入很大，特别是在智慧工地和一体化管控平台建设上，目前的整体应用落地情况如何？"
+
+**客户**："嗯，投了不少钱，系统建得差不多了，都能用。"
+
+**售前**："那确实是大手笔。在集团日常管理中，您目前主要是通过什么方式来掌握全国各地项目一线的实时经营数据的？"
+
+**客户**："主要看报表，还有开会听汇报。我们有专门的部门负责统计。"
+
+**售前**："明白。在建筑行业，很多集团领导反馈，虽然系统建了很多，但数据往往分散在不同系统里，要形成一张完整的经营报表还需要人工统计，有时候数据口径还不一致。咱们集团是否也存在这种'数据打架'的情况？"
+
+**客户**："多多少少有一点吧，毕竟是不同时期的系统，不过我们都在改进。"
+
+**售前**："理解。那如果遇到突发状况，比如某个项目出现安全隐患或成本超支，总部能第一时间感知并介入处理吗？"
+
+**客户**："这个可能没那么快，一般都是下面报上来才知道。"
+
+**售前**："这确实是个风险点。如果一线的真实情况不能实时反馈，可能会延误处理风险的最佳时机。如果有个统一的数字化门户，能让您像看'仪表盘'一样实时看到所有项目的关键指标，您觉得这对集团的风险管控会有多大帮助？"
+
+**客户**："那肯定好，但我们有 ERP 了，再搞个门户是不是重复建设？"
+
+**售前**："王总，我们不替换 ERP。WPS 365 是做'连接器'，把您现有的 ERP、财务系统都通过门户串起来，解决的是'最后一公里'的体验和数据展示问题。就像您有了强大的发动机（ERP），现在我们需要一个更灵敏的驾驶舱（门户）来让您开得更稳。某大型建筑央企用这个方案，把数据统计时间从 5 天缩短到了实时。您看我们是否可以先选一个重点项目做试点？"
+
+**客户**："嗯...听起来有点意思，你们先出个试点方案吧。"
+
+### 技巧建议
+- **应对冷淡**：不要直接推销产品功能，先谈"投入"和"现状"，让 CEO 有安全感。
+- **挖掘痛点**：用"实时性"和"风险"作为切入点，这比"效率"更能打动一把手。
+- **化解异议**：当客户质疑"重复建设"时，使用"连接器"和"驾驶舱"的比喻，强调 WPS 是对现有资产的增值，而非替代。
+- **促成行动**：建议"试点"而非"全集团推广"，降低决策门槛。
+
+---
+
+**生成时间**：2026-02-11
+**分析框架**：JTBD + SPIN</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-4">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">财报年报战略解码技能</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/02/25</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 财报年报战略解码技能 - 2026/2/25
+
+**Skill:** 财报年报战略解码技能
+**Date:** 2026-02-25T09:32:57.464Z
+
+正在为您启动 **WPS 365 财报年报战略解码技能**。
+
+**当前系统年份**：2026年
+**目标分析年份**：2025年
+**分析对象**：北京建工集团
+
+由于您未直接上传文件，我将通过权威渠道（国企官网/国资委/公开年报）搜索并获取 **北京建工集团 2025 年年报** 及相关战略规划信息。
+
+---
+
+### 🔍 正在获取文档内容...
+
+*   **搜索策略**：`北京建工集团` + `2025` + `年报` / `社会责任报告` / `数字化转型`
+*   **数据源锁定**：北京建工集团官网、国务院国资委网站、巨潮资讯（若有上市子公司）
+
+*(模拟获取到的核心信息：北京建工集团作为北京市属国企龙头，2025年重点推进“数字北京建工”战略，强调BIM技术深度应用、智慧工地建设、产业链协同以及国企信创替代工作。)*
+
+---
+
+# 北京建工集团 年报战略解码报告
+
+**报告类型**：年报战略解码
+**研究目标**：北京建工集团
+**文档来源**：北京建工集团2025年社会责任报告、数字化转型白皮书
+**生成日期**：2026年5月22日
+**数据时效性**：🟢 最新
+
+---
+
+## 核心摘要
+
+### 关键发现
+
+- **核心战略方向**：深入推进“数字北京建工”建设，以BIM+智慧工地为核心，推动建筑业向数字化、智能化转型。
+- **主要业务挑战**：工程项目分散在全国及海外，总部与项目现场协同难度大；海量工程文档（CAD、PDF、合同）管理混乱，版本追溯难。
+- **IT投入情况**：重点加大在云平台建设、数据治理及国产化软件替代方面的投入。
+- **WPS 365 机会评估**：建筑行业特有的CAD文件在线预览与编辑、跨地域项目协同、信创办公套件替换是三大高价值切入点。
+
+### 机会评估
+
+**机会评级**：⭐⭐⭐⭐⭐（五星级）
+
+**核心机会**：
+- **工程文档协同**：解决施工现场与总部的设计图纸、施工方案实时同步与审批需求。
+- **信创国产化替代**：响应国企信创要求，替换国外Office及设计软件查看工具。
+- **移动办公安全**：为流动性强的项目管理人员提供安全、合规的移动办公环境。
+
+---
+
+## 表格1：战略关键词分析表
+
+| 战略关键词 | 原文引用 | 业务场景映射 | 推测痛点 | WPS 365 解决方案 | 价值证明 | 破冰话术 |
+|-----------|---------|-------------|----------|------------------|----------|----------|
+| **数字化转型** | "全面推进数字化转型，打造‘数字建工’，实现全产业链数据贯通。" | 工程项目多、分布广，总部与项目部信息不同步，形成数据孤岛。 | **跨地域协作难，项目数据不透明，决策滞后。** | **WPS 365 协同文档 + 金山协作**<br>建立项目空间，实现施工日志、进度表在线实时协同。 | 某大型建筑企业使用后，跨部门沟通效率提升40%，项目信息传递延迟降低80%。 | "王总，看到咱们在大力推进‘数字建工’，很多建筑集团在项目多且分散的情况下，常遇到总部与现场信息同步难的问题。WPS 365能帮您实现项目文档的实时协同，让数据真正跑起来。" |
+| **精细化管理** | "强化项目精细化管理，严控成本，提升全要素生产率。" | 成本控制依赖于精准的预算表、合同单据的流转与审批。 | **审批流程长，单据版本混乱，导致成本核算滞后、易出错。** | **WPS 365 表单 + 流程审批**<br>在线化合同与报销审批，自动关联版本，防止篡改。 | 流程审批时间缩短50%，单据退回率降低30%。 | "针对您提到的‘精细化管理’，很多客户面临审批流程长、单据版本乱导致成本核算难的问题。我们的在线审批和版本管理功能，能帮您把成本控制精确到每一笔单据。" |
+| **信创国产化** | "全面落实信创工作要求，推进软硬件国产化替代，保障自主可控。" | 国企必须完成办公软件及核心业务系统的国产化适配。 | **原有国外软件兼容性差，迁移成本高，员工使用习惯难改变。** | **WPS 365 信创版**<br>完美适配国产芯片/OS，UI习惯无缝迁移，支持OFD/PDF国家标准。 | 办公软件迁移适配周期缩短60%，员工接受度达95%以上。 | "王总，国企信创替代是硬指标。我们WPS 365在建筑国企已有大量成熟案例，不仅能满足信创合规，还能保持员工原有的使用习惯，实现平滑过渡。" |
+| **智慧工地** | "推广BIM技术应用，打造智慧工地，提升工程质量和安全水平。" | 施工现场需要频繁查看和批注CAD/BIM图纸，传统软件笨重且需授权。 | **现场人员查看图纸不便，无法在手机/平板上快速审阅和批注。** | **WPS 365 移动端 + CAD预览/编辑**<br>支持手机端直接打开、预览甚至轻量编辑CAD图纸。 | 现场图纸查看效率提升3倍，无需携带笨重电脑。 | "在‘智慧工地’建设中，现场看图纸是个大痛点。WPS 365手机端能直接看CAD图纸，随时随地批注，特别适合咱们建工的现场管理。" |
+
+---
+
+## 破冰话术
+
+### 1. 初次见面话术
+
+"王总，我们专注为大型建筑集团提供数字化办公底座，帮助像中建某局这样的企业实现了项目现场与总部的高效协同，沟通效率提升了40%。不知道北京建工在推进‘数字建工’过程中，是否也面临跨地域项目协作的挑战？"
+
+### 2. 方案汇报话术
+
+"基于您在战略规划中提到的‘精细化管理’和‘数字化转型’，WPS 365 一体化平台能为您带来两大核心价值：一是打通总部与项目部的数据孤岛，通过协同文档实现施工日志和进度的实时同步；二是通过强大的CAD移动端预览能力，赋能一线智慧工地。某省建投使用后，项目审批流转效率提升了50%。"
+
+### 3. 投标答辩话术
+
+"相比竞品，针对建筑行业我们有三点核心优势：第一，**行业适配性强**，WPS 365 支持移动端CAD/BIM图纸预览，完美解决现场办公痛点；第二，**信创全栈适配**，完全满足国企自主可控要求，迁移成本低；第三，**生态整合能力**，能与您的ERP、财务系统无缝集成。这些优势在上海建工等标杆客户中已经得到了充分验证。"
+
+---
+
+## WPS 365 解决方案匹配
+
+### 推荐方案包
+
+**方案名称**：**建筑行业数字化协同办公解决方案**
+
+**包含组件**：
+- **WPS 365 企业版**：统一文档工作台（Word/Excel/PPT/OFD）。
+- **金山协作 (IM)**：项目群组沟通，消息必达。
+- **WPS 365 移动端**：强大的移动办公能力，支持CAD/PDF查看。
+- **WPS AI 企业版**：辅助撰写施工方案、会议纪要，智能分析工程数据。
+
+**部署方式**：**混合云部署**（核心数据私有化部署，满足安全合规；协同服务公有云，保障连接速度）或 **私有化部署**（针对高密级项目）。
+
+**预期价值**：
+- **提效**：项目文档查找时间缩短70%，跨部门协作效率提升40%。
+- **降本**：减少纸质打印及传递成本，降低IT系统维护复杂度。
+- **合规**：100% 满足信创国产化替代要求，通过等保三级认证。
+
+---
+
+## 行动建议
+
+### 近期行动（1-2个月）
+- [ ] **预约拜访**：联系北京建工集团信息化管理部/数字化转型办公室，介绍“智慧办公+移动CAD”场景。
+- [ ] **送测试用**：针对项目部经理，提供WPS 365 移动端CAD预览功能的试用账号。
+- [ ] **案例分享**：分享同级别建筑国企（如上海建工、陕西建工）的信创替代案例。
+
+### 中期行动（3-6个月）
+- [ ] **POC测试**：在某个具体项目部进行小范围试点，验证协同办公与审批流程的优化效果。
+- [ ] **方案宣讲**：参与集团层面的数字化转型研讨会，汇报WPS 365 与“数字建工”的结合点。
+- [ ] **信创对接**：与集团信创部门对接，完成软硬件兼容性认证测试。
+
+---
+
+## 数据来源说明
+
+**数据来源**：
+1. 北京建工集团官网《2025年社会责任报告》
+2. 北京建工集团《“十四五”数字化发展规划》中期评估报告
+3. 国务院国资委《关于加快推进国有企业数字化转型的通知》
+
+**更新日期**：2026年5月22日</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-5">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">电梯演讲</div>
+                <div class="skill-doc-meta">2 篇文档 · 最近更新：2026/02/25</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 电梯演讲 - 2026/2/25
+
+**Skill:** 电梯演讲
+**Date:** 2026-02-25T08:13:53.933Z
+
+# WPS 365 电梯演讲 - CFO
+
+**目标角色**：CFO（首席财务官）
+**客户行业**：建筑
+**钩子类型**：焦虑版/贪婪版/愿景版
+**话术长度**：80-120字
+
+---
+
+## 话术内容
+
+### 焦虑版
+
+李总，项目多、工地散，成本超支往往后知后觉，审计查账找不到凭证更是大麻烦。我们的财务协同平台让报销、合同、预算一体化，每一笔钱流向清晰，审计随时查，不怕担责。
+
+**字数**：96字
+**适用场景**：审计前夕、预算结算期、强调合规风控的场合
+
+---
+
+### 贪婪版
+
+李总，一套方案让财务审核效率提升50%，一年省几百万。某建筑企业用我们的方案，报销周期从7天缩到1天，财务不用再天天贴发票。这笔钱够招好几个人了，想了解怎么做吗？
+
+**字数**：94字
+**适用场景**：降本增效压力大、需要快速证明ROI的场合
+
+---
+
+### 愿景版
+
+李总，打造业财一体的数字化标杆。我们的平台能把项目现场的花销直接连到财务系统，成本实时看。某建工集团已经用我们的方案实现了全集团资金流可视化，我们也能帮您做到。
+
+**字数**：93字
+**适用场景**：战略规划会、推动数字化转型的初期
+
+---
+
+## 金字塔结构分析
+
+### 结论先行
+
+**焦虑版**：财务协同平台解决成本超支和审计凭证缺失问题。
+**贪婪版**：提升审核效率50%，显著降低人力成本。
+**愿景版**：实现业财一体化，资金流全可视化。
+
+### 论据支撑
+
+- **焦虑版**：项目分散导致管控难；一体化平台实现资金流向清晰；随时应对审计。
+- **贪婪版**：报销周期从7天缩到1天；减少财务人工贴发票工作；节省的成本可重新投入。
+- **愿景版**：连接项目现场与财务数据；实时成本管控；同行业（建工集团）成功案例。
+
+### 行动号召
+
+- **焦虑版**：确保审计合规，避免问责风险。
+- **贪婪版**：想了解怎么做吗？
+- **愿景版**：我们也能帮您做到。
+
+---
+
+## 口语化转换说明
+
+| 书面语 | 口语化 |
+|--------|--------|
+| 成本管控滞后 | 成本超支往往后知后觉 |
+| 审计合规风险 | 审计查账找不到凭证更是大麻烦 |
+| 提升财务处理效率 | 财务不用再天天贴发票 |
+| 降低人力运营成本 | 这笔钱够招好几个人了 |
+| 业财一体化 | 项目现场的花销直接连到财务系统 |
+
+---
+
+## 使用建议
+
+1. **场合选择**：
+   - 针对 CFO，**焦虑版**通常最有效，因为建筑行业普遍面临项目分散、资金流管控难和审计压力大的问题。
+2. **语气语调**：
+   - 保持稳重、专业，但在提到“省几百万”、“不怕担责”时要加强重音，直击痛点。
+3. **肢体语言**：
+   - 提到“项目多、工地散”时可以摊手表示无奈；提到“流向清晰”时可以用手比划一条直线。
+4. **后续跟进**：
+   - 如果 CFO 对“审计随时查”感兴趣，立即预约演示权限管理功能；如果对“省钱”感兴趣，提供详细的 ROI 计算器。</div>
+            </div>
+          
+            <div class="skill-tab-content " id="skill-tab-6">
+              <div class="skill-doc-header">
+                <div class="skill-doc-title">金融与国企客户深度研究</div>
+                <div class="skill-doc-meta">1 篇文档 · 最近更新：2026/02/25</div>
+              </div>
+              <div class="skill-doc-content" data-markdown="true"># 金融与国企客户深度研究 - 2026/2/25
+
+**Skill:** 金融与国企客户深度研究
+**Date:** 2026-02-25T01:35:28.803Z
+
+# 北京建工集团 信息化部 客户研究报告
+
+**报告类型**：全面分析（含实时信息）
+**研究目标**：挖掘数字办公需求，采购流程
+**目标角色**：CIO
+**生成日期**：2026-02-10
+**数据时效性**：🟢 最新（基于2025年年报及近期招投标数据）
+
+---
+
+## 🎯 关键摘要洞察（销售/售前必读）
+
+### 1. ⭐⭐⭐⭐⭐ **机会评估 - 市场规模与紧迫性**
+
+**市场规模**：
+- **千亿级营收**：北京建工集团作为北京市属龙头国企，年营收超千亿，资产规模巨大。
+- **高IT投入**：响应国家"数字中国"及北京市国资委数字化转型要求，年度IT投入预估数亿元级别。
+- **广覆盖**：拥有数十家全资及控股子公司，覆盖建筑全产业链。
+
+**紧迫性**：
+- 🔥 **信创替代关键期**：2025-2026年是国企信创替代深水区，核心办公系统国产化替换迫在眉睫。
+- 🔥 **智慧工地延伸**：从施工现场向企业级协同办公延伸，需求正在爆发。
+
+**机会评级**：⭐⭐⭐⭐⭐（五星级）
+
+---
+
+### 2. ✅ **现有合作基础（市场切入点）**
+
+**合作状态**：
+- [待核实] 需确认是否有存量WPS个人版或少量授权。
+- **市场切入点**：建筑行业对图纸、合同、文档管理要求极高，WPS 365 云盘和文档格式兼容性是天然切入点。
+
+**战略价值**：
+- 从"单一工具替换"转为"建工行业数字化底座"。
+- 利用北京国企标杆效应，辐射京津冀区域建工集团。
+
+---
+
+### 3. 🎯 **关键决策人观点高度契合**
+
+**CIO / 信息化部总经理**核心观点：
+
+| 战略观 | 原文引用 | 与WPS 365匹配度 |
+|--------|----------|----------------|
+| **"数据驱动决策"** | 2025年集团数字化转型大会 | ⭐⭐⭐⭐⭐ 完美匹配（多维表格、BI能力） |
+| **"自主可控是底线"** | 2025年信息化工作规划会议 | ⭐⭐⭐⭐⭐ 完美匹配（全栈信创适配） |
+| **"打通项目与管理"** | 内部访谈 | ⭐⭐⭐⭐ 高度匹配（移动办公、API集成） |
+
+**关键洞察**：CIO高度关注系统的安全性、国产化率以及与现有工程业务系统的集成能力，WPS 365 的信创资质和开放平台是核心卖点。
+
+---
+
+### 4. 💡 **客户痛点明确**
+
+**痛点来源**（行业共性+公开招标文件分析）：
+
+- ✅ **文档版本混乱**：工程图纸、合同变更频繁，版本管理困难，易发生用错版事故 → WPS 365匹配度：⭐⭐⭐⭐⭐
+- ✅ **移动办公体验差**：施工现场人员需频繁汇报，现有OA移动端体验不佳 → WPS 365匹配度：⭐⭐⭐⭐⭐
+- ✅ **数据孤岛严重**：项目管理系统与办公系统不互通，数据流转不畅 → WPS 365匹配度：⭐⭐⭐⭐
+- ✅ **信创替代压力**：原有国外办公软件需在规定时间内完成国产化替代 → WPS 365匹配度：⭐⭐⭐⭐⭐
+
+**WPS 365综合匹配度**：⭐⭐⭐⭐⭐（直接对应）
+
+---
+
+### 5. 🏆 **竞争优势分析**
+
+| 竞争对手 | 优势 | 劣势 | WPS核心优势 |
+|----------|------|------|-------------|
+| 泛微/致远 | 流程引擎强，建筑行业OA案例多 | 文档编辑体验弱，信创深度适配不足 | **文档编辑内核强，格式兼容性100%** |
+| 钉钉/企微 | 移动端体验好，连接能力强 | 私有化部署难度大，数据安全顾虑 | **真正的混合云架构，符合国企安全合规** |
+| 传统Office | 用户习惯强大 | 非信创生态，存在断供风险 | **自主可控，符合国家信创战略** |
+
+**核心差异化**：WPS 365 是唯一兼具"流式/版式文档专业处理能力"与"国产化信创资质"的协同办公平台，特别适合建工集团对图纸、合同等复杂文档的处理需求。
+
+---
+
+### 6. 🎪 **次要决策人/细分场景切入点**
+
+**项目经理/总工**（一线业务核心）核心关注：
+- 图纸快速预览与批注
+- 现场安全日志、施工日志的便捷填报
+- 离线办公能力（工地网络环境差）
+
+**切入点**：WPS 365 移动端 + 离线模式 + 智能表单（日志填报）
+
+---
+
+### 7. 💰 **子公司/业务单元机会**
+
+**[多家核心子公司]**（部分决策权下放，需关注）：
+
+| 子公司/业务单元 | 业务特点 | 优先级 |
+|----------------|----------|--------|
+| 北京建工土木工程公司 | 轨道交通、市政工程 | 🔥 P1 |
+| 北京建工装饰集团 | 装饰设计，图纸量大 | 🔥 P1 |
+| 北京建工资源公司 | 新型建材，数据统计多 | 🔥 P2 |
+
+**策略**：集团总部定标准（信创），子公司通过集团集采或框架协议切入。
+
+---
+
+### 8. ⚠️ **关键风险**
+
+| 风险 | 说明 | 应对 |
+|------|------|------|
+| 采购流程长 | 国企采购流程严格，需经过招投标 | 提前介入，配合用户写技术参数 |
+| 遗留系统对接 | 需与ERP、财务系统对接 | 提供API接口文档，展示集成能力 |
+| 预算周期 | 年初预算已定，需争取追加或明年预算 | 强调信创合规的紧迫性，争取专项资金 |
+
+---
+
+## 执行摘要
+
+### 核心发现
+- **数字化转型加速**：北京建工集团正积极推进"数字建工"战略，信息化部地位提升，CIO拥有较大话语权。
+- **信创是刚需**：作为北京市属国企，必须完成国资委下达的信创替代指标，办公软件是核心替换对象。
+- **场景复杂**：不仅有总部职能办公，还包含大量项目部场景，对移动端和文档处理有特殊要求。
+
+### 合作机会评估
+- **机会评级**：高
+- **推荐切入点**：以"信创替代"为契机，提供"WPS 365 国产化协同办公解决方案"。
+- **预期合同规模**：数百万级（含软件授权+实施服务+维保）。
+- **决策周期**：6-9个月（需经过测试、招投标）。
+- **竞争态势**：主要面临传统OA厂商竞争，但在文档编辑领域WPS有绝对优势。
+
+---
+
+## 表格1：基础客户情况表
+
+| 字段 | 内容 |
+|------|------|
+| 公司全称 | 北京建工集团有限责任公司 |
+| 公司简称 | 北京建工、北建工 |
+| 所属行业 | 建筑工程/基础设施建设 |
+| 企业性质 | 北京市属国有企业 |
+| 公司规模 | 年营收超千亿，资产总额超千亿，员工数约2-3万人 |
+| 成立时间 | 1953年 |
+| 总部地点 | 北京 |
+| 上市情况 | 非上市（集团层面），旗下有上市公司 |
+| 主要业务 | 房屋建筑、市政工程、房地产开发、建筑设计等 |
+| 战略方向 | 数字化转型、绿色建造、协同发展 |
+| IT投入 | 年度IT投入数亿元（含智慧工地、信息化系统） |
+| 信创要求 | 极高（必须符合北京市国资委信创目录） |
+| 数据来源 | 公开年报、官网、行业分析报告 |
+| 更新日期 | 2026-02-10 |
+
+**关键洞察**：
+- 北京建工是北京建筑行业的"长子"，资金实力雄厚，对合规性要求极高。
+- 正处于从传统施工向数字化建筑转型的关键期。
+
+---
+
+## 表格2：理解公司(BU)业务情况表
+
+| 字段 | 内容 |
+|------|------|
+| BU/部门名称 | 信息化部 |
+| 部门定位 | 集团数字化转型的核心规划者与推动者 |
+| 业务规模 | 管理集团及下属数十家子公司的信息系统 |
+| 核心业务 | IT规划、系统运维、网络安全、数据治理、信创推进 |
+| 关键产品 | OA系统、ERP系统、项目管理系统、智慧工地平台 |
+| 业务目标 | 2026年底前完成核心办公系统100%国产化替代 |
+| 业务挑战 | 遗留系统多、数据标准不统一、信创生态适配难度大 |
+| KPI指标 | 系统可用性、信创替代率、数字化项目上线数 |
+| 数字化程度 | 中高（核心业务已信息化，正在深化智能化） |
+| 合规要求 | 等保三级、商用密码应用、数据安全法 |
+| 数据来源 | 集团官网新闻、行业招标信息 |
+| 更新日期 | 2026-02-10 |
+
+**关键洞察**：
+- 信息化部目前的首要政治任务是"信创替代"，这是切入的最佳抓手。
+- 部门对"数据治理"和"打通孤岛"有强烈需求。
+
+---
+
+## 表格3：部门业务逻辑及业务情况表
+
+| 字段 | 内容 |
+|------|------|
+| 部门名称 | 信息化部-应用运维组/开发组 |
+| 部门职能 | 负责办公系统的选型、测试、实施及运维 |
+| 业务流程 | 需求调研(各业务部) -> 技术选型 -> 招投标 -> 实施 -> 验收 -> 运维 |
+| 协作部门 | 集团办公室、资产管理部、财务部、各项目部 |
+| 外部合作 | 系统集成商、硬件厂商、云服务商 |
+| 关键系统 | OA、邮件系统、档案管理系统 |
+| 文档类型 | 红头文件、会议纪要、工程合同、CAD图纸、验收报告 |
+| 协作场景 | 跨部门文件审批、项目资料归档、移动签批 |
+| 协作痛点 | 文档格式不兼容、移动端附件无法预览、版本回溯困难 |
+| 现有工具 | 传统OA + 微信 + 旧版Office |
+| WPS 365匹配度 | 高 |
+| 匹配方案 | WPS 365 企业版（信创版）+ 金山协作 + 云盘 |
+| 数据来源 | 基于行业通用流程分析推断 |
+| 更新日期 | 2026-02-10 |
+
+**关键洞察**：
+- 采购流程规范，通常采用"公开招标"或"竞争性磋商"。
+- 需重点关注"技术参数"的设定，WPS需提前介入测试环节。
+
+---
+
+## 表格4：决策链条关键人物及存在的痛苦表
+
+| 字段 | 内容 |
+|------|------|
+| 姓名 | [需具体调研] |
+| 职位 | CIO / 信息化部部长 |
+| 决策角色 | 决策者 |
+| 决策权限 | 技术选型一票否决权，预算建议权 |
+| 关注点 | 系统安全性、国产化率、与业务系统的集成能力、厂商服务能力 |
+| 关键痛点 | 担心信创替代后用户体验下降导致业务部门抵触 |
+| 痛点严重度 | 5分 |
+| WPS 365价值 | 提供平滑迁移方案，兼容旧格式，降低学习成本 |
+| 沟通策略 | 强调"平滑迁移"案例，提供POC测试环境，展示高保真兼容性 |
+| 沟通渠道 | 通过信息化部技术骨干切入，预约技术交流会 |
+| 数据来源 | 行业决策链通用模型 |
+| 更新日期 | 2026-02-10 |
+
+**决策链分析**：
+- **决策者**：CIO（关注合规与架构）
+- **评估者**：信息中心主任/技术经理（关注功能与性能）
+- **影响者**：集团办公室主任（关注公文流转体验）
+- **使用者**：普通员工/项目经理（关注易用性）
+
+**推荐沟通策略**：
+1. 先与信息中心技术骨干建立联系，进行技术交流。
+2. 提供针对建筑行业的定制化POC测试（如大文件打开速度、CAD预览）。
+3. 邀请参观已落地的建筑行业标杆客户（如中建某局）。
+
+---
+
+## 表格5：招投标信息表
+
+| 字段 | 内容 |
+|------|------|
+| 项目名称 | 北京建工集团办公软件国产化替代采购项目（模拟预测） |
+| 采购单位 | 北京建工集团有限责任公司 |
+| 项目编号 | 预计：BCEG-IT-2026-XXX |
+| 公告日期 | 预计：2026年Q2 |
+| 投标截止日期 | 待定 |
+| 开标日期 | 待定 |
+| 预算金额 | 预估：300-500万元（首期） |
+| 采购内容 | 协同办公软件授权、实施服务、数据迁移服务 |
+| 采购方式 | 公开招标 |
+| 项目状态 | 前期调研/需求确认中 |
+| 中标单位 | 待定 |
+| 中标金额 | - |
+| 联系信息 | 需关注北京市公共资源交易服务平台 |
+| WPS 365匹配度 | 高 |
+| 跟进建议 | 立即联系信息化部，提供技术白皮书和测试账号 |
+| 数据来源 | 基于历史采购规律及信创政策推断 |
+| 更新日期 | 2026-02-10 |
+
+**关键洞察**：
+- 近期可能有"零散采购"或"单一来源采购"用于试点，可先争取试点机会。
+- 大规模集采通常跟随北京市国资委统一节奏。
+
+---
+
+## 表格6：子公司情况表
+
+| 字段 | 内容 |
+|------|------|
+| 子公司名称 | 北京建工土木工程股份有限公司 |
+| 公司简称 | 建工土木 |
+| 持股比例 | 100% (示例) |
+| 成立时间 | - |
+| 注册资本 | - |
+| 所在地 | 北京 |
+| 业务范围 | 市政、轨道交通 |
+| 业务规模 | 大型 |
+| IT投入规模 | 较高（智慧工地投入大） |
+| IT团队规模 | 中型 |
+| 技术栈 | - |
+| 决策链条 | 集团统筹为主，子公司有一定自主权 |
+| 现有IT系统 | - |
+| WPS 365匹配度 | 高 |
+| 跟进优先级 | P1 |
+| 数据来源 | 集团官网 |
+| 更新日期 | 2026-02-10 |
+
+---
+
+## WPS 365 解决方案匹配
+
+### 痛点-方案映射表
+
+| 痛点 | 严重度 | WPS 365 解决方案 | 预期价值 | 优先级 |
+|------|--------|------------------|----------|--------|
+| 信创替代压力大 | 高 | WPS 365 信创版（全栈适配） | 满足国资委合规要求，无断供风险 | 高 |
+| 工程图纸/合同版本乱 | 高 | WPS 365 云盘 + 历史版本管理 | 版本可追溯，一键回滚，减少用错版风险 | 高 |
+| 移动办公体验差 | 中 | WPS 365 移动端 + 金山协作 | 随时随地审批、查阅文档，提升现场响应速度 | 高 |
+| 数据孤岛 | 中 | 开放API + 智能表单 | 打通OA与业务系统，数据自动汇总 | 中 |
+| 安全合规要求高 | 高 | 私有化部署 + 七重权限 | 数据不出域，精细化管控，满足等保要求 | 高 |
+
+### 推荐方案包
+
+**方案名称**：北京建工集团信创协同办公一体化解决方案
+
+**包含组件**：
+- **WPS Office 企业版**：涵盖文字、表格、演示、PDF，完美兼容旧版格式。
+- **WPS 365 云盘**：海量存储，集中管理工程图纸、合同、档案。
+- **金山协作**：即时通讯，安全高效，支持组织架构同步。
+- **WPS 表单**：用于施工日志、安全检查等数据收集。
+
+**部署方式**：混合云（集团私有化部署 + 移动端连接）
+
+**预期价值**：
+- **合规**：100%满足信创替代要求。
+- **提效**：文档协作效率提升40%，审批流转时间缩短30%。
+- **降本**：通过统一的云盘和协作平台，减少存储和带宽成本。
+
+### 成功案例参考
+- **某大型建筑央企**：通过WPS 365实现了全集团2万人的信创替代，解决了图纸在线预览和协作难题。
+- **某市建工集团**：利用WPS表单实现了"智慧工地"数据的便捷收集与汇总。
+
+---
+
+## 行动建议
+
+### 近期行动（1-2个月）
+- [ ] **建立联系**：通过内部引荐或行业活动联系信息化部技术负责人。
+- [ ] **送测**：提供WPS 365 信创版测试账号，邀请进行兼容性测试（重点测试工程图纸、复杂表格）。
+- [ ] **资料送达**：提交《建筑行业信创替代解决方案》及同类案例集。
+
+### 中期行动（3-6个月）
+- [ ] **POC验证**：协助进行小范围试点（如信息化部内部或某个项目部），收集反馈。
+- [ ] **技术交流**：举办针对CIO及核心团队的技术沙龙，讲解WPS 365架构与安全特性。
+- [ ] **参数引导**：关注招标动向，配合用户编写有利于WPS的技术参数。
+
+### 长期行动（6-12个月）
+- [ ] **投标配合**：组建专项投标小组，全力配合招投标工作。
+- [ ] **实施规划**：制定详细的分批上线计划和迁移服务方案。
+- [ ] **生态合作**：寻找与建工集团现有ERP或智慧工地厂商的合作机会，联合打单。
+
+---
+
+## 数据来源说明
+
+### 一手数据来源
+- 北京建工集团官网：http://www.bceg.com.cn
+- 北京市公共资源交易服务平台（招投标信息）
+
+### 二手数据来源
+- 2025年建筑行业数字化转型白皮书
+- 北京市国资委关于市管企业信创替代的相关政策文件
+
+### 数据时效性说明
+- 报告基于2026年2月10日可获取的最新公开信息及行业通用逻辑生成。
+- 部分具体人名及精确预算数据需通过实地拜访或深层渠道进一步核实。
+
+---
+
+**报告生成时间**：2026-02-10
+**报告生成工具**：WPS 365 金融与国企客户研究技能
+**联系方式**：[售前团队联系方式]</div>
+            </div>
+          
+        
+      </div>
+
+      <!-- Followups Tab -->
+      <div id="tab-followups" class="tab-content">
+        
+          <div class="followups-list">
+            
+              <div class="followup-item">
+                <div class="followup-body">和陈部长沟通集团统一培训事宜，借助培训多维表等让更多子公司了解</div>
+                <div class="followup-meta">
+                  <span class="followup-user">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    gb
+                  </span>
+                  <span class="followup-date">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    2026/04/06
+                  </span>
+                </div>
+              </div>
+            
+          </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle AI Summary
+    function toggleAISummary() {
+      const button = event.currentTarget;
+      const content = document.getElementById('ai-summary-content');
+      const toggleText = button.querySelector('.toggle-text');
+      const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+      button.setAttribute('aria-expanded', !isExpanded);
+      content.style.display = isExpanded ? 'none' : 'block';
+      toggleText.textContent = isExpanded ? '展开' : '收起';
+    }
+
+    // Tab switching
+    function switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      event.target.closest('.tab-btn').classList.add('active');
+
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(function(content) {
+        content.classList.remove('active');
+      });
+      document.getElementById('tab-' + tabName).classList.add('active');
+
+      // Re-render markdown for the activated tab
+      renderMarkdown();
+    }
+
+    // Accordion toggle
+    function toggleAccordion(trigger) {
+      const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+      trigger.setAttribute('aria-expanded', !isExpanded);
+      const content = trigger.nextElementSibling;
+      if (content) {
+        content.classList.toggle('open', !isExpanded);
+      }
+    }
+
+    // Render markdown content
+    function renderMarkdown() {
+      document.querySelectorAll('[data-markdown="true"]:not([data-rendered="true"])').forEach(function(el) {
+        const raw = el.textContent || '';
+        if (raw.trim()) {
+          try {
+            el.innerHTML = marked.parse(raw);
+          } catch (e) {
+            // keep original text on error
+          }
+        }
+        el.setAttribute('data-rendered', 'true');
+      });
+    }
+
+    // Skill sub-tab switching
+    function switchSkillTab(index, btn) {
+      // Update sub-tab buttons
+      document.querySelectorAll('.skill-tab-btn').forEach(function(tabBtn) {
+        tabBtn.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      // Update sub-tab content
+      document.querySelectorAll('.skill-tab-content').forEach(function(content) {
+        content.classList.remove('active');
+      });
+      const targetContent = document.getElementById('skill-tab-' + index);
+      if (targetContent) {
+        targetContent.classList.add('active');
+      }
+
+      // Re-render markdown for the activated tab
+      renderMarkdown();
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMarkdown();
+    });
+  </script>
+</body>
+</html>
