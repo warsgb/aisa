@@ -27,18 +27,16 @@ if command -v lsof >/dev/null 2>&1; then
 fi
 
 # Double-check no processes are running
-COUNT=$(ps aux | grep -E "(nest|backend.*main|dist/main)" | grep -v grep | wc -l)
+COUNT=$(ps aux | grep "dist/src/main" | grep -v grep | wc -l)
 if [ "$COUNT" -gt 0 ]; then
     echo "⚠️  Found $COUNT existing backend processes"
     echo "🧹 Cleaning up..."
     "$BACKEND_DIR/stop-backend.sh"
 fi
 
-# Verify dist folder exists
-if [ ! -d "$BACKEND_DIR/dist" ]; then
-    echo "📦 Dist folder not found. Building first..."
-    npm run build
-fi
+# Always build to ensure src changes are reflected
+echo "📦 Building backend..."
+npm run build
 
 # Create logs directory
 mkdir -p "$BACKEND_DIR/logs"

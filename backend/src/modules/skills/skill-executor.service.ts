@@ -10,6 +10,13 @@ import { TeamMember } from '../../entities/team-member.entity';
 import { Document } from '../../entities/document.entity';
 import { Customer } from '../../entities/customer.entity';
 import { CustomerProfile } from '../../entities/customer-profile.entity';
+import { CustomerFollowup } from '../../entities/customer-followup.entity';
+import * as path from 'path';
+import * as fs from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 interface ExecuteSkillOptions {
   skillId: string;
@@ -52,6 +59,8 @@ export class SkillExecutorService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerProfile)
     private customerProfileRepository: Repository<CustomerProfile>,
+    @InjectRepository(CustomerFollowup)
+    private followupRepository: Repository<CustomerFollowup>,
     private aiService: AIService,
     private searchService: SearchService,
   ) {}
@@ -183,6 +192,19 @@ export class SkillExecutorService {
             if (profile.history_notes) {
               customerContext += `\n历史笔记:\n${profile.history_notes}\n`;
             }
+
+            // 加载跟进记录
+            const followups = await this.followupRepository.find({
+              where: { customer_id: customerId },
+              order: { created_at: 'DESC' },
+            });
+            if (followups.length > 0) {
+              const followupsText = followups.map(f => {
+                const time = new Date(f.created_at).toLocaleString('zh-CN');
+                return `[${time}]\n${f.content}`;
+              }).join('\n\n---\n\n');
+              customerContext += `\n客户跟进记录（共 ${followups.length} 条）:\n${followupsText}\n`;
+            }
           } else {
             console.log('⚠️ [Skill Executor] No customer profile found');
           }
@@ -227,6 +249,19 @@ export class SkillExecutorService {
         if (profile.history_notes) {
           customerBackground += `## 历史合作笔记\n\n${profile.history_notes}\n\n`;
         }
+
+        // 带入跟进记录
+        const followupsForPrompt = await this.followupRepository.find({
+          where: { customer_id: customerId },
+          order: { created_at: 'DESC' },
+        });
+        if (followupsForPrompt.length > 0) {
+          const followupsText = followupsForPrompt.map(f => {
+            const time = new Date(f.created_at).toLocaleString('zh-CN');
+            return `[${time}]\n${f.content}`;
+          }).join('\n\n---\n\n');
+          customerBackground += `## 客户跟进记录（共 ${followupsForPrompt.length} 条）\n\n${followupsText}\n\n`;
+        }
         processedSystemPrompt = processedSystemPrompt.replaceAll('{{customer_background}}', customerBackground || '[客户背景资料暂无]');
         console.log('✅ [Skill Executor] Customer background injected');
       }
@@ -264,6 +299,53 @@ export class SkillExecutorService {
           console.error('❌ [Skill Executor] Search execution failed:', error);
           // Continue without search results
         }
+      }
+
+      // Step 4.6: Execute @script directive if present
+      const scriptResult = await this.executeScriptDirective(skill, parameters, customer);
+      if (scriptResult) {
+        // Script executed successfully, send result via streaming
+        console.log('✅ [Skill Executor] Script result injected, skipping AI call');
+
+        // Send result through callbacks
+        if (onChunk) {
+          onChunk(scriptResult);
+        }
+
+        // Update interaction status to COMPLETED
+        await this.interactionRepository
+          .createQueryBuilder()
+          .update('skill_interactions')
+          .set({
+            status: InteractionStatus.COMPLETED,
+            completed_at: () => 'CURRENT_TIMESTAMP',
+            summary: scriptResult.substring(0, 500),
+          })
+          .where('id = :id', { id: interactionId })
+          .execute();
+
+        // Save assistant message with script result
+        await this.messageRepository
+          .createQueryBuilder()
+          .insert()
+          .into('interaction_messages')
+          .values({
+            interaction_id: interactionId,
+            role: MessageRole.ASSISTANT,
+            content: scriptResult,
+            turn: nextTurn,
+          })
+          .execute();
+
+        // Notify completion
+        if (onComplete) {
+          onComplete({
+            interactionId,
+            content: scriptResult,
+          });
+        }
+
+        return;
       }
 
       // Add system prompt
@@ -319,22 +401,45 @@ export class SkillExecutorService {
 
       console.log('🎯 [Skill Executor] Executing skill:', skillId);
       console.log('💬 [Skill Executor] Message count:', aiMessages.length);
+      console.log('🤖 [Skill Executor] Calling AI service...');
 
       // Stream response from AI
       let fullResponse = '';
+      let hasReceivedChunk = false;
+
+      // Add timeout to detect hanging AI service
+      const timeout = setTimeout(() => {
+        if (!hasReceivedChunk && onError) {
+          console.error('❌ [Skill Executor] AI service timeout - no response received');
+          console.error('❌ [Skill Executor] Possible issues: AI service down, API key invalid, or network error');
+          onError(new Error('AI service timeout - no response received after 60 seconds'));
+        }
+      }, 60000); // 60 second timeout
 
       await this.aiService.stream({
         messages: aiMessages,
         system: skill.system_prompt,
         onChunk: (chunk: string) => {
-          if (cancelToken.cancelled) return;
+          if (cancelToken.cancelled) {
+            console.log('⚠️ [Skill Executor] Execution cancelled, ignoring chunk');
+            return;
+          }
+          if (!hasReceivedChunk) {
+            console.log('✅ [Skill Executor] Received first chunk from AI');
+            hasReceivedChunk = true;
+          }
           fullResponse += chunk;
           if (onChunk) {
             onChunk(chunk);
           }
         },
         onComplete: async (text: string) => {
+          clearTimeout(timeout); // Clear timeout on completion
+
           if (cancelToken.cancelled) return;
+
+          console.log('✅ [Skill Executor] AI service completed successfully');
+          console.log(`✅ [Skill Executor] Response length: ${text.length} characters`);
 
           try {
             // Reload interaction to get latest state
@@ -419,7 +524,11 @@ export class SkillExecutorService {
           }
         },
         onError: async (error: Error) => {
+          clearTimeout(timeout); // Clear timeout on error
+
           this.logger.error('AI service error:', error);
+          console.error('❌ [Skill Executor] AI service error:', error.message);
+          console.error('❌ [Skill Executor] Error stack:', error.stack);
 
           // Update interaction status to failed
           const failedInteraction = await this.interactionRepository.findOne({
@@ -447,6 +556,12 @@ export class SkillExecutorService {
 
       console.log('📊 [Skill Executor] Execution finished');
       console.log(`📊 Interaction ID: ${interactionId}`);
+      console.log(`📊 Total response length: ${fullResponse.length} characters`);
+
+      if (!hasReceivedChunk) {
+        console.error('⚠️ [Skill Executor] WARNING: No chunks received from AI service!');
+        console.error('⚠️ [Skill Executor] This indicates the AI service did not return any response');
+      }
     } catch (error) {
       this.logger.error('Error executing skill:', error);
 
@@ -528,5 +643,131 @@ export class SkillExecutorService {
       this.logger.error('Error generating document:', error);
       return undefined;
     }
+  }
+
+  /**
+   * Execute @script directive if present in system prompt
+   * @returns Script output if script was executed, null otherwise
+   */
+  private async executeScriptDirective(
+    skill: Skill,
+    parameters: Record<string, any>,
+    customer: Customer | null,
+  ): Promise<string | null> {
+    const systemPrompt = skill.system_prompt || '';
+
+    // 解析 @script 指令
+    // 支持两种格式:
+    // 1. @script:path/to/script.js arg1 arg2 key="{{value}}"
+    // 2. @script:path/to/script.js method="method" param="{{value}}"
+    const scriptRegex = /@script:(\S+)(?:\s+(.+?))?$/gm;
+    const match = scriptRegex.exec(systemPrompt);
+
+    if (!match) {
+      return null; // 没有 @script 指令
+    }
+
+    const [, scriptPath, argsStr] = match;
+
+    console.log(`🔧 [Skill Executor] Found @script directive: ${scriptPath}`);
+    console.log(`   Args: ${argsStr}`);
+    console.log(`   Customer: ${customer?.name || 'None'}`);
+
+    try {
+      // 构建脚本完整路径
+      const skillsDir = path.join(process.cwd(), '..', 'skills');
+      const skillFilePath = skill.file_path || '';
+      const skillDir = path.join(skillsDir, skillFilePath.replace(/\/SKILL\.md$/, ''));
+      const fullScriptPath = path.join(skillDir, scriptPath);
+
+      if (!fs.existsSync(fullScriptPath)) {
+        console.error(`❌ [Skill Executor] Script not found: ${fullScriptPath}`);
+        return `错误：脚本文件不存在: ${scriptPath}`;
+      }
+
+      console.log(`✅ [Skill Executor] Script found: ${fullScriptPath}`);
+
+      // 构建替换上下文（包含客户信息）
+      const context = {
+        ...parameters,
+        customer_name: customer?.name || '',
+        customer_industry: customer?.industry || '',
+      };
+
+      // 解析参数
+      const commandArgs: string[] = [];
+      const namedParams: Record<string, string> = {};
+
+      if (argsStr) {
+        // 解析参数和占位符
+        // 支持: method="method" query="{{value}}" 或直接 arg1 arg2
+        const argRegex = /(\w+)=["']([^"']+)["']|["']([^"']+)["']|(\S+)/g;
+        let argMatch;
+        while ((argMatch = argRegex.exec(argsStr)) !== null) {
+          if (argMatch[1]) {
+            // 命名参数: key="value"
+            const [, key, value] = argMatch;
+            const resolvedValue = this.replaceParameterPlaceholders(value, context);
+            namedParams[key] = resolvedValue;
+          } else if (argMatch[3]) {
+            // 位置参数（带引号）: "value"
+            const resolvedValue = this.replaceParameterPlaceholders(argMatch[3], context);
+            commandArgs.push(resolvedValue);
+          } else if (argMatch[4]) {
+            // 位置参数（不带引号）: arg
+            const resolvedValue = this.replaceParameterPlaceholders(argMatch[4], context);
+            commandArgs.push(resolvedValue);
+          }
+        }
+      }
+
+      console.log(`📋 [Skill Executor] Command args:`, commandArgs);
+      console.log(`📋 [Skill Executor] Named params:`, namedParams);
+
+      // 构建命令行
+      let cmd = `node "${fullScriptPath}"`;
+
+      // 添加位置参数
+      if (commandArgs.length > 0) {
+        cmd += ' ' + commandArgs.map(arg => `"${arg}"`).join(' ');
+      }
+
+      // 添加命名参数（作为 --params）
+      if (Object.keys(namedParams).length > 0) {
+        const paramsJson = JSON.stringify(namedParams);
+        cmd += ` --params '${paramsJson}'`;
+      }
+
+      // 执行脚本
+      console.log(`⚡ [Skill Executor] Executing: ${cmd}`);
+      const { stdout, stderr } = await execAsync(cmd);
+
+      if (stderr) {
+        console.error(`⚠️ [Skill Executor] Script stderr: ${stderr}`);
+      }
+
+      console.log(`✅ [Skill Executor] Script executed successfully`);
+      console.log(`📤 [Skill Executor] Output length: ${stdout.length} chars`);
+
+      return stdout;
+
+    } catch (error) {
+      console.error(`❌ [Skill Executor] Script execution failed:`, error);
+      return `脚本执行失败: ${error.message}`;
+    }
+  }
+
+  /**
+   * Replace parameter placeholders in string
+   * Format: {{parameter}}
+   */
+  private replaceParameterPlaceholders(
+    str: string,
+    parameters: Record<string, any>,
+  ): string {
+    return str.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      const value = parameters[key];
+      return value !== undefined ? String(value) : match;
+    });
   }
 }

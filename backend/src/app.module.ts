@@ -14,6 +14,8 @@ import { FrameworksModule } from './modules/frameworks/frameworks.module';
 import { SystemModule } from './modules/system/system.module';
 import { LtcModule } from './modules/ltc/ltc.module';
 import { McpModule } from './modules/mcp/mcp.module';
+import { Customer360Module } from './modules/customer360/customer360.module';
+import { KuaichaModule } from './modules/kuaicha/kuaicha.module';
 import * as path from 'path';
 
 @Module({
@@ -54,6 +56,8 @@ import * as path from 'path';
     SystemModule,
     LtcModule,
     McpModule,
+    Customer360Module,
+    KuaichaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

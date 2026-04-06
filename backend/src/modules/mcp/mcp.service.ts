@@ -8,11 +8,14 @@ import { Skill } from '../../entities/skill.entity';
 import { TeamMember } from '../../entities/team-member.entity';
 import { LtcNode } from '../../entities/ltc-node.entity';
 import { NodeSkillBinding } from '../../entities/node-skill-binding.entity';
+import { SkillInteraction } from '../../entities/interaction.entity';
 import { CustomersService } from '../customers/customers.service';
 import { LtcService } from '../ltc/ltc.service';
 import { SkillExecutorService } from '../skills/skill-executor.service';
+import { Customer360Service } from '../customer360/customer360.service';
 import { CreateCustomerMcpDto } from './dto/create-customer-mcp.dto';
 import { ExecuteSkillMcpDto } from './dto/execute-skill-mcp.dto';
+import { CreateFollowupMcpDto } from './dto/create-followup-mcp.dto';
 
 @Injectable()
 export class McpService {
@@ -33,9 +36,12 @@ export class McpService {
     private ltcNodeRepository: Repository<LtcNode>,
     @InjectRepository(NodeSkillBinding)
     private nodeSkillBindingRepository: Repository<NodeSkillBinding>,
+    @InjectRepository(SkillInteraction)
+    private interactionRepository: Repository<SkillInteraction>,
     private readonly customerService: CustomersService,
     private readonly ltcService: LtcService,
     private readonly skillExecutorService: SkillExecutorService,
+    private readonly customer360Service: Customer360Service,
   ) {}
 
   /**
@@ -287,30 +293,68 @@ export class McpService {
       throw new ForbiddenException('User is not a member of this team');
     }
 
-    // 3. Verify skill exists - support ID, name, or slug
-    let skill = await this.skillRepository.findOne({
-      where: { id: skillId },
-    });
-
-    // If not found by ID, try by name (Chinese name)
-    if (!skill) {
-      skill = await this.skillRepository.findOne({
-        where: { name: skillId },
-      });
-    }
-
-    // If still not found, try by slug
-    if (!skill) {
-      skill = await this.skillRepository.findOne({
-        where: { slug: skillId },
-      });
-    }
+    // 3. Verify skill exists - support name, slug, or ID (name/slug first to avoid UUID cast errors)
+    let skill = await this.skillRepository.findOne({ where: { name: skillId } });
+    if (!skill) skill = await this.skillRepository.findOne({ where: { slug: skillId } });
+    if (!skill) skill = await this.skillRepository.findOne({ where: { id: skillId } });
 
     if (!skill) {
       throw new NotFoundException('Skill not found');
     }
 
-    // 4. Execute skill asynchronously (fire-and-forget)
+    // 4. Get customer's existing documents (if includeCustomerDocuments is true or not set)
+    let referenceDocumentIds = dto.referenceDocumentIds || [];
+    if (dto.includeCustomerDocuments !== false) {
+      // Get all customer documents with their skill info
+      const customerDocuments = await this.documentRepository
+        .createQueryBuilder('doc')
+        .leftJoinAndSelect('doc.interaction', 'interaction')
+        .leftJoinAndSelect('interaction.skill', 'skill')
+        .where('doc.customer_id = :customerId', { customerId })
+        .select([
+          'doc.id',
+          'doc.title',
+          'doc.created_at',
+          'doc.updated_at',
+          'skill.id',
+          'skill.name',
+        ])
+        .orderBy('doc.updated_at', 'DESC')
+        .getMany();
+
+      this.logger.log(`Found ${customerDocuments.length} existing documents for customer ${customerId}`);
+
+      // Group documents by skill (one document per skill type, most recent first)
+      const documentsBySkill = new Map<string, any>();
+      for (const doc of customerDocuments) {
+        const skillName = doc.interaction?.skill?.name || '未分类';
+        const skillId = doc.interaction?.skill?.id || 'uncategorized';
+
+        // Only keep the most recent document for each skill type
+        if (!documentsBySkill.has(skillId)) {
+          documentsBySkill.set(skillId, {
+            id: doc.id,
+            title: doc.title,
+            skill_name: skillName,
+            updated_at: doc.updated_at,
+          });
+        }
+      }
+
+      const selectedDocs = Array.from(documentsBySkill.values());
+      const customerDocIds = selectedDocs.map(doc => doc.id);
+
+      this.logger.log(`Selected ${customerDocIds.length} unique documents (one per skill type) for customer ${customerId}`);
+      this.logger.log(`Document types: ${selectedDocs.map(d => d.skill_name).join(', ')}`);
+
+      // Merge with any explicitly provided document IDs
+      referenceDocumentIds = [...customerDocIds, ...referenceDocumentIds];
+    }
+
+    // Also keep the old single document ID for backward compatibility
+    const referenceDocumentId = dto.referenceDocumentId;
+
+    // 5. Execute skill asynchronously (fire-and-forget)
     setImmediate(async () => {
       try {
         await this.skillExecutorService.executeSkill({
@@ -320,10 +364,11 @@ export class McpService {
           userId,
           parameters: dto.parameters || {},
           message: dto.message,
-          referenceDocumentId: dto.referenceDocumentId,
+          referenceDocumentId,  // Keep for backward compatibility
+          referenceDocumentIds,  // New: array of document IDs
           // No callbacks - fire and forget
         });
-        this.logger.log(`Skill execution initiated: ${skill.name} (${skill.id}) for customer ${customerId}`);
+        this.logger.log(`Skill execution initiated: ${skill.name} (${skill.id}) for customer ${customerId} with ${referenceDocumentIds.length} reference documents`);
       } catch (error) {
         this.logger.error(`Skill execution failed: ${skill.name} (${skill.id}) for customer ${customerId}:`, error);
       }
@@ -337,6 +382,7 @@ export class McpService {
         skill_name: skill.name,
         customer_id: customerId,
         team_id: teamId,
+        reference_documents_count: referenceDocumentIds.length,
       },
     };
   }
@@ -369,22 +415,10 @@ export class McpService {
       throw new ForbiddenException('User is not a member of this team');
     }
 
-    // 3. Resolve skill ID - support ID, name, or slug
-    let skill = await this.skillRepository.findOne({
-      where: { id: skillId },
-    });
-
-    if (!skill) {
-      skill = await this.skillRepository.findOne({
-        where: { name: skillId },
-      });
-    }
-
-    if (!skill) {
-      skill = await this.skillRepository.findOne({
-        where: { slug: skillId },
-      });
-    }
+    // 3. Resolve skill ID - support name, slug, or ID (name/slug first to avoid UUID cast errors)
+    let skill = await this.skillRepository.findOne({ where: { name: skillId } });
+    if (!skill) skill = await this.skillRepository.findOne({ where: { slug: skillId } });
+    if (!skill) skill = await this.skillRepository.findOne({ where: { id: skillId } });
 
     if (!skill) {
       this.logger.warn(`Skill not found: ${skillId}`);
@@ -627,6 +661,162 @@ export class McpService {
         ltc_context: updatedCustomer.ltc_context,
         updated_at: updatedCustomer.updated_at,
       },
+    };
+  }
+
+  /**
+   * 添加客户跟进记录
+   */
+  async addFollowup(userId: string, customerId: string, dto: CreateFollowupMcpDto) {
+    // 验证客户存在并获取 team_id
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+      select: ['team_id'],
+    });
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    // 验证用户属于团队
+    const teamMember = await this.teamMemberRepository.findOne({
+      where: { user_id: userId, team_id: customer.team_id },
+    });
+    if (!teamMember) {
+      throw new ForbiddenException('User is not a member of this team');
+    }
+
+    const followup = await this.customerService.createFollowup(
+      customerId,
+      customer.team_id,
+      userId,
+      { content: dto.content },
+    );
+
+    this.logger.log(`Followup added for customer ${customerId} by user ${userId}`);
+    return {
+      success: true,
+      followup: {
+        id: followup.id,
+        customer_id: followup.customer_id,
+        content: followup.content,
+        created_at: followup.created_at,
+      },
+    };
+  }
+
+  /**
+   * 生成客户360报告
+   */
+  async generateCustomer360(userId: string, customerId: string) {
+    // 验证客户存在并获取 team_id
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+      select: ['team_id'],
+    });
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    // 验证用户属于团队
+    const teamMember = await this.teamMemberRepository.findOne({
+      where: { user_id: userId, team_id: customer.team_id },
+    });
+    if (!teamMember) {
+      throw new ForbiddenException('User is not a member of this team');
+    }
+
+    const filePath = await this.customer360Service.generateCustomer360Html(customerId, customer.team_id);
+
+    this.logger.log(`Customer360 generated for ${customerId} by user ${userId}`);
+    return {
+      success: true,
+      message: 'Customer360 report generated successfully',
+      preview_url: `/reports/${customerId}.html`,
+      file_path: filePath,
+    };
+  }
+
+  /**
+   * 获取客户360报告链接
+   */
+  async getCustomer360Url(userId: string, customerId: string) {
+    // 验证客户存在并获取 team_id
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+      select: ['team_id'],
+    });
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    // 验证用户属于团队
+    const teamMember = await this.teamMemberRepository.findOne({
+      where: { user_id: userId, team_id: customer.team_id },
+    });
+    if (!teamMember) {
+      throw new ForbiddenException('User is not a member of this team');
+    }
+
+    const exists = await this.customer360Service.checkCustomer360Exists(customerId);
+
+    return {
+      customer_id: customerId,
+      exists,
+      preview_url: exists ? `/reports/${customerId}.html` : null,
+    };
+  }
+
+  /**
+   * 查询指定客户+技能的最新一次执行状态
+   * 用于 quickcreate 脚本轮询技能是否完成
+   */
+  async getSkillInteractionStatus(userId: string, customerId: string, skillId: string) {
+    // 1. Verify customer exists and get team_id
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+      select: ['team_id'],
+    });
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    // 2. Verify user is member of team
+    const teamMember = await this.teamMemberRepository.findOne({
+      where: { user_id: userId, team_id: customer.team_id },
+    });
+    if (!teamMember) {
+      throw new ForbiddenException('User is not a member of this team');
+    }
+
+    // 3. Resolve skill ID - support name, slug, or ID (name/slug first to avoid UUID cast errors)
+    let skill = await this.skillRepository.findOne({ where: { name: skillId } });
+    if (!skill) skill = await this.skillRepository.findOne({ where: { slug: skillId } });
+    if (!skill) skill = await this.skillRepository.findOne({ where: { id: skillId } });
+    if (!skill) {
+      this.logger.warn(`Skill not found: ${skillId}`);
+      return null;
+    }
+
+    // 4. Query latest interaction for this customer + skill
+    const interaction = await this.interactionRepository.findOne({
+      where: { customer_id: customerId, skill_id: skill.id },
+      order: { updated_at: 'DESC' },
+    });
+
+    if (!interaction) {
+      this.logger.warn(`No interaction found for customer ${customerId}, skill ${skillId}`);
+      return null;
+    }
+
+    this.logger.log(`Interaction status for customer ${customerId}, skill ${skillId}: ${interaction.status}`);
+    return {
+      interaction_id: interaction.id,
+      skill_id: interaction.skill_id,
+      skill_name: skill.name,
+      status: interaction.status,
+      started_at: interaction.started_at,
+      completed_at: interaction.completed_at,
+      created_at: interaction.created_at,
     };
   }
 }

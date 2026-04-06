@@ -14,6 +14,7 @@ import { SystemRoleSkillConfig } from '../../entities/system-role-skill-config.e
 import { TeamRoleSkillConfig } from '../../entities/team-role-skill-config.entity';
 import { SystemConfig } from '../../entities/system-config.entity';
 import { AIService } from '../../common/services/ai.service';
+import { KuaichaModule } from '../kuaicha/kuaicha.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AIService } from '../../common/services/ai.service';
       TeamRoleSkillConfig,
       SystemConfig,
     ]),
+    KuaichaModule,
   ],
   controllers: [LtcController],
   providers: [LtcService, AIService],

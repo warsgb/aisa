@@ -5,6 +5,7 @@ import { QueryTeamsDto } from './dto/query-teams.dto';
 import { CreateCustomerMcpDto } from './dto/create-customer-mcp.dto';
 import { ExecuteSkillMcpDto } from './dto/execute-skill-mcp.dto';
 import { UpdateCustomerMcpDto } from './dto/update-customer-mcp.dto';
+import { CreateFollowupMcpDto } from './dto/create-followup-mcp.dto';
 
 @Controller('mcp')
 @UseGuards(ApiTokenGuard)
@@ -97,6 +98,19 @@ export class McpController {
     return this.mcpService.getLatestDocumentByCustomerSkill(userId, customerId, skillId);
   }
 
+  @Get('customers/:customerId/skills/:skillId/interaction-status')
+  async getSkillInteractionStatus(
+    @Param('customerId') customerId: string,
+    @Param('skillId') skillId: string,
+    @Request() req?: any,
+  ) {
+    const userId = req?.user?.id;
+    if (!userId) {
+      return null;
+    }
+    return this.mcpService.getSkillInteractionStatus(userId, customerId, skillId);
+  }
+
   @Get('teams/:teamId/skills')
   async querySkills(
     @Param('teamId') teamId: string,
@@ -133,5 +147,42 @@ export class McpController {
       throw new Error('User not authenticated');
     }
     return this.mcpService.updateCustomerProfile(userId, customerId, dto);
+  }
+
+  @Post('customers/:customerId/followups')
+  async addFollowup(
+    @Param('customerId') customerId: string,
+    @Body() dto: CreateFollowupMcpDto,
+    @Request() req?: any,
+  ) {
+    const userId = req?.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    return this.mcpService.addFollowup(userId, customerId, dto);
+  }
+
+  @Post('customers/:customerId/customer360')
+  async generateCustomer360(
+    @Param('customerId') customerId: string,
+    @Request() req?: any,
+  ) {
+    const userId = req?.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    return this.mcpService.generateCustomer360(userId, customerId);
+  }
+
+  @Get('customers/:customerId/customer360')
+  async getCustomer360Url(
+    @Param('customerId') customerId: string,
+    @Request() req?: any,
+  ) {
+    const userId = req?.user?.id;
+    if (!userId) {
+      return { customer_id: customerId, exists: false, preview_url: null };
+    }
+    return this.mcpService.getCustomer360Url(userId, customerId);
   }
 }

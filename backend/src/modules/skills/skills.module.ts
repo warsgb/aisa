@@ -13,6 +13,7 @@ import { SkillInteraction } from '../../entities/interaction.entity';
 import { InteractionMessage } from '../../entities/interaction-message.entity';
 import { Customer } from '../../entities/customer.entity';
 import { CustomerProfile } from '../../entities/customer-profile.entity';
+import { CustomerFollowup } from '../../entities/customer-followup.entity';
 import { ReferenceMaterial } from '../../entities/reference-material.entity';
 import { SharedFramework } from '../../entities/shared-framework.entity';
 import { TeamMember } from '../../entities/team-member.entity';
@@ -27,6 +28,7 @@ import { AuthModule } from '../auth/auth.module';
       InteractionMessage,
       Customer,
       CustomerProfile,
+      CustomerFollowup,
       ReferenceMaterial,
       SharedFramework,
       TeamMember,

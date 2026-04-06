@@ -91,13 +91,18 @@ export class StreamingGateway implements OnGatewayConnection, OnGatewayDisconnec
   ) {
     const userId = client.data.user?.sub;
     if (!userId) {
+      console.error('❌ [Streaming Gateway] Unauthorized - no userId');
       client.emit('error', { message: 'Unauthorized' });
       return;
     }
 
-    console.log('🎯 [Streaming Gateway] Received skill:execute request');
+    console.log('�� [Streaming Gateway] Received skill:execute request');
     console.log('📝 [Streaming Gateway] Client ID:', client.id);
-    console.log('📋 [Streaming Gateway] Data:', JSON.stringify(data, null, 2));
+    console.log('👤 [Streaming Gateway] User ID:', userId);
+    console.log('📋 [Streaming Gateway] Skill ID:', data.skillId);
+    console.log('📋 [Streaming Gateway] Team ID:', data.teamId);
+    console.log('📋 [Streaming Gateway] Customer ID:', data.customerId);
+    console.log('📋 [Streaming Gateway] Parameters:', JSON.stringify(data.parameters, null, 2));
 
     try {
       // Execute skill and stream results

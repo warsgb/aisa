@@ -4,6 +4,7 @@ export { TeamMember, TeamRole } from './team-member.entity';
 export { TeamMemberPreference, IronTriangleRole } from './team-member-preference.entity';
 export { Customer } from './customer.entity';
 export { CustomerProfile } from './customer-profile.entity';
+export { CustomerFollowup } from './customer-followup.entity';
 export { Skill } from './skill.entity';
 export { SkillInteraction, InteractionStatus } from './interaction.entity';
 export { InteractionMessage, MessageRole } from './interaction-message.entity';

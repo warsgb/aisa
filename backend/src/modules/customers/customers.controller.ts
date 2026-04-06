@@ -13,6 +13,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { CreateCustomerFollowupDto } from './dto/create-customer-followup.dto';
+import { UpdateCustomerFollowupDto } from './dto/update-customer-followup.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -27,6 +29,50 @@ interface RequestWithUser extends Request {
 @UseGuards(JwtAuthGuard)
 export class CustomersController {
   constructor(private customersService: CustomersService) {}
+
+  // ─── Customer Followup Endpoints (must be before :id routes) ───────────────────
+
+  @Get(':customerId/followups')
+  findFollowups(
+    @Param('customerId') customerId: string,
+    @Param('teamId') teamId: string,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.customersService.findFollowups(customerId, teamId, req.user.id);
+  }
+
+  @Post(':customerId/followups')
+  createFollowup(
+    @Param('customerId') customerId: string,
+    @Param('teamId') teamId: string,
+    @Request() req: RequestWithUser,
+    @Body() dto: CreateCustomerFollowupDto,
+  ) {
+    return this.customersService.createFollowup(customerId, teamId, req.user.id, dto);
+  }
+
+  @Put(':customerId/followups/:followupId')
+  updateFollowup(
+    @Param('followupId') followupId: string,
+    @Param('customerId') customerId: string,
+    @Param('teamId') teamId: string,
+    @Request() req: RequestWithUser,
+    @Body() dto: UpdateCustomerFollowupDto,
+  ) {
+    return this.customersService.updateFollowup(followupId, teamId, req.user.id, dto);
+  }
+
+  @Delete(':customerId/followups/:followupId')
+  deleteFollowup(
+    @Param('followupId') followupId: string,
+    @Param('customerId') customerId: string,
+    @Param('teamId') teamId: string,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.customersService.deleteFollowup(followupId, teamId, req.user.id);
+  }
+
+  // ─── Customer CRUD Endpoints ────────────────────────────────────────────────────
 
   @Post()
   create(

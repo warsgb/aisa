@@ -12,7 +12,7 @@ BACKEND_DIR="${BACKEND_DIR:-$SCRIPT_DIR}"
 echo "🛑 Stopping backend on port $PORT..."
 
 # Count processes before
-BEFORE_COUNT=$(ps aux | grep -E "(nest|backend.*main|dist/main)" | grep -v grep | wc -l)
+BEFORE_COUNT=$(ps aux | grep "dist/src/main" | grep -v grep | wc -l)
 echo "Found $BEFORE_COUNT backend-related processes"
 
 # Method 1: Kill by port (most reliable - kills the final node process)
@@ -47,10 +47,10 @@ ps aux | grep "[n]ode.*backend" | awk '{print $2}' | xargs -r kill -9 2>/dev/nul
 sleep 2
 
 # Count processes after
-AFTER_COUNT=$(ps aux | grep -E "(nest|backend.*main|dist/main)" | grep -v grep | wc -l)
+AFTER_COUNT=$(ps aux | grep "dist/src/main" | grep -v grep | wc -l)
 
 # Verify and report
-REMAINING=$(ps aux | grep -E "(nest|backend.*main|dist/main)" | grep -v grep || true)
+REMAINING=$(ps aux | grep "dist/src/main" | grep -v grep || true)
 if [ -n "$REMAINING" ]; then
     echo "⚠️  Warning: $AFTER_COUNT processes still remain:"
     echo "$REMAINING"
@@ -66,7 +66,7 @@ if lsof -ti :$PORT >/dev/null 2>&1; then
     lsof -i :$PORT
     exit 1
 else
-    FINAL_COUNT=$(ps aux | grep -E "(nest|backend.*main|dist/main)" | grep -v grep | wc -l)
+    FINAL_COUNT=$(ps aux | grep "dist/src/main" | grep -v grep | wc -l)
     echo "✅ Backend stopped successfully"
     echo "📊 Processes: $BEFORE_COUNT → $FINAL_COUNT"
 fi

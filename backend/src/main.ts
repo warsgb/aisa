@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 
@@ -16,19 +17,15 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Enable CORS with explicit configuration for development
-  // Read allowed origins from environment variable or use defaults
   const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
     : ['http://localhost:5173', 'http://127.0.0.1:5173'];
 
-  // Allow all origins in development if CORS_ALLOW_ALL is set
-  const allowAllOrigins = process.env.NODE_ENV === 'development' && process.env.CORS_ALLOW_ALL === 'true';
-
   app.enableCors({
-    origin: true, // Allow all origins for now
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
@@ -60,6 +57,45 @@ async function bootstrap() {
 
   // Set global API prefix
   app.setGlobalPrefix('api');
+
+  // Serve customer360 static files (不需要认证)
+  expressApp.use('/customer360', (req: any, res: any) => {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(process.cwd(), 'customer360', req.path);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.sendFile(filePath);
+    } else {
+      res.status(404).send('Not Found');
+    }
+  });
+
+  // Serve reports from frontend dist directory (不需要认证)
+  // 优先从后端目录读取，没有则从前端dist目录读取
+  expressApp.use('/reports', (req: any, res: any) => {
+    const fs = require('fs');
+    const path = require('path');
+
+    // 先尝试后端目录
+    let filePath = path.join(process.cwd(), 'customer360', req.path);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.sendFile(filePath);
+    }
+
+    // 再尝试前端dist目录
+    filePath = path.join(process.cwd(), '..', 'dist', 'reports', req.path);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.sendFile(filePath);
+    }
+
+    res.status(404).send('Not Found');
+  });
 
   const port = process.env.PORT ?? 3001;
   await app.listen(port, '0.0.0.0');

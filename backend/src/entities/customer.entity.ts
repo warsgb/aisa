@@ -14,6 +14,7 @@ import { SkillInteraction } from './interaction.entity';
 import { Document } from './document.entity';
 import { ReferenceMaterial } from './reference-material.entity';
 import { CustomerProfile } from './customer-profile.entity';
+import { CustomerFollowup } from './customer-followup.entity';
 
 @Entity('customers')
 export class Customer {
@@ -70,4 +71,7 @@ export class Customer {
 
   @OneToOne(() => CustomerProfile, (profile) => profile.customer)
   profile: CustomerProfile;
+
+  @OneToMany(() => CustomerFollowup, (f) => f.customer)
+  followups: CustomerFollowup[];
 }
