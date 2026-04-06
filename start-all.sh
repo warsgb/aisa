@@ -48,14 +48,10 @@ fi
 
 # Start Backend
 echo ""
-echo "🔧 Starting Backend..."
+echo "🔧 Building & Starting Backend..."
 cd "$BACKEND_DIR"
-if [ -d "dist" ]; then
-    echo "✅ Dist folder exists"
-else
-    echo "📦 Building backend first..."
-    npm run build --silent
-fi
+echo "📦 Building backend..."
+npm run build
 
 # Create logs directory if not exists
 mkdir -p logs

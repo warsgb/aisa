@@ -16,7 +16,7 @@ echo "======================"
 echo ""
 
 # Count processes before
-BEFORE_BACKEND=$(ps aux | grep -E "(nest|backend.*main|dist/main)" | grep -v grep | wc -l)
+BEFORE_BACKEND=$(ps aux | grep "dist/src/main" | grep -v grep | wc -l)
 BEFORE_FRONTEND=$(ps aux | grep "vite.*5173" | grep -v grep | wc -l)
 
 echo "📊 Processes before stop:"
@@ -32,6 +32,8 @@ if [ -f "stop-backend.sh" ]; then
 else
     echo "ℹ️  Backend stop script not found, killing by port..."
     lsof -ti :3001 2>/dev/null | xargs kill -9 2>/dev/null || true
+    sleep 2
+    ps aux | grep "[d]ist/src/main" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 fi
 
 # Stop Frontend
@@ -43,7 +45,7 @@ pkill -f "vite.*5173" 2>/dev/null || true
 sleep 2
 
 # Count processes after
-AFTER_BACKEND=$(ps aux | grep -E "(nest|backend.*main|dist/main)" | grep -v grep | wc -l)
+AFTER_BACKEND=$(ps aux | grep "dist/src/main" | grep -v grep | wc -l)
 AFTER_FRONTEND=$(ps aux | grep "vite.*5173" | grep -v grep | wc -l)
 
 echo ""
