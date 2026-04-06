@@ -33,3 +33,34 @@ backend/.env
 uploads/
 
 backend/.backend.pid
+
+# 临时文档
+*.md
+!README.md
+
+# 测试脚本
+test-*.sh
+test-*.cjs
+test-*.js
+check-*.js
+check-*.sh
+example-*.sh
+get-*.sh
+
+# 备份文件
+*.bak
+*.backup
+*.backup2
+
+# 模板目录
+templates/
+
+# 日志文件
+*.log
+.pid
+
+# Claude配置
+.claude/
+
+# 截图
+*.png
