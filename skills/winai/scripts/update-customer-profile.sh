@@ -58,7 +58,7 @@ fi
 
 echo "正在更新客户 $CUSTOMER_ID 的 $FIELD ..." >&2
 
-curl -s -X PUT "http://localhost:3001/api/mcp/customers/$CUSTOMER_ID" \
+curl -s -X PUT "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID" \
     -H "Content-Type: application/json" \
     -H "$HEADER_AUTH" \
     -d "$UPDATE_DATA" | jq .

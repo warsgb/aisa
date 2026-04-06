@@ -24,7 +24,7 @@ fi
 
 echo "正在添加跟进记录 for customer $CUSTOMER_ID ..." >&2
 
-curl -s -X POST "http://localhost:3001/api/mcp/customers/$CUSTOMER_ID/followups" \
+curl -s -X POST "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID/followups" \
     -H "Content-Type: application/json" \
     -H "$HEADER_AUTH" \
     -d "{\"content\": $CONTENT}" | jq .

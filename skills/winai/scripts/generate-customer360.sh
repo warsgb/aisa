@@ -26,6 +26,6 @@ fi
 echo "正在生成客户360报告 for customer $CUSTOMER_ID ..." >&2
 echo "提示: 报告生成约需1-2分钟，请稍后使用 get-customer360-url.sh 查询链接" >&2
 
-curl -s -X POST "http://localhost:3001/api/mcp/customers/$CUSTOMER_ID/customer360" \
+curl -s -X POST "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID/customer360" \
     -H "Content-Type: application/json" \
     -H "$HEADER_AUTH" | jq .

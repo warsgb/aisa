@@ -25,5 +25,5 @@ if [ -n "$AISA_API_TOKEN" ]; then
     HEADER_AUTH="Authorization: Bearer $AISA_API_TOKEN"
 fi
 
-curl -s -X GET "http://localhost:3001/api/mcp/customers/$CUSTOMER_ID/customer360" \
+curl -s -X GET "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID/customer360" \
     -H "$HEADER_AUTH" | jq .
