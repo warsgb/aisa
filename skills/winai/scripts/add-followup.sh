@@ -17,14 +17,17 @@ fi
 CUSTOMER_ID="$1"
 CONTENT="$2"
 
-HEADER_AUTH=""
-if [ -n "$AISA_API_TOKEN" ]; then
-    HEADER_AUTH="Authorization: Bearer $AISA_API_TOKEN"
-fi
-
 echo "正在添加跟进记录 for customer $CUSTOMER_ID ..." >&2
 
-curl -s -X POST "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID/followups" \
-    -H "Content-Type: application/json" \
-    -H "$HEADER_AUTH" \
-    -d "{\"content\": $CONTENT}" | jq .
+DATA=$(jq -n --arg content "$CONTENT" '{"content": $content}')
+
+if [ -n "$AISA_API_TOKEN" ]; then
+    curl -s -X POST "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID/followups" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $AISA_API_TOKEN" \
+        -d "$DATA" | jq .
+else
+    curl -s -X POST "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID/followups" \
+        -H "Content-Type: application/json" \
+        -d "$DATA" | jq .
+fi

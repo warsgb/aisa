@@ -44,8 +44,10 @@ POLL_TIMEOUT=3600  # 单次操作最大等待秒数（1小时，保险值）
 
 # 三个技能名称（支持中文名）
 SKILL_1="金融与国企客户深度研究"
-SKILL_2="需求挖掘分析（面向CIO/技术负责人）"
-SKILL_3="高层拜访故事线（面向CIO/技术负责人）"
+SKILL_2="需求挖掘分析"
+SKILL_3="高层拜访故事线"
+SKILL_2_PARAMS='{"target_role":"cio"}'
+SKILL_3_PARAMS='{"target_role":"cio"}'
 
 # ---------- 工具函数 ----------
 log() {
@@ -64,23 +66,24 @@ fail() {
     exit 1
 }
 
-# 获取 HTTP header
-_header_auth() {
-    if [ -n "$API_TOKEN" ]; then
-        echo "-H \"Authorization: Bearer $API_TOKEN\""
-    fi
-}
-
 # 调用 API（支持相对路径，自动拼接 API_URL）
 api_get() {
     local path="$1"
-    curl -s $(eval _header_auth) "${API_URL}${path}"
+    if [ -n "$API_TOKEN" ]; then
+        curl -s -H "Authorization: Bearer $API_TOKEN" "${API_URL}${path}"
+    else
+        curl -s "${API_URL}${path}"
+    fi
 }
 
 api_post() {
     local path="$1"
     local data="$2"
-    curl -s -X POST $(eval _header_auth) -H "Content-Type: application/json" -d "$data" "${API_URL}${path}"
+    if [ -n "$API_TOKEN" ]; then
+        curl -s -X POST -H "Authorization: Bearer $API_TOKEN" -H "Content-Type: application/json" -d "$data" "${API_URL}${path}"
+    else
+        curl -s -X POST -H "Content-Type: application/json" -d "$data" "${API_URL}${path}"
+    fi
 }
 
 # ---------- 轮询函数 ----------
@@ -96,9 +99,15 @@ poll_interaction_status() {
 
     while [ $elapsed -lt $POLL_TIMEOUT ]; do
         local response
-        response=$(curl -s $(eval _header_auth) "${API_URL}/api/mcp/customers/${customer_id}/skills/${skill_id}/interaction-status")
+        response=$(curl -s -H "Authorization: Bearer $API_TOKEN" "${API_URL}/api/mcp/customers/${customer_id}/skills/${skill_id}/interaction-status")
 
-        # 检查是否为有效 JSON
+        # 检查是否为有效 JSON（空响应说明 interaction 还未创建，继续等待）
+        if [ -z "$response" ]; then
+            log "等待 interaction 创建..."
+            sleep $POLL_INTERVAL
+            elapsed=$((elapsed + POLL_INTERVAL))
+            continue
+        fi
         if ! echo "$response" | jq -e . >/dev/null 2>&1; then
             log "API 返回无效响应，10秒后重试..."
             sleep 10
@@ -139,12 +148,12 @@ fi
 
 log "搜索客户: ${CUSTOMER_NAME}"
 
-CUSTOMER_SEARCH=$(api_get "/api/mcp/teams/${TEAM_ID}/customers?search=$(echo "$CUSTOMER_NAME" | jq -Rs .)")
-CUSTOMER_COUNT=$(echo "$CUSTOMER_SEARCH" | jq 'length')
+CUSTOMER_SEARCH=$(api_get "/api/mcp/teams/${TEAM_ID}/customers?search=$(echo "$CUSTOMER_NAME" | jq -Rs @uri | sed 's/%0A$//')")
+CUSTOMER_COUNT=$(echo "$CUSTOMER_SEARCH" | jq 'length' 2>/dev/null || echo 0)
 
 log "搜索到 ${CUSTOMER_COUNT} 个匹配客户"
 
-if [ "$CUSTOMER_COUNT" -gt 0 ]; then
+if [ "$CUSTOMER_COUNT" -gt 0 ] 2>/dev/null; then
     CUSTOMER_ID=$(echo "$CUSTOMER_SEARCH" | jq -r '.[0].id')
     CUSTOMER_EXISTS_NAME=$(echo "$CUSTOMER_SEARCH" | jq -r '.[0].name')
     log "客户已存在，ID: ${CUSTOMER_ID}，名称: ${CUSTOMER_EXISTS_NAME}"
@@ -165,11 +174,7 @@ else
         fail "创建客户失败: $(echo "$CREATE_RESULT" | jq .)"
     fi
 
-    log "客户创建成功，ID: ${CUSTOMER_ID}，等待AI调研完成（可能需要2-3分钟）..."
-
-    # 等待AI调研完成
-    poll_interaction_status "$CUSTOMER_ID" "金融与国企客户深度研究" "COMPLETED" || true
-    log "AI调研完成"
+    log "客户创建成功，ID: ${CUSTOMER_ID}，后续步骤将自动触发AI调研和分析"
 fi
 
 echo "CUSTOMER_ID=${CUSTOMER_ID}"
@@ -200,9 +205,10 @@ header "步骤3：执行技能 - ${SKILL_2}"
 log "执行技能: ${SKILL_2}"
 if [ -n "$DOC1_ID" ]; then
     EXEC_RESULT=$(api_post "/api/mcp/customers/${CUSTOMER_ID}/skills/${SKILL_2}/execute" \
-        "{\"referenceDocumentIds\":[\"${DOC1_ID}\"]}")
+        "{\"referenceDocumentIds\":[\"${DOC1_ID}\"],\"target_role\":\"cio\"}")
 else
-    EXEC_RESULT=$(api_post "/api/mcp/customers/${CUSTOMER_ID}/skills/${SKILL_2}/execute" "{}")
+    EXEC_RESULT=$(api_post "/api/mcp/customers/${CUSTOMER_ID}/skills/${SKILL_2}/execute" \
+        "$SKILL_2_PARAMS")
 fi
 log "执行响应: $(echo "$EXEC_RESULT" | jq .)"
 
@@ -225,12 +231,13 @@ header "步骤4：执行技能 - ${SKILL_3}"
 log "执行技能: ${SKILL_3}"
 if [ -n "$DOC1_ID" ] && [ -n "$DOC2_ID" ]; then
     EXEC_RESULT=$(api_post "/api/mcp/customers/${CUSTOMER_ID}/skills/${SKILL_3}/execute" \
-        "{\"referenceDocumentIds\":[\"${DOC1_ID}\",\"${DOC2_ID}\"]}")
+        "{\"referenceDocumentIds\":[\"${DOC1_ID}\",\"${DOC2_ID}\"],\"target_role\":\"cio\"}")
 elif [ -n "$DOC1_ID" ]; then
     EXEC_RESULT=$(api_post "/api/mcp/customers/${CUSTOMER_ID}/skills/${SKILL_3}/execute" \
-        "{\"referenceDocumentIds\":[\"${DOC1_ID}\"]}")
+        "{\"referenceDocumentIds\":[\"${DOC1_ID}\"],\"target_role\":\"cio\"}")
 else
-    EXEC_RESULT=$(api_post "/api/mcp/customers/${CUSTOMER_ID}/skills/${SKILL_3}/execute" "{}")
+    EXEC_RESULT=$(api_post "/api/mcp/customers/${CUSTOMER_ID}/skills/${SKILL_3}/execute" \
+        "$SKILL_3_PARAMS")
 fi
 log "执行响应: $(echo "$EXEC_RESULT" | jq .)"
 

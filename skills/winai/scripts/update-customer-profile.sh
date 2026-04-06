@@ -48,17 +48,18 @@ case "$FIELD" in
 esac
 
 # 构建更新数据
-UPDATE_DATA="{\"$JSON_FIELD\": $(echo "$CONTENT" | jq -Rs .)}"
-
-# 调��� API
-HEADER_AUTH=""
-if [ -n "$AISA_API_TOKEN" ]; then
-    HEADER_AUTH="Authorization: Bearer $AISA_API_TOKEN"
-fi
+UPDATE_DATA=$(jq -n --arg field "$JSON_FIELD" --arg content "$CONTENT" \
+    '{"background_info": null, "decision_chain": null, "history_notes": null} | .[$field] = $content')
 
 echo "正在更新客户 $CUSTOMER_ID 的 $FIELD ..." >&2
 
-curl -s -X PUT "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID" \
-    -H "Content-Type: application/json" \
-    -H "$HEADER_AUTH" \
-    -d "$UPDATE_DATA" | jq .
+if [ -n "$AISA_API_TOKEN" ]; then
+    curl -s -X PUT "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $AISA_API_TOKEN" \
+        -d "$UPDATE_DATA" | jq .
+else
+    curl -s -X PUT "${AISA_API_URL}/api/mcp/customers/$CUSTOMER_ID" \
+        -H "Content-Type: application/json" \
+        -d "$UPDATE_DATA" | jq .
+fi
