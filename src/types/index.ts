@@ -167,6 +167,7 @@ export interface Document {
   title: string;
   content: string;
   format: string;
+  document_type?: string;
   metadata?: Record<string, any>;
   created_at: string;
   updated_at: string;
@@ -447,6 +448,30 @@ export interface CustomerWithLtc extends Customer {
 // Extended SkillInteraction with node_id
 export interface SkillInteractionWithNode extends SkillInteraction {
   node_id?: string;
+}
+
+// Customer Followup Types
+export interface CustomerFollowup {
+  id: string;
+  team_id: string;
+  customer_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+}
+
+export interface CreateCustomerFollowupDto {
+  content: string;
+}
+
+export interface UpdateCustomerFollowupDto {
+  content?: string;
 }
 
 // Home Page Data

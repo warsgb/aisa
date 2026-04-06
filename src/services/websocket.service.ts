@@ -22,7 +22,16 @@ class WebSocketService {
     }
 
     // Support relative paths for same-origin deployment, fallback to localhost
-    const wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3001');
+    let wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3001');
+
+    // If wsUrl is a relative path (starts with /), construct full URL
+    if (wsUrl.startsWith('/')) {
+      // Use the backend URL directly
+      wsUrl = 'http://localhost:3001';
+    } else if (wsUrl.startsWith('/ws') || wsUrl.startsWith('ws')) {
+      // Extract base URL if wsUrl contains /ws path
+      wsUrl = 'http://localhost:3001';
+    }
 
     this.socket = io(wsUrl, {
       path: '/ws',

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api.service';
 import type { Customer, CreateCustomerDto, CustomerProfile } from '../../types';
+import { FollowupList } from '../../components/customer/FollowupList';
 import MDEditor from '@uiw/react-md-editor';
 import {
   Users,
@@ -347,6 +348,29 @@ export function CustomersPage() {
     }
   };
 
+  const handleGenerate360 = async (customer: Customer) => {
+    if (!team) return;
+
+    if (!customer.name || customer.name.trim() === '') {
+      alert('请先填写客户名称');
+      return;
+    }
+
+    try {
+      const result = await apiService.generateCustomer360(team.id, customer.id);
+      // Open preview URL in new tab - use direct static file path
+      const customerId = customer.id;
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const baseUrl = backendUrl.replace(/\/api$/, ''); // Remove /api suffix if present
+
+      alert('360报告生成成功');
+    } catch (error: any) {
+      console.error('生成360报告失败:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || '生成360报告失败，请稍后重试';
+      alert(errorMsg);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
@@ -419,6 +443,8 @@ export function CustomersPage() {
                 onDelete={() => handleDelete(customer)}
                 onEditProfile={() => openProfileModal(customer)}
                 onAutoFill={handleAutoFill}
+                onGenerate360={handleGenerate360}
+                teamId={team?.id || ''}
               />
             ))}
           </div>
@@ -601,11 +627,14 @@ interface CustomerCardProps {
   onDelete: () => void;
   onEditProfile: () => void;
   onAutoFill: (customer: Customer) => void;
+  onGenerate360: (customer: Customer) => void;
+  teamId: string;
 }
 
-function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAutoFill }: CustomerCardProps) {
+function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAutoFill, onGenerate360, teamId }: CustomerCardProps) {
   // 仅用于按钮的禁用状态，不显示独立的进度条模态窗口
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [isGenerating360, setIsGenerating360] = useState(false);
 
   const handleAutoFill = async () => {
     setIsAutoFilling(true);
@@ -614,6 +643,26 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAut
     } finally {
       setIsAutoFilling(false);
     }
+  };
+
+  const handleGenerate360 = async () => {
+    setIsGenerating360(true);
+    try {
+      await onGenerate360(customer);
+    } finally {
+      setIsGenerating360(false);
+    }
+  };
+
+  const handleView360 = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
+    // 从 API URL 提取后端基础地址
+    let backendUrl = apiUrl.replace(/\/api$/, '');
+    // 如果替换后为空（VITE_API_URL = '/api'），使用默认后端地址
+    if (!backendUrl || backendUrl === '/') {
+      backendUrl = 'http://localhost:3001';
+    }
+    window.open(`${backendUrl}/customer360/${customer.id}.html`, '_blank');
   };
   return (
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-[#1677FF]/20 overflow-hidden">
@@ -685,8 +734,8 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAut
         </button>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 p-5 pt-0 border-t border-gray-100">
+      {/* Actions - Row 1 */}
+      <div className="flex items-center gap-2 px-5 pb-2">
         <button
           onClick={onView}
           className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#1677FF] bg-[#1677FF]/5 rounded-xl hover:bg-[#1677FF]/10 transition-colors"
@@ -703,15 +752,45 @@ function CustomerCard({ customer, onView, onEdit, onDelete, onEditProfile, onAut
         </button>
         <button
           onClick={onEdit}
-          className="p-2.5 text-gray-400 hover:text-[#1677FF] hover:bg-[#1677FF]/5 rounded-xl transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
         >
           <Edit className="w-4 h-4" />
+          编辑
+        </button>
+      </div>
+
+      {/* Actions - Row 2 */}
+      <div className="flex items-center gap-2 px-5 pb-4 border-t border-gray-100 pt-2">
+        <button
+          onClick={handleGenerate360}
+          disabled={isGenerating360 || !customer.name}
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#1677FF] bg-[#1677FF]/5 rounded-xl hover:bg-[#1677FF]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isGenerating360 ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              生成中...
+            </>
+          ) : (
+            <>
+              <FileText className="w-4 h-4" />
+              生成360
+            </>
+          )}
+        </button>
+        <button
+          onClick={handleView360}
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#1677FF] rounded-xl hover:bg-[#4096FF] transition-colors"
+        >
+          <Eye className="w-4 h-4" />
+          查看360
         </button>
         <button
           onClick={onDelete}
-          className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
+          删除
         </button>
       </div>
     </div>
@@ -859,6 +938,8 @@ function CustomerViewModal({
   onEdit,
   onEditProfile,
 }: CustomerViewModalProps) {
+  const [activeTab, setActiveTab] = useState<'detail' | 'followups'>('detail');
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -880,8 +961,33 @@ function CustomerViewModal({
           </button>
         </div>
 
+        {/* Tab Bar */}
+        <div className="px-6 border-b border-gray-100 flex gap-1">
+          <button
+            onClick={() => setActiveTab('detail')}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'detail'
+                ? 'border-[#1677FF] text-[#1677FF]'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            详情
+          </button>
+          <button
+            onClick={() => setActiveTab('followups')}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'followups'
+                ? 'border-[#1677FF] text-[#1677FF]'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            跟进记录
+          </button>
+        </div>
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6" data-color-mode="light">
+          {activeTab === 'detail' ? (
           <div className="space-y-6">
             {/* Basic Info */}
             <section>
@@ -999,6 +1105,9 @@ function CustomerViewModal({
               )}
             </section>
           </div>
+          ) : (
+            <FollowupList teamId={customer.team_id} customerId={customer.id} />
+          )}
         </div>
 
         {/* Footer */}

@@ -30,6 +30,9 @@ import type {
   LtcNode,
   NodeSkillBinding,
   CustomerProfile,
+  CustomerFollowup,
+  CreateCustomerFollowupDto,
+  UpdateCustomerFollowupDto,
   TeamMemberPreference,
   CreateLtcNodeDto,
   UpdateLtcNodeDto,
@@ -319,6 +322,24 @@ class ApiService {
     return this.request<void>(`/teams/${teamId}/customers/${id}`, { method: 'DELETE' });
   }
 
+  // Customer 360 endpoints
+  async generateCustomer360(teamId: string, customerId: string): Promise<any> {
+    return this.request<any>(`/teams/${teamId}/customers/${customerId}/generate-360`, {
+      method: 'POST',
+    });
+  }
+
+  async checkCustomer360Exists(teamId: string, customerId: string): Promise<boolean> {
+    return this.request<boolean>(`/teams/${teamId}/customers/${customerId}/check-360`, {
+      method: 'GET',
+    });
+  }
+
+  getCustomer360PreviewUrl(customerId: string): string {
+    const baseUrl = import.meta.env.VITE_API_URL || '';
+    return `${baseUrl}/customer360/${customerId}.html`;
+  }
+
   // Skills endpoints
   async getSkills(includeDisabled: boolean = true): Promise<Skill[]> {
     return this.request<Skill[]>(`/skills?includeDisabled=${includeDisabled}`);
@@ -441,14 +462,14 @@ class ApiService {
     return this.request<Document>(`/teams/${teamId}/documents/${id}`);
   }
 
-  async createDocument(teamId: string, data: { title: string; content: string; format?: string }): Promise<Document> {
+  async createDocument(teamId: string, data: { title: string; content: string; format?: string; customer_id?: string }): Promise<Document> {
     return this.request<Document>(`/teams/${teamId}/documents`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateDocument(teamId: string, id: string, data: { title?: string; content?: string; change_description?: string }): Promise<Document> {
+  async updateDocument(teamId: string, id: string, data: { title?: string; content?: string; customer_id?: string; change_description?: string }): Promise<Document> {
     return this.request<Document>(`/teams/${teamId}/documents/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -838,6 +859,45 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ searchGoal }),
     }, 300000);  // 5分钟超时
+  }
+
+  // Customer Followups
+  async getCustomerFollowups(teamId: string, customerId: string): Promise<CustomerFollowup[]> {
+    return this.request<CustomerFollowup[]>(`/teams/${teamId}/customers/${customerId}/followups`);
+  }
+
+  async createCustomerFollowup(
+    teamId: string,
+    customerId: string,
+    data: CreateCustomerFollowupDto,
+  ): Promise<CustomerFollowup> {
+    return this.request<CustomerFollowup>(
+      `/teams/${teamId}/customers/${customerId}/followups`,
+      { method: 'POST', body: JSON.stringify(data) },
+    );
+  }
+
+  async updateCustomerFollowup(
+    teamId: string,
+    customerId: string,
+    followupId: string,
+    data: UpdateCustomerFollowupDto,
+  ): Promise<CustomerFollowup> {
+    return this.request<CustomerFollowup>(
+      `/teams/${teamId}/customers/${customerId}/followups/${followupId}`,
+      { method: 'PUT', body: JSON.stringify(data) },
+    );
+  }
+
+  async deleteCustomerFollowup(
+    teamId: string,
+    customerId: string,
+    followupId: string,
+  ): Promise<void> {
+    return this.request<void>(
+      `/teams/${teamId}/customers/${customerId}/followups/${followupId}`,
+      { method: 'DELETE' },
+    );
   }
 
   // Team Member Preference (Iron Triangle Role)

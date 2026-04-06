@@ -18,6 +18,7 @@ export default function DocumentsPage() {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
+    customer_id: '',
   });
   const isSystemAdmin = user?.role === 'SYSTEM_ADMIN';
 
@@ -72,9 +73,10 @@ export default function DocumentsPage() {
         title: formData.title,
         content: formData.content,
         format: 'markdown',
+        customer_id: formData.customer_id || undefined,
       });
       setShowNewModal(false);
-      setFormData({ title: '', content: '' });
+      setFormData({ title: '', content: '', customer_id: '' });
       loadDocuments();
     } catch (error) {
       console.error('创建文档失败:', error);
@@ -89,11 +91,12 @@ export default function DocumentsPage() {
       await apiService.updateDocument(team.id, selectedDoc.id, {
         title: formData.title,
         content: formData.content,
+        customer_id: formData.customer_id || undefined,
         change_description: '手动更新',
       });
       setShowEditModal(false);
       setSelectedDoc(null);
-      setFormData({ title: '', content: '' });
+      setFormData({ title: '', content: '', customer_id: '' });
       loadDocuments();
     } catch (error) {
       console.error('更新文档失败:', error);
@@ -116,7 +119,11 @@ export default function DocumentsPage() {
 
   const openEditModal = (doc: Document) => {
     setSelectedDoc(doc);
-    setFormData({ title: doc.title, content: doc.content });
+    setFormData({
+      title: doc.title,
+      content: doc.content,
+      customer_id: doc.customer?.id || '',
+    });
     setShowEditModal(true);
   };
 
@@ -263,6 +270,22 @@ export default function DocumentsPage() {
             <div className="p-6 flex-1 overflow-y-auto">
               <div className="space-y-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">所属客户</label>
+                  <select
+                    value={formData.customer_id}
+                    onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
+                  >
+                    <option value="">不关联客户</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">可选择关联此文档到特定客户</p>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">标题 *</label>
                   <input
                     type="text"
@@ -289,7 +312,7 @@ export default function DocumentsPage() {
               <button
                 onClick={() => {
                   setShowNewModal(false);
-                  setFormData({ title: '', content: '' });
+                  setFormData({ title: '', content: '', customer_id: '' });
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
               >
@@ -317,6 +340,22 @@ export default function DocumentsPage() {
             <div className="p-6 flex-1 overflow-y-auto">
               <div className="space-y-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">所属客户</label>
+                  <select
+                    value={formData.customer_id}
+                    onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1677FF] focus:border-[#1677FF]"
+                  >
+                    <option value="">不关联客户</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">可选择关联此文档到特定客户</p>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">标题 *</label>
                   <input
                     type="text"
@@ -342,7 +381,7 @@ export default function DocumentsPage() {
                 onClick={() => {
                   setShowEditModal(false);
                   setSelectedDoc(null);
-                  setFormData({ title: '', content: '' });
+                  setFormData({ title: '', content: '', customer_id: '' });
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
               >

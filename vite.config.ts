@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -7,7 +8,12 @@ export default defineConfig({
 
   base: './',
 
+  // 公开目录，包含可直接访问的静态资源
+  publicDir: 'dist/reports',
+
   build: {
+    // 构建时复制reports目录
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
         manualChunks(id) {
