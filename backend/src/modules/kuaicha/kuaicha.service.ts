@@ -296,6 +296,34 @@ Call: {"tool":"call","params":{"tool_id":"...","params":{...}}}
 End: {"tool":"answer","params":{"answer":"..."}}`;
   }
   private async executeToolCall(toolCall: { tool: string; params: any }): Promise<any> {
+    const useProxy = process.env.USE_KUAICHA_PROXY === 'true';
+    const proxyUrl = process.env.KUAICHA_PROXY_URL;
+
+    if (useProxy && proxyUrl) {
+      // 通过代理服务调用
+      if (toolCall.tool === 'discover') {
+        const query = toolCall.params.query || '';
+        const res = await fetch(`${proxyUrl}/discover`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+        });
+        return await res.json();
+      }
+      if (toolCall.tool === 'call') {
+        const toolId = toolCall.params.tool_id || '';
+        const callParams = toolCall.params.params || {};
+        const res = await fetch(`${proxyUrl}/call`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tool_id: toolId, params: callParams }),
+        });
+        return await res.json();
+      }
+      throw new Error(`未知工具: ${toolCall.tool}`);
+    }
+
+    // 原有脚本调用
     if (toolCall.tool === 'discover') {
       const query = toolCall.params.query || '';
       const cmd = `node "${this.scriptPath}" discover "${query}"`;
