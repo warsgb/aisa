@@ -21,16 +21,21 @@ class WebSocketService {
       return;
     }
 
-    // Support relative paths for same-origin deployment, fallback to localhost
-    let wsUrl = import.meta.env.VITE_WS_URL || (import.meta.env.VITE_API_URL || 'http://localhost:3001');
+    // Use environment variable for WebSocket URL
+    // VITE_WS_URL should be like: wss://winai.top or ws://localhost:3001
+    let wsUrl = import.meta.env.VITE_WS_URL;
 
-    // If wsUrl is a relative path (starts with /), construct full URL
-    if (wsUrl.startsWith('/')) {
-      // Use the backend URL directly
-      wsUrl = 'http://localhost:3001';
-    } else if (wsUrl.startsWith('/ws') || wsUrl.startsWith('ws')) {
-      // Extract base URL if wsUrl contains /ws path
-      wsUrl = 'http://localhost:3001';
+    // Fallback: construct from API URL
+    if (!wsUrl) {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      // Convert HTTP to WS protocol
+      if (apiUrl.startsWith('https://')) {
+        wsUrl = apiUrl.replace('https://', 'wss://');
+      } else if (apiUrl.startsWith('http://')) {
+        wsUrl = apiUrl.replace('http://', 'ws://');
+      } else {
+        wsUrl = 'ws://localhost:3001';
+      }
     }
 
     this.socket = io(wsUrl, {
